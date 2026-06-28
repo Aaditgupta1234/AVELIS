@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AVELIS | The Discerning Bibliophile's Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&amp;family=Inter:wght@300;400;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#C9A227", // Antique Gold
+                        "on-primary": "#0B183D",
+                        "background": "#0B183D", // Deep Navy
+                        "surface": "#1A2E57", // Surface
+                        "surface-variant": "#13254B", // Secondary Navy
+                        "on-background": "#F8F5F0",
+                        "on-surface": "#F8F5F0",
+                        "outline": "#C9A22733",
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "section-padding": "120px",
+                        "gutter": "40px",
+                        "container-max": "1440px",
+                    },
+                    "fontFamily": {
+                        "display": ["Cinzel", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0B183D;
+        }
+
+        .paper-grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.04;
+            background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+        }
+
+        .glass-panel {
+            background: rgba(19, 37, 75, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(201, 162, 39, 0.1);
+        }
+
+        .gold-border-hover {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+        .gold-border-hover:hover {
+            border-color: #C9A227;
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .reading-progress-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: #C9A227;
+            z-index: 1000;
+            transition: width 0.1s ease;
+        }
+
+        .shader-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .threejs-container {
+            width: 100%;
+            height: 600px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 1s ease-out forwards; }
+
+        .divider-diamond::after {
+            content: '◆';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: #0B183D;
+            padding: 0 15px;
+            color: #C9A227;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="font-body text-on-background selection:bg-primary/30">
+<div class="paper-grain"></div>
+<div class="reading-progress-line" id="progressBar"></div>
+<!-- Atmospheric Background Shader -->
+<div class="shader-bg">
+<!-- STITCH_SHADER_START:ANIMATION_18 class="" -->
+<div class="" style="display:block;width:100%;height:100%;min-height:200px;">
+<canvas id="shader-canvas-ANIMATION_18" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_18');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+
+float noise(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = v_texCoord;
+    vec2 mouse = u_mouse / u_resolution;
+    
+    // Official Brand Background: Deep Navy (#0B183D)
+    vec3 color = vec3(0.043, 0.094, 0.239); 
+    
+    // Deep ambient depth
+    float distToCenter = length(uv - vec2(0.5));
+    color -= distToCenter * 0.06;
+    
+    // Interactive Golden Dust Particles (Antique Gold #C9A227)
+    for(float i=0.0; i<50.0; i++) {
+        float n = noise(vec2(i, 1.23));
+        vec2 p = vec2(noise(vec2(i, 0.0)), noise(vec2(0.0, i)));
+        
+        // Slow, cinematic drift
+        p.y = fract(p.y - u_time * 0.005 * (0.3 + n));
+        p.x += sin(u_time * 0.03 + i) * 0.15;
+        
+        // Subtle mouse repulsion
+        float mDist = length(uv - p);
+        float mouseAvoid = smoothstep(0.25, 0.0, length(uv - mouse));
+        p += (uv - mouse) * mouseAvoid * 0.02;
+        
+        float dist = length(uv - p);
+        float particle = smoothstep(0.0012, 0.0, dist);
+        color += particle * vec3(0.788, 0.635, 0.153) * (0.1 + 0.5 * n); 
+    }
+    
+    // Cinematic light beam from top-right
+    vec2 rayOrigin = vec2(1.15, 1.15);
+    float ray = pow(max(0.0, 1.0 - length(uv - rayOrigin)), 3.5);
+    color += ray * vec3(0.878, 0.706, 0.31) * 0.15;
+    
+    // Microscopic paper grain texture
+    float grain = noise(uv * u_resolution + u_time) * 0.015;
+    color += grain;
+    
+    gl_FragColor = vec4(color, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_18 -->
+</div>
+<!-- Navigation -->
+<nav class="fixed top-0 w-full z-50 transition-all duration-500 border-b border-white/5" id="navbar">
+<div class="max-w-container-max mx-auto px-gutter py-6 flex justify-between items-center">
+<div class="font-display text-2xl tracking-[0.2em] text-primary">AVELIS</div>
+<div class="hidden lg:flex gap-12 font-display text-[11px] tracking-[0.2em] uppercase">
+<a class="hover:text-primary transition-colors text-primary" href="#">Collections</a>
+<a class="hover:text-primary transition-colors" href="#">Library</a>
+<a class="hover:text-primary transition-colors" href="#">The Experience</a>
+<a class="hover:text-primary transition-colors" href="#">Journal</a>
+</div>
+<div class="flex items-center gap-8">
+<button class="material-symbols-outlined text-primary scale-90">search</button>
+<button class="bg-primary text-on-primary px-8 py-3 font-display text-[10px] tracking-[0.2em] uppercase hover:brightness-110 transition-all">Join the Circle</button>
+</div>
+</div>
+</nav>
+<!-- Hero Section -->
+<section class="min-h-screen flex items-center pt-20 overflow-hidden px-gutter">
+<div class="max-w-container-max mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+<div class="space-y-12 animate-fade-in">
+<div class="inline-flex items-center gap-4 px-4 py-1.5 border border-primary/20 rounded-full">
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+<span class="font-display text-[10px] tracking-[0.3em] text-primary uppercase">The Definitive Digital Library</span>
+</div>
+<h1 class="font-display text-6xl md:text-8xl leading-[1.1] text-white">
+                    EVERY STORY <br/>
+<span class="italic text-primary">BEGINS WITH</span> <br/>
+                    A CHOICE.
+                </h1>
+<p class="text-on-background/70 text-lg max-w-xl font-light leading-relaxed">
+                    Step into a curated sanctuary where the art of literature meets modern refinement. Discover, collect, and experience the world's most significant works in an environment designed for the discerning mind.
+                </p>
+<div class="flex flex-wrap gap-8">
+<button class="bg-primary text-on-primary px-12 py-6 font-display text-[12px] tracking-[0.2em] uppercase hover:scale-105 transition-transform shadow-2xl">Explore Archives</button>
+<button class="border border-primary/30 text-white px-12 py-6 font-display text-[12px] tracking-[0.2em] uppercase hover:bg-primary/5 transition-colors">The Experience</button>
+</div>
+</div>
+<div class="relative flex justify-center items-center">
+<div class="absolute inset-0 bg-primary/10 blur-[120px] rounded-full"></div>
+<div class="threejs-container" id="threejs-container-AVELIS-MASTER">
+<!-- 3D Interactive Book Scene Loaded Here -->
+</div>
+</div>
+</div>
+</section>
+<!-- Trusted Section -->
+<section class="py-24 border-y border-white/5 bg-surface-variant/20">
+<div class="max-w-container-max mx-auto px-gutter text-center">
+<p class="font-display text-[10px] tracking-[0.4em] text-primary/60 uppercase mb-12">Endorsed by the Global Literary Elite</p>
+<div class="flex flex-wrap justify-center items-center gap-16 md:gap-32 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
+<span class="font-display text-xl tracking-tighter text-white">Oxford Times</span>
+<span class="font-display text-xl tracking-tighter text-white">The Guardian</span>
+<span class="font-display text-xl tracking-tighter text-white">Literary Hub</span>
+<span class="font-display text-xl tracking-tighter text-white">Vogue Books</span>
+<span class="font-display text-xl tracking-tighter text-white">New Yorker</span>
+</div>
+</div>
+</section>
+<!-- Featured Collections -->
+<section class="py-section-padding px-gutter">
+<div class="max-w-container-max mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-baseline mb-20 gap-8">
+<div>
+<p class="font-display text-primary text-[11px] tracking-[0.4em] uppercase mb-4">Curated Selections</p>
+<h2 class="font-display text-4xl md:text-5xl">The Season's Anthology</h2>
+</div>
+<a class="font-display text-[11px] tracking-[0.2em] text-primary hover:text-white transition-colors border-b border-primary/20 pb-2" href="#">VIEW ALL ARCHIVES</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+<!-- Book Card 1 (Large) -->
+<div class="lg:col-span-2 group">
+<div class="relative overflow-hidden aspect-[16/10] bg-surface-variant gold-border-hover">
+<img alt="The Silent Library" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnTfko1oBkPcKBiPzij8xCRpy--PxCYJj60yN3yhd9JocIcU4ajGcb7xoDLYFhqTuuw2uyACszZ4cNzdqm53i8FOWf0lX2wxECQbx0OmwLCJKA0TD396WkiCbKrrnHuj_Ra37lOFohhuA3-3Pvr9ATiM4pmS6CXjbfnSqAsM6rR-O3d6zR8iLwwXD5KiLyHO_dLSCAb11OFn65HuEYIKm5uxixK4TQFwst7LX-QOwqLjtyezOTvEDsMAymuocG-Ylv-OiqvFV5a0zG"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent opacity-60"></div>
+<div class="absolute bottom-8 left-8">
+<span class="bg-primary/20 backdrop-blur-md px-3 py-1 text-[8px] font-display text-primary tracking-widest uppercase border border-primary/30 mb-4 inline-block">Editor's Pick</span>
+<h3 class="font-display text-3xl mb-1">The Silent Library</h3>
+<p class="font-display text-[10px] text-primary/70 tracking-widest">JULIAN VANCE • 2024</p>
+</div>
+</div>
+</div>
+<!-- Book Card 2 -->
+<div class="group">
+<div class="relative overflow-hidden aspect-[3/4] bg-surface-variant gold-border-hover mb-6">
+<img alt="Echoes of Gold" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU52ijSLmU_qjFNUOAerhdUpQteDYp-nWFtLh4voF6DSU1RngPE1bZDKVyFE_Ins5b-fhz-TrYm1qt2hcbhLpWVUW1zU0TLNCasw1eIY670L4VxFWnA8DGthNY8apX-Nf1Ls_wAuTQxzX7InGTYZnEji853jaJRGQYDVe7t5YnSOk0BI2sZOjGwDI8Tpg5qAOGSvPMJiv5XPUzIbspiXhX-LrfHMNLuTOH7BCEvrDngvT9YzV3GVjAVcQC74f7I0WGgk3DAT2cOk2Q"/>
+<div class="absolute top-4 right-4 h-8 w-8 bg-background/80 flex items-center justify-center rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-sm">bookmark</span>
+</div>
+</div>
+<h3 class="font-display text-xl mb-1">Echoes of Gold</h3>
+<p class="font-display text-[10px] text-primary/70 tracking-widest uppercase">ELARA STERLING</p>
+</div>
+<!-- Book Card 3 -->
+<div class="group">
+<div class="relative overflow-hidden aspect-[3/4] bg-surface-variant gold-border-hover mb-6">
+<img alt="The Botanical Guild" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeJgiCbSFFXnJYQlPQxoJEuc8uvF07iNbjx-4cy6obuU8uvCGy3KQy9GNov2qUFPpcCDfUJKsHpYE98S1FGQdL_x6aPw5ggWqUjDsSA8Zg1nrW492CEsPwHTtmxZ5YCXYnMpikOx-nMFlq3o8EMnARZTUflvpm3mF2XZ2tk_WsDnSESEjfECww2PB_aIa-OqpQZEZdsLySkc9vg1OmwQo6Ur9Weo_TEnBQtm69GnBidXM2wk4ZgU8cXW70NmOJlkyP7RF70rIzmt9z"/>
+<div class="absolute top-4 right-4 h-8 w-8 bg-background/80 flex items-center justify-center rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-sm">bookmark</span>
+</div>
+</div>
+<h3 class="font-display text-xl mb-1">The Botanical Guild</h3>
+<p class="font-display text-[10px] text-primary/70 tracking-widest uppercase">DR. ARIS THORNE</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Categories -->
+<section class="py-section-padding bg-surface/30">
+<div class="max-w-container-max mx-auto px-gutter text-center">
+<h2 class="font-display text-4xl mb-20 uppercase tracking-widest">Curated Domains</h2>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+<div class="glass-panel p-10 hover:bg-primary/10 transition-all group cursor-pointer border border-white/5">
+<span class="material-symbols-outlined text-primary mb-6 scale-150 block opacity-70 group-hover:opacity-100">castle</span>
+<p class="font-display text-[11px] tracking-[0.3em] uppercase">Fantasy</p>
+</div>
+<div class="glass-panel p-10 hover:bg-primary/10 transition-all group cursor-pointer border border-white/5">
+<span class="material-symbols-outlined text-primary mb-6 scale-150 block opacity-70 group-hover:opacity-100">history_edu</span>
+<p class="font-display text-[11px] tracking-[0.3em] uppercase">History</p>
+</div>
+<div class="glass-panel p-10 hover:bg-primary/10 transition-all group cursor-pointer border border-white/5">
+<span class="material-symbols-outlined text-primary mb-6 scale-150 block opacity-70 group-hover:opacity-100">foundation</span>
+<p class="font-display text-[11px] tracking-[0.3em] uppercase">Philosophy</p>
+</div>
+<div class="glass-panel p-10 hover:bg-primary/10 transition-all group cursor-pointer border border-white/5">
+<span class="material-symbols-outlined text-primary mb-6 scale-150 block opacity-70 group-hover:opacity-100">rocket_launch</span>
+<p class="font-display text-[11px] tracking-[0.3em] uppercase">Sci-Fi</p>
+</div>
+<div class="glass-panel p-10 hover:bg-primary/10 transition-all group cursor-pointer border border-white/5">
+<span class="material-symbols-outlined text-primary mb-6 scale-150 block opacity-70 group-hover:opacity-100">palette</span>
+<p class="font-display text-[11px] tracking-[0.3em] uppercase">Arts</p>
+</div>
+<div class="glass-panel p-10 hover:bg-primary/10 transition-all group cursor-pointer border border-white/5">
+<span class="material-symbols-outlined text-primary mb-6 scale-150 block opacity-70 group-hover:opacity-100">terminal</span>
+<p class="font-display text-[11px] tracking-[0.3em] uppercase">Technology</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Reader Experience -->
+<section class="py-section-padding px-gutter overflow-hidden">
+<div class="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+<div class="relative order-2 lg:order-1">
+<div class="absolute inset-0 bg-primary/10 blur-[100px] rounded-full scale-150"></div>
+<img alt="Device Showcase" class="relative z-10 w-full drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrfA7BAEvYVrXr4qH72poM_KTDMuM_FjnG8j-BhOA-KuNmFrqmbyFOixw49q0PMPgm73p02YcnZ1UZGAuzitReHb3uE0vPmtYoKkhT479waBDJRsx_I_3t27am1mAVCYq4Fygz33tpV4aQv1VqmSD9eMqQuSbenu840SVeuZL_MYT_IyMb1aoV4qhcV4ec8OYzVcbD0-BFnNvYSJ-W9AV531DuRhn4C-4MabTEgI4lpgYkBc3R-i_xHOnUzKqRx8Mm2WKwWF4JrugR"/>
+</div>
+<div class="space-y-12 order-1 lg:order-2">
+<div class="space-y-4">
+<p class="font-display text-primary text-[11px] tracking-[0.4em] uppercase">Interface</p>
+<h2 class="font-display text-5xl leading-tight">Refined for the <br/>Modern Scholar</h2>
+</div>
+<div class="space-y-10">
+<div class="flex gap-8">
+<div class="w-12 h-12 flex-shrink-0 flex items-center justify-center border border-primary/20 text-primary">
+<span class="material-symbols-outlined">auto_stories</span>
+</div>
+<div>
+<h4 class="font-display text-xl mb-2">Digital Paper™ Experience</h4>
+<p class="text-on-background/60 font-light leading-relaxed">Proprietary rendering engine that mimics the eye-comfort and texture of heavy cream paper.</p>
+</div>
+</div>
+<div class="flex gap-8">
+<div class="w-12 h-12 flex-shrink-0 flex items-center justify-center border border-primary/20 text-primary">
+<span class="material-symbols-outlined">ink_highlighter</span>
+</div>
+<div>
+<h4 class="font-display text-xl mb-2">Gilded Annotations</h4>
+<p class="text-on-background/60 font-light leading-relaxed">Capture your insights with a suite of analytical tools designed for deep reading and research.</p>
+</div>
+</div>
+<div class="flex gap-8">
+<div class="w-12 h-12 flex-shrink-0 flex items-center justify-center border border-primary/20 text-primary">
+<span class="material-symbols-outlined">sync</span>
+</div>
+<div>
+<h4 class="font-display text-xl mb-2">Omni-Synchronicity</h4>
+<p class="text-on-background/60 font-light leading-relaxed">Your library and progress, flawlessly preserved across every refined device you own.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Statistics -->
+<section class="py-24 bg-surface-variant/40 border-y border-white/5">
+<div class="max-w-container-max mx-auto px-gutter grid grid-cols-2 lg:grid-cols-4 gap-16 text-center">
+<div>
+<p class="font-display text-5xl text-primary mb-2" data-target="100000">100K+</p>
+<p class="font-display text-[10px] tracking-[0.3em] text-white/50 uppercase">Global Readers</p>
+</div>
+<div>
+<p class="font-display text-5xl text-primary mb-2" data-target="50000">50K+</p>
+<p class="font-display text-[10px] tracking-[0.3em] text-white/50 uppercase">First Editions</p>
+</div>
+<div>
+<p class="font-display text-5xl text-primary mb-2" data-target="1200000">1.2M+</p>
+<p class="font-display text-[10px] tracking-[0.3em] text-white/50 uppercase">Archival Downloads</p>
+</div>
+<div>
+<p class="font-display text-5xl text-primary mb-2">99%</p>
+<p class="font-display text-[10px] tracking-[0.3em] text-white/50 uppercase">Scholastic Rating</p>
+</div>
+</div>
+</section>
+<!-- Premium Features -->
+<section class="py-section-padding px-gutter">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-display text-4xl text-center mb-20 uppercase tracking-[0.2em]">The Patronage Benefits</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
+<span class="material-symbols-outlined text-primary mb-8 scale-150 block">workspace_premium</span>
+<h3 class="font-display text-2xl mb-4">The Circle Access</h3>
+<p class="text-on-background/60 font-light leading-relaxed">Exclusive entry to author salons, private archives, and early access to bespoke physical commissions.</p>
+</div>
+<div class="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
+<span class="material-symbols-outlined text-primary mb-8 scale-150 block">inventory_2</span>
+<h3 class="font-display text-2xl mb-4">Physical Inheritance</h3>
+<p class="text-on-background/60 font-light leading-relaxed">A seamless bridge between digital ownership and handcrafted hardcover first editions for your physical library.</p>
+</div>
+<div class="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
+<span class="material-symbols-outlined text-primary mb-8 scale-150 block">psychology</span>
+<h3 class="font-display text-2xl mb-4">The Oracle AI</h3>
+<p class="text-on-background/60 font-light leading-relaxed">A proprietary recommendation engine that understands the nuances of your literary taste through semantic analysis.</p>
+</div>
+<div class="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
+<span class="material-symbols-outlined text-primary mb-8 scale-150 block">history</span>
+<h3 class="font-display text-2xl mb-4">Immutable Archives</h3>
+<p class="text-on-background/60 font-light leading-relaxed">Your collection is preserved forever on a decentralized ledger, ensuring your digital heritage remains yours.</p>
+</div>
+<div class="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
+<span class="material-symbols-outlined text-primary mb-8 scale-150 block">menu_book</span>
+<h3 class="font-display text-2xl mb-4">Curated Journals</h3>
+<p class="text-on-background/60 font-light leading-relaxed">Receive quarterly editorial journals featuring essays and long-form reviews from today's leading critics.</p>
+</div>
+<div class="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
+<span class="material-symbols-outlined text-primary mb-8 scale-150 block">support_agent</span>
+<h3 class="font-display text-2xl mb-4">Archival Concierge</h3>
+<p class="text-on-background/60 font-light leading-relaxed">Dedicated assistance for finding rare texts, managing commissions, and navigating our vast archives.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonials -->
+<section class="py-section-padding bg-surface/20 border-y border-white/5">
+<div class="max-w-container-max mx-auto px-gutter">
+<div class="text-center mb-20">
+<p class="font-display text-primary text-[11px] tracking-[0.4em] uppercase mb-4">Reader Reflections</p>
+<h2 class="font-display text-4xl">Voices from the Study</h2>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<div class="glass-panel p-16 relative border-l-4 border-primary">
+<p class="font-display text-2xl italic leading-relaxed text-white/90 mb-12">
+                        "AVELIS has transformed my relationship with digital reading. It no longer feels like a utility, but a ritual. The typography and dark environment are unparalleled."
+                    </p>
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20">
+<img alt="Clara Hemmingway" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2b-KANMlJL4ie-hWzoBx6aV8QEfOqJZD0lrZitnvSyZWLlMebHMEz1fmmAxIPSizP8O_U0OsCN0sK8aNjd17tdJQOhGLxH00x0P3wqiN4UvN3WfuZyNLw3qbGX2Hz1JxML4k0ip1pGMjlReyKwyzj2bOGhpJlK2OlhoTIWIfUDxapzZNzEyWcDpXOfzhochGvc3qtUFCC4qOCpFkYKJ_TgjbfGtsRDAghaTsyTpx2TAts9GRg3SwxVVO_UXu6yeGFdLCpRy4oFo-U"/>
+</div>
+<div>
+<p class="font-display text-lg">Clara Hemmingway</p>
+<p class="font-display text-[9px] tracking-[0.2em] text-primary uppercase">Literary Critic</p>
+</div>
+</div>
+</div>
+<div class="glass-panel p-16 relative border-l-4 border-primary">
+<p class="font-display text-2xl italic leading-relaxed text-white/90 mb-12">
+                        "The archive of first editions is a scholar's dream. Being able to cross-reference physical rarity with digital convenience in such a beautiful interface is remarkable."
+                    </p>
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20">
+<img alt="Arthur Penhaligon" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-6cn_FuVEPCaVWTXkKxuBXhbMhiEnZ7_A-4MbNp1EOrEuredN_GxJEznKkSeyVPIx4-MSrFb0gPGK54ZU1jEZ8ug7MKD38athBd8RCVnsJQplbg-rDHuBXoixkXizN_P31-8b50aCzJ-XnNhM722OJef9RT9_269D25h5DPMsMjWSLoNtIsdW8sC5rDiv84AMYpJLAOErPpRnLhpyzTt4Tw2boUPIrwlXCr0fqFpdJs17bD7bQ851NPI5Ivr1MD40Vm6mHlqR6v90"/>
+</div>
+<div>
+<p class="font-display text-lg">Arthur Penhaligon</p>
+<p class="font-display text-[9px] tracking-[0.2em] text-primary uppercase">Archival Historian</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-40 relative overflow-hidden text-center px-gutter">
+<div class="max-w-4xl mx-auto space-y-12">
+<h2 class="font-display text-6xl md:text-8xl leading-tight">Your Next Story <br/> Starts Here.</h2>
+<div class="w-full h-[1px] bg-primary/20 relative divider-diamond mb-12"></div>
+<p class="text-on-background/60 text-xl font-light max-w-2xl mx-auto leading-relaxed">
+                Step into the AVELIS sanctuary. Whether you seek the wisdom of the ancients or the thrill of the modern era, your seat in the circle awaits.
+            </p>
+<button class="bg-primary text-on-primary px-16 py-8 font-display text-[14px] tracking-[0.3em] uppercase hover:scale-105 transition-all shadow-2xl">Join the Collective</button>
+</div>
+</section>
+<!-- Footer -->
+<footer class="py-section-padding border-t border-white/5 bg-background">
+<div class="max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-4 gap-20">
+<div class="lg:col-span-1">
+<div class="font-display text-4xl text-primary mb-8 tracking-[0.2em]">AVELIS</div>
+<p class="text-on-background/50 font-light text-sm leading-relaxed mb-8">
+                    An ecosystem dedicated to the preservation and elevation of the written word. Crafting digital sanctuaries for the discerning bibliophile.
+                </p>
+<div class="flex gap-6">
+<span class="material-symbols-outlined text-primary/60 hover:text-primary cursor-pointer transition-colors">public</span>
+<span class="material-symbols-outlined text-primary/60 hover:text-primary cursor-pointer transition-colors">terminal</span>
+<span class="material-symbols-outlined text-primary/60 hover:text-primary cursor-pointer transition-colors">draw</span>
+</div>
+</div>
+<div>
+<h4 class="font-display text-xs tracking-[0.3em] uppercase text-primary mb-10">The Sanctuary</h4>
+<ul class="space-y-4 text-xs font-display tracking-[0.1em] text-white/40 uppercase">
+<li><a class="hover:text-primary transition-colors" href="#">The Founders</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Bespoke Commissions</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Archival Access</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Journal</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-display text-xs tracking-[0.3em] uppercase text-primary mb-10">Governance</h4>
+<ul class="space-y-4 text-xs font-display tracking-[0.1em] text-white/40 uppercase">
+<li><a class="hover:text-primary transition-colors" href="#">Patron Rights</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Ethics Statement</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact Us</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-display text-xs tracking-[0.3em] uppercase text-primary mb-10">The Newsletter</h4>
+<p class="text-on-background/50 text-xs mb-6 font-light">Receive rare updates from our archival scouts.</p>
+<div class="flex border-b border-primary/20 pb-2">
+<input class="bg-transparent border-none focus:ring-0 text-xs w-full placeholder:text-white/20 uppercase tracking-widest" placeholder="EMAIL ADDRESS" type="email"/>
+<button class="material-symbols-outlined text-primary">chevron_right</button>
+</div>
+</div>
+</div>
+<div class="max-w-container-max mx-auto px-gutter mt-32 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+<p class="font-display text-[9px] tracking-[0.4em] text-white/20 uppercase">© 2024 AVELIS. CRAFTED FOR THE DISCERNING BIBLIOPHILE.</p>
+<div class="flex gap-10">
+<span class="material-symbols-outlined text-white/20 text-sm">volume_up</span>
+<span class="material-symbols-outlined text-white/20 text-sm">visibility</span>
+</div>
+</div>
+</footer>
+<script>
+        // Interactive Scroll Logic
+        window.onscroll = function() {
+            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrolled = (winScroll / height) * 100;
+            document.getElementById("progressBar").style.width = scrolled + "%";
+
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('bg-background/80', 'backdrop-blur-xl', 'py-4');
+                navbar.classList.remove('py-6');
+            } else {
+                navbar.classList.remove('bg-background/80', 'backdrop-blur-xl', 'py-4');
+                navbar.classList.add('py-6');
+            }
+        };
+
+        // Initialize Three.js Scene via DataStore (Master Animation)
+        (function() {
+            const container = document.getElementById('threejs-container-AVELIS-MASTER');
+            if (!container) return;
+            
+            // Re-evaluating the provided logic within our scoped context
+            <!-- STITCH_THREEJS_START:ANIMATION_19 class="" -->
+<div class="" style="display:block;width:100%;height:100%;min-height:200px;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_19" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_19');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  (function() {
+  const container = document.getElementById('threejs-container-AVELIS-MASTER');
+  const width = container.clientWidth || window.innerWidth;
+  const height = container.clientHeight || window.innerHeight;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(24, width / height, 0.1, 1000);
+  camera.position.set(0, 0, 10);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  // Studio Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambientLight);
+
+  const goldKey = new THREE.PointLight(0xC9A227, 2.8, 15);
+  goldKey.position.set(5, 4, 5);
+  scene.add(goldKey);
+
+  const rimLight = new THREE.DirectionalLight(0xF8F5F0, 0.8);
+  rimLight.position.set(-5, 5, 2);
+  scene.add(rimLight);
+
+  // Book Asset Group
+  const bookGroup = new THREE.Group();
+
+  // Premium Materials
+  const coverMat = new THREE.MeshPhongMaterial({ 
+      color: 0x0B183D, // Deep Navy
+      shininess: 100,
+      specular: 0x1A2E57
+  });
+  const pagesMat = new THREE.MeshPhongMaterial({ color: 0xF8F5F0 });
+  const goldDetailMat = new THREE.MeshPhongMaterial({ color: 0xC9A227, shininess: 150 });
+
+  // Geometries
+  const coverGeom = new THREE.BoxGeometry(2.8, 4.0, 0.15);
+  const pagesGeom = new THREE.BoxGeometry(2.7, 3.9, 0.5);
+
+  const frontCover = new THREE.Mesh(coverGeom, coverMat);
+  const backCover = new THREE.Mesh(coverGeom, coverMat);
+  const pages = new THREE.Mesh(pagesGeom, pagesMat);
+
+  frontCover.position.z = 0.32;
+  backCover.position.z = -0.32;
+
+  // Hinge/Spine logic
+  const spineGeom = new THREE.CylinderGeometry(0.32, 0.32, 4.0, 32, 1, false, Math.PI, Math.PI);
+  const spine = new THREE.Mesh(spineGeom, coverMat);
+  spine.rotation.z = Math.PI / 2;
+  spine.position.x = -1.4;
+  spine.rotation.x = Math.PI / 2;
+
+  const hinge = new THREE.Group();
+  hinge.position.x = -1.4;
+  frontCover.position.x = 1.4;
+  hinge.add(frontCover);
+
+  bookGroup.add(hinge);
+  bookGroup.add(backCover);
+  bookGroup.add(pages);
+  bookGroup.add(spine);
+
+  // Elegant Ribbon Bookmark
+  const ribbonGeom = new THREE.BoxGeometry(0.18, 1.6, 0.01);
+  const ribbon = new THREE.Mesh(ribbonGeom, goldDetailMat);
+  ribbon.position.set(0.8, 1.5, 0.3);
+  bookGroup.add(ribbon);
+
+  scene.add(bookGroup);
+
+  // Animation State
+  let mouseX = 0;
+  let mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth) - 0.5;
+      mouseY = (e.clientY / window.innerHeight) - 0.5;
+  });
+
+  function animate() {
+      requestAnimationFrame(animate);
+      const time = Date.now() * 0.001;
+      
+      // Luxury floating rhythm
+      bookGroup.position.y = Math.sin(time * 0.3) * 0.25;
+      bookGroup.rotation.z = Math.sin(time * 0.15) * 0.03;
+      
+      // Parallax Response
+      bookGroup.rotation.y = THREE.MathUtils.lerp(bookGroup.rotation.y, mouseX * 0.4, 0.04);
+      bookGroup.rotation.x = THREE.MathUtils.lerp(bookGroup.rotation.x, mouseY * 0.25, 0.04);
+      
+      // Elegant page breathing
+      hinge.rotation.y = -0.12 + Math.sin(time * 0.5) * 0.05;
+      
+      // Gold Light Pulse
+      goldKey.intensity = 2.5 + Math.sin(time * 1.5) * 0.8;
+      
+      renderer.render(scene, camera);
+  }
+
+  window.addEventListener('resize', () => {
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+  });
+
+  animate();
+})();
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_19 -->
+        })();
+    </script>
+</body></html>
