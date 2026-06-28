@@ -23,6 +23,15 @@ export const HERO_LINES = [
   { text: "A CHOICE.", italic: false },
 ];
 
+export const CURATED_DOMAINS = [
+  { icon: "castle", label: "Fantasy" },
+  { icon: "history_edu", label: "History" },
+  { icon: "foundation", label: "Philosophy" },
+  { icon: "rocket_launch", label: "Sci-Fi" },
+  { icon: "palette", label: "Arts" },
+  { icon: "terminal", label: "Technology" },
+];
+
 export const PREMIUM_FEATURES = [
   { icon: "workspace_premium", title: "The Circle Access", description: "Exclusive entry to author salons, private archives, and early access to bespoke physical commissions." },
   { icon: "inventory_2", title: "Physical Inheritance", description: "A seamless bridge between digital ownership and handcrafted hardcover first editions for your physical library." },

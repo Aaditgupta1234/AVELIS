@@ -1,52 +1,60 @@
 import { motion } from "framer-motion";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
 import { springs, staggers } from "../utils/motion";
-import { categories } from "../data/collections";
+import { CURATED_DOMAINS } from "../utils/constants";
 
-const CategoryCard = ({ image, title }: { image: string; title: string }) => {
+const CategoryCard = ({ icon, label }: { icon: string; label: string }) => {
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 20 },
+        hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0 },
       }}
-      className="group relative h-40 overflow-hidden border border-white/10 cursor-pointer"
-      whileHover="hover"
       initial="rest"
+      whileHover="hover"
+      className="relative glass-panel p-10 cursor-pointer overflow-hidden border"
       animate="rest"
     >
-      <motion.div 
-        className="absolute inset-0 bg-surface-variant z-0"
+      <motion.div
         variants={{
-          rest: { opacity: 1 },
-          hover: { opacity: 0 }
+          rest: { 
+            borderColor: "rgba(255, 255, 255, 0.05)",
+            background: "rgba(255, 255, 255, 0)",
+            y: 0,
+            boxShadow: "0px 0px 0px rgba(0,0,0,0)",
+          },
+          hover: { 
+            borderColor: "rgba(212, 175, 55, 0.4)",
+            background: "linear-gradient(180deg, rgba(212, 175, 55, 0.05) 0%, rgba(212, 175, 55, 0) 100%)",
+            y: -6,
+            boxShadow: "0px 10px 20px -10px rgba(212,175,55,0.15)",
+          },
         }}
         transition={springs.smooth}
+        className="absolute inset-0 z-0"
       />
       
-      <motion.div 
-        className="absolute inset-0 z-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${image})` }}
-        variants={{
-          rest: { opacity: 0, scale: 1 },
-          hover: { opacity: 0.5, scale: 1.05 }
-        }}
-        transition={springs.smooth}
-      />
-
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent z-10" />
-      
-      <div className="relative z-20 h-full flex flex-col items-center justify-center p-6 text-center">
-        <motion.h3 
+      <div className="relative z-10 flex flex-col items-center">
+        <motion.span
           variants={{
-            rest: { y: 0, color: "rgba(255,255,255,0.7)" },
-            hover: { y: -4, color: "rgba(212,175,55,1)" }
+            rest: { y: 0, opacity: 0.7, textShadow: "0px 0px 0px rgba(212,175,55,0)" },
+            hover: { y: -2, opacity: 1, textShadow: "0px 4px 12px rgba(212,175,55,0.5)" },
           }}
           transition={springs.smooth}
-          className="font-display text-lg tracking-wider"
+          className="material-symbols-outlined text-primary mb-6 scale-150 block"
         >
-          {title}
-        </motion.h3>
+          {icon}
+        </motion.span>
+        <motion.p
+          variants={{
+            rest: { color: "rgba(255, 255, 255, 0.7)" },
+            hover: { color: "rgba(255, 255, 255, 1)" },
+          }}
+          transition={springs.smooth}
+          className="font-display text-[11px] tracking-[0.3em] uppercase"
+        >
+          {label}
+        </motion.p>
       </div>
     </motion.div>
   );
@@ -54,20 +62,21 @@ const CategoryCard = ({ image, title }: { image: string; title: string }) => {
 
 export const Categories = () => {
   return (
-    <AnimatedSection variant="A" className="py-12 border-b border-white/5 relative z-10 px-gutter bg-background/50">
-      <div className="max-w-container-max mx-auto">
-        <motion.div 
+    <AnimatedSection variant="C" className="py-section-padding bg-surface/30 relative z-10">
+      <div className="max-w-container-max mx-auto px-gutter text-center">
+        <h2 className="font-display text-4xl mb-20 uppercase tracking-widest">Curated Domains</h2>
+        <motion.div
           variants={{
             hidden: {},
             visible: { transition: { staggerChildren: staggers.fast } },
           }}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true }}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+          viewport={{ once: true, margin: "-50px" }}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
         >
-          {categories.map((cat, i) => (
-            <CategoryCard key={i} image={cat.image} title={cat.title} />
+          {CURATED_DOMAINS.map((cat, i) => (
+            <CategoryCard key={i} icon={cat.icon} label={cat.label} />
           ))}
         </motion.div>
       </div>

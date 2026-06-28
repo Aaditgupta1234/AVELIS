@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useSpring, useReducedMotion } from "framer-motion";
-import { Hero3DScene } from "../components/ui/Hero3DScene";
+import { HeroVisual } from "../components/hero/HeroVisual";
 import { springs, durations, easeOut, staggers } from "../utils/motion";
 import { HERO_LINES } from "../utils/constants";
 
@@ -146,8 +146,7 @@ export const Hero = () => {
             }}
             className="w-full h-full relative flex justify-center items-center"
           >
-            <div className="absolute inset-0 bg-primary/10 blur-[120px] rounded-full"></div>
-            <Hero3DScene />
+            <HeroVisual />
           </motion.div>
         </motion.div>
         
