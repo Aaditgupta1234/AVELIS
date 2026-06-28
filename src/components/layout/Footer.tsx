@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { springs } from "../../utils/motion";
 
 const FooterLink = ({ children, href }: { children: React.ReactNode; href: string }) => {
@@ -43,7 +44,9 @@ export const Footer = () => {
     <footer className="py-section-padding border-t border-white/5 bg-background">
       <div className="max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-4 gap-20">
         <div className="lg:col-span-1">
-          <div className="font-display text-4xl text-primary mb-8 tracking-[0.2em]">AVELIS</div>
+          <Link to="/">
+            <div className="font-display text-4xl text-primary mb-8 tracking-[0.2em] cursor-pointer inline-block">AVELIS</div>
+          </Link>
           <p className="text-on-background/50 font-light text-sm leading-relaxed mb-8">
             An ecosystem dedicated to the preservation and elevation of the written word. Crafting digital sanctuaries for the discerning bibliophile.
           </p>

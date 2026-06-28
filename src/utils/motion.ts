@@ -1,30 +1,35 @@
 import type { Variants } from "framer-motion";
 
 // Core Easings
-export const easeOut = [0.25, 0.1, 0.25, 1];
-export const easeInOut = [0.4, 0, 0.2, 1];
+export const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
+export const easeInOut: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
 // Durations
 export const durations = {
   fast: 0.3,
   medium: 0.5,
   slow: 0.8,
-  verySlow: 1.0,
+  verySlow: 1.2,
 };
 
 // Springs
 export const springs = {
   buttonClick: {
-    type: "spring",
+    type: "spring" as const,
     stiffness: 400,
     damping: 25,
   },
   smooth: {
-    type: "spring",
+    type: "spring" as const,
     stiffness: 100,
     damping: 20,
     mass: 1,
   },
+  bounce: {
+    type: "spring" as const,
+    stiffness: 300,
+    damping: 10,
+  }
 };
 
 // Global Reveal Variants (A, B, C)

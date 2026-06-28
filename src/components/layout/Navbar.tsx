@@ -1,30 +1,35 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { Link, useLocation } from "react-router-dom";
 import { springs } from "../../utils/motion";
 import { SearchModal } from "../ui/SearchModal";
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
-  const [activeLink, setActiveLink] = useState("Collections");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const prevSearchOpen = useRef(isSearchOpen);
+  const location = useLocation();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 50);
   });
 
   useEffect(() => {
-    // If search modal just closed, return focus to search button
     if (prevSearchOpen.current && !isSearchOpen) {
       searchButtonRef.current?.focus();
     }
     prevSearchOpen.current = isSearchOpen;
   }, [isSearchOpen]);
 
-  const links = ["Collections", "Library", "The Experience", "Journal"];
+  const links = [
+    { name: "Collections", path: "/collections" },
+    { name: "Library", path: "/library" },
+    { name: "The Experience", path: "/experience" },
+    { name: "Journal", path: "/journal" }
+  ];
 
   return (
     <>
@@ -43,32 +48,35 @@ export const Navbar = () => {
         className="fixed top-0 w-full z-50 border-b border-white/5"
       >
         <div className="max-w-container-max mx-auto px-gutter flex justify-between items-center">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={springs.smooth}
-            className="font-display text-2xl tracking-[0.2em] text-primary cursor-pointer"
-          >
-            AVELIS
-          </motion.div>
+          <Link to="/">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={springs.smooth}
+              className="font-display text-2xl tracking-[0.2em] text-primary cursor-pointer"
+            >
+              AVELIS
+            </motion.div>
+          </Link>
           <div className="hidden lg:flex gap-12 font-display text-[11px] tracking-[0.2em] uppercase">
-            {links.map((link) => (
-              <div
-                key={link}
-                className="relative cursor-pointer"
-                onMouseEnter={() => setActiveLink(link)}
-              >
-                <span className={`transition-colors duration-300 ${activeLink === link ? "text-primary" : "text-white/60 hover:text-primary"}`}>
-                  {link}
-                </span>
-                {activeLink === link && (
-                  <motion.div
-                    layoutId="navbar-underline"
-                    className="absolute -bottom-1 left-0 right-0 h-[1px] bg-primary"
-                    transition={springs.smooth}
-                  />
-                )}
-              </div>
-            ))}
+            {links.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <Link to={link.path} key={link.name}>
+                  <div className="relative cursor-pointer group">
+                    <span className={`transition-colors duration-300 ${isActive ? "text-primary" : "text-white/60 group-hover:text-primary"}`}>
+                      {link.name}
+                    </span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="navbar-underline"
+                        className="absolute -bottom-1 left-0 right-0 h-[1px] bg-primary"
+                        transition={springs.smooth}
+                      />
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
           <div className="flex items-center gap-8">
             <motion.button

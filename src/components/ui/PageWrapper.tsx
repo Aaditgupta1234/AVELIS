@@ -1,5 +1,6 @@
 import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { springs, durations } from "../../utils/motion";
 
 interface PageWrapperProps {
@@ -9,7 +10,7 @@ interface PageWrapperProps {
 export const PageWrapper: React.FC<PageWrapperProps> = ({ children }) => {
   const shouldReduceMotion = useReducedMotion();
 
-  const variants = {
+  const variants: Variants = {
     initial: { 
       opacity: 0, 
       y: shouldReduceMotion ? 0 : 20 
