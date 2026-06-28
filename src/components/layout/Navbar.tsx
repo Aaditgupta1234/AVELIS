@@ -3,6 +3,7 @@ import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { springs } from "../../utils/motion";
 import { SearchModal } from "../ui/SearchModal";
+import { NAVIGATION_LINKS } from "../../utils/constants";
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
@@ -23,13 +24,6 @@ export const Navbar = () => {
     }
     prevSearchOpen.current = isSearchOpen;
   }, [isSearchOpen]);
-
-  const links = [
-    { name: "Collections", path: "/collections" },
-    { name: "Library", path: "/library" },
-    { name: "The Experience", path: "/experience" },
-    { name: "Journal", path: "/journal" }
-  ];
 
   return (
     <>
@@ -58,7 +52,7 @@ export const Navbar = () => {
             </motion.div>
           </Link>
           <div className="hidden lg:flex gap-12 font-display text-[11px] tracking-[0.2em] uppercase">
-            {links.map((link) => {
+            {NAVIGATION_LINKS.map((link) => {
               const isActive = location.pathname === link.path;
               return (
                 <Link to={link.path} key={link.name}>

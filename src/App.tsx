@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { LandingPage } from "./pages/LandingPage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { PageWrapper } from "./components/ui/PageWrapper";
+import { ScrollToTop } from "./components/ui/ScrollToTop";
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const AnimatedRoutes = () => {
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AnimatedRoutes />
     </BrowserRouter>
   );

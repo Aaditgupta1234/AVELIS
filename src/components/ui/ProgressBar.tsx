@@ -10,7 +10,7 @@ export const ProgressBar = () => {
   });
 
   const [isVisible, setIsVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     // Only show if we've scrolled down a bit

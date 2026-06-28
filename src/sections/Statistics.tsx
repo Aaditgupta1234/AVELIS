@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useMotionValue, animate, useReducedMotion } from "framer-motion";
+import { motion, useInView, animate, useReducedMotion } from "framer-motion";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
-import { springs } from "../utils/motion";
 
 const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
   const ref = useRef<HTMLSpanElement>(null);

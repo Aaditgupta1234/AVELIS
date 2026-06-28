@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
 import { springs, staggers } from "../utils/motion";
+import { PREMIUM_FEATURES } from "../utils/constants";
 
 const FeatureCard = ({ icon, title, description }: { icon: string; title: string; description: string }) => {
   return (
@@ -49,15 +50,6 @@ const FeatureCard = ({ icon, title, description }: { icon: string; title: string
 };
 
 export const PremiumFeatures = () => {
-  const features = [
-    { icon: "workspace_premium", title: "The Circle Access", description: "Exclusive entry to author salons, private archives, and early access to bespoke physical commissions." },
-    { icon: "inventory_2", title: "Physical Inheritance", description: "A seamless bridge between digital ownership and handcrafted hardcover first editions for your physical library." },
-    { icon: "psychology", title: "The Oracle AI", description: "A proprietary recommendation engine that understands the nuances of your literary taste through semantic analysis." },
-    { icon: "history", title: "Immutable Archives", description: "Your collection is preserved forever on a decentralized ledger, ensuring your digital heritage remains yours." },
-    { icon: "menu_book", title: "Curated Journals", description: "Receive quarterly editorial journals featuring essays and long-form reviews from today's leading critics." },
-    { icon: "support_agent", title: "Archival Concierge", description: "Dedicated assistance for finding rare texts, managing commissions, and navigating our vast archives." }
-  ];
-
   return (
     <AnimatedSection variant="C" className="py-section-padding px-gutter relative z-10">
       <div className="max-w-container-max mx-auto">
@@ -72,7 +64,7 @@ export const PremiumFeatures = () => {
           viewport={{ once: true, margin: "-50px" }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {features.map((feat, i) => (
+          {PREMIUM_FEATURES.map((feat, i) => (
             <FeatureCard key={i} icon={feat.icon} title={feat.title} description={feat.description} />
           ))}
         </motion.div>

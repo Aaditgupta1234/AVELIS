@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
-import { springs, staggers } from "../../utils/motion";
+import { staggers } from "../../utils/motion";
 import { Link } from "react-router-dom";
+import { authorBooks } from "../../data/books";
 
 export const FeaturedAuthor = () => {
-  const books = ["The Stranger", "The Myth of Sisyphus", "The Plague"];
-
   return (
     <AnimatedSection variant="B" className="py-section-padding px-gutter max-w-container-max mx-auto overflow-hidden relative z-10">
       <div className="flex flex-col md:flex-row gap-16 items-center">
@@ -30,6 +29,7 @@ export const FeaturedAuthor = () => {
               className="w-full h-full object-cover" 
               alt="Albert Camus" 
               src="/albert-camus.png"
+              loading="lazy"
             />
           </div>
         </div>
@@ -51,7 +51,7 @@ export const FeaturedAuthor = () => {
             viewport={{ once: true }}
             className="space-y-2"
           >
-            {books.map((book, idx) => (
+            {authorBooks.map((book, idx) => (
               <motion.div 
                 key={idx}
                 variants={{

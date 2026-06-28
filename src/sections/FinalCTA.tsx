@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
-import { springs, easeOut } from "../utils/motion";
+import { springs } from "../utils/motion";
 
 export const FinalCTA = () => {
   const shouldReduceMotion = useReducedMotion();

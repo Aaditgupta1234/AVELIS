@@ -1,7 +1,7 @@
-import { useRef } from "react";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useReducedMotion } from "framer-motion";
 import { Hero3DScene } from "../components/ui/Hero3DScene";
 import { springs, durations, easeOut, staggers } from "../utils/motion";
+import { HERO_LINES } from "../utils/constants";
 
 const Particles = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -54,12 +54,6 @@ export const Hero = () => {
     mouseY.set(y);
   };
 
-  const titleLines = [
-    { text: "EVERY STORY", italic: false },
-    { text: "BEGINS WITH", italic: true },
-    { text: "A CHOICE.", italic: false },
-  ];
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -96,7 +90,7 @@ export const Hero = () => {
           </motion.div>
           
           <h1 className="font-display text-6xl md:text-8xl leading-[1.1] text-white">
-            {titleLines.map((line, i) => (
+            {HERO_LINES.map((line, i) => (
               <motion.div key={i} variants={itemVariants}>
                 {line.italic ? <span className="italic text-primary">{line.text}</span> : line.text}
               </motion.div>

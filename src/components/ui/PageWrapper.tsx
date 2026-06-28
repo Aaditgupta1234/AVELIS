@@ -1,7 +1,7 @@
 import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { springs, durations } from "../../utils/motion";
+import { durations } from "../../utils/motion";
 
 interface PageWrapperProps {
   children: React.ReactNode;
