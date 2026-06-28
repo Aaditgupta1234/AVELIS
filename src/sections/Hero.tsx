@@ -72,24 +72,24 @@ export const Hero = () => {
 
   return (
     <section 
-      className="min-h-screen flex items-center pt-20 overflow-hidden px-gutter relative z-10"
+      className="min-h-screen flex items-center pt-20 overflow-hidden px-12 relative z-10"
       onMouseMove={handleMouseMove}
     >
       <Particles />
-      <div className="max-w-container-max mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center relative z-10">
+      <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-12"
+          className="space-y-8"
         >
           <motion.div variants={itemVariants} className="inline-flex items-center gap-4 px-4 py-1.5 border border-primary/20 rounded-full">
             <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
-            <span className="font-display text-[10px] tracking-[0.3em] text-primary uppercase">The Definitive Digital Library</span>
+            <span className="font-display text-[9px] tracking-[0.3em] text-primary uppercase">The Definitive Digital Library</span>
           </motion.div>
           
-          <h1 className="font-display text-6xl md:text-8xl leading-[1.1] text-white">
+          <h1 className="font-display text-5xl md:text-7xl lg:text-[5.25rem] leading-[1.1] text-white">
             {HERO_LINES.map((line, i) => (
               <motion.div key={i} variants={itemVariants}>
                 {line.italic ? <span className="italic text-primary">{line.text}</span> : line.text}
@@ -97,11 +97,11 @@ export const Hero = () => {
             ))}
           </h1>
           
-          <motion.p variants={itemVariants} className="text-on-background/70 text-lg max-w-xl font-light leading-relaxed">
+          <motion.p variants={itemVariants} className="text-on-background/70 text-base max-w-lg font-light leading-relaxed">
             Step into a curated sanctuary where the art of literature meets modern refinement. Discover, collect, and experience the world's most significant works in an environment designed for the discerning mind.
           </motion.p>
           
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-8">
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-6">
             <motion.button 
               whileHover={{ 
                 y: -2,
@@ -109,7 +109,7 @@ export const Hero = () => {
               }}
               whileTap={{ scale: 0.98 }}
               transition={springs.buttonClick}
-              className="bg-primary text-on-primary px-12 py-6 font-display text-[12px] tracking-[0.2em] uppercase transition-colors"
+              className="bg-primary text-on-primary px-10 py-4 font-display text-[11px] tracking-[0.2em] uppercase transition-colors"
             >
               Explore Archives
             </motion.button>
@@ -120,7 +120,7 @@ export const Hero = () => {
               }}
               whileTap={{ scale: 0.98 }}
               transition={springs.buttonClick}
-              className="border border-primary/30 text-white px-12 py-6 font-display text-[12px] tracking-[0.2em] uppercase transition-colors"
+              className="border border-primary/30 text-white px-10 py-4 font-display text-[11px] tracking-[0.2em] uppercase transition-colors"
             >
               The Experience
             </motion.button>
