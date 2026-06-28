@@ -1,4 +1,44 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { springs } from "../../utils/motion";
+
+const FooterLink = ({ children, href }: { children: React.ReactNode; href: string }) => {
+  return (
+    <li>
+      <motion.a 
+        href={href}
+        className="relative inline-block text-white/40 hover:text-primary transition-colors duration-300"
+        initial="rest"
+        whileHover="hover"
+      >
+        {children}
+        <motion.span
+          variants={{
+            rest: { scaleX: 0, opacity: 0 },
+            hover: { scaleX: 1, opacity: 1, transition: springs.smooth },
+          }}
+          className="absolute -bottom-1 left-0 right-0 h-[1px] bg-primary origin-left"
+        />
+      </motion.a>
+    </li>
+  );
+};
+
+const SocialIcon = ({ icon }: { icon: string }) => {
+  return (
+    <motion.span 
+      whileHover={{ y: -2, rotate: 3, color: "var(--color-primary)" }}
+      transition={springs.smooth}
+      className="material-symbols-outlined text-primary/60 cursor-pointer"
+    >
+      {icon}
+    </motion.span>
+  );
+};
+
 export const Footer = () => {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <footer className="py-section-padding border-t border-white/5 bg-background">
       <div className="max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-4 gap-20">
@@ -8,43 +48,55 @@ export const Footer = () => {
             An ecosystem dedicated to the preservation and elevation of the written word. Crafting digital sanctuaries for the discerning bibliophile.
           </p>
           <div className="flex gap-6">
-            <span className="material-symbols-outlined text-primary/60 hover:text-primary cursor-pointer transition-colors">public</span>
-            <span className="material-symbols-outlined text-primary/60 hover:text-primary cursor-pointer transition-colors">terminal</span>
-            <span className="material-symbols-outlined text-primary/60 hover:text-primary cursor-pointer transition-colors">draw</span>
+            <SocialIcon icon="public" />
+            <SocialIcon icon="terminal" />
+            <SocialIcon icon="draw" />
           </div>
         </div>
         
         <div>
           <h4 className="font-display text-xs tracking-[0.3em] uppercase text-primary mb-10">The Sanctuary</h4>
-          <ul className="space-y-4 text-xs font-display tracking-[0.1em] text-white/40 uppercase">
-            <li><a className="hover:text-primary transition-colors" href="#">The Founders</a></li>
-            <li><a className="hover:text-primary transition-colors" href="#">Bespoke Commissions</a></li>
-            <li><a className="hover:text-primary transition-colors" href="#">Archival Access</a></li>
-            <li><a className="hover:text-primary transition-colors" href="#">Journal</a></li>
+          <ul className="space-y-4 text-xs font-display tracking-[0.1em] uppercase">
+            <FooterLink href="#">The Founders</FooterLink>
+            <FooterLink href="#">Bespoke Commissions</FooterLink>
+            <FooterLink href="#">Archival Access</FooterLink>
+            <FooterLink href="#">Journal</FooterLink>
           </ul>
         </div>
         
         <div>
           <h4 className="font-display text-xs tracking-[0.3em] uppercase text-primary mb-10">Governance</h4>
-          <ul className="space-y-4 text-xs font-display tracking-[0.1em] text-white/40 uppercase">
-            <li><a className="hover:text-primary transition-colors" href="#">Patron Rights</a></li>
-            <li><a className="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
-            <li><a className="hover:text-primary transition-colors" href="#">Ethics Statement</a></li>
-            <li><a className="hover:text-primary transition-colors" href="#">Contact Us</a></li>
+          <ul className="space-y-4 text-xs font-display tracking-[0.1em] uppercase">
+            <FooterLink href="#">Patron Rights</FooterLink>
+            <FooterLink href="#">Privacy Policy</FooterLink>
+            <FooterLink href="#">Ethics Statement</FooterLink>
+            <FooterLink href="#">Contact Us</FooterLink>
           </ul>
         </div>
         
         <div>
           <h4 className="font-display text-xs tracking-[0.3em] uppercase text-primary mb-10">The Newsletter</h4>
           <p className="text-on-background/50 text-xs mb-6 font-light">Receive rare updates from our archival scouts.</p>
-          <div className="flex border-b border-primary/20 pb-2">
-            <input 
-              className="bg-transparent border-none focus:outline-none focus:ring-0 text-xs w-full placeholder:text-white/20 uppercase tracking-widest" 
-              placeholder="EMAIL ADDRESS" 
+          <motion.div 
+            animate={{
+              borderColor: isFocused ? "rgba(212, 175, 55, 0.8)" : "rgba(212, 175, 55, 0.2)",
+              boxShadow: isFocused ? "0px 4px 12px rgba(212, 175, 55, 0.1)" : "0px 0px 0px rgba(0,0,0,0)"
+            }}
+            transition={springs.smooth}
+            className="flex border-b pb-2"
+          >
+            <motion.input 
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              animate={{
+                opacity: isFocused ? 1 : 0.6,
+              }}
+              className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs w-full text-white placeholder:text-white/20 uppercase tracking-widest transition-opacity duration-300" 
+              placeholder={isFocused ? "" : "EMAIL ADDRESS"} 
               type="email"
             />
-            <button className="material-symbols-outlined text-primary">chevron_right</button>
-          </div>
+            <button className="material-symbols-outlined text-primary hover:text-white transition-colors">chevron_right</button>
+          </motion.div>
         </div>
       </div>
       

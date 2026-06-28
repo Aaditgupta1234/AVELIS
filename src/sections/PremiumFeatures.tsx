@@ -1,60 +1,82 @@
-export const PremiumFeatures = () => {
+import { motion } from "framer-motion";
+import { AnimatedSection } from "../components/ui/AnimatedSection";
+import { springs, staggers } from "../utils/motion";
+
+const FeatureCard = ({ icon, title, description }: { icon: string; title: string; description: string }) => {
   return (
-    <section className="py-section-padding px-gutter relative z-10">
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
+      }}
+      initial="rest"
+      whileHover="hover"
+      animate="rest"
+      className="glass-panel p-12 border border-primary/20 relative overflow-hidden group cursor-default"
+    >
+      <motion.div
+        variants={{
+          rest: { 
+            borderColor: "rgba(212, 175, 55, 0.2)",
+            boxShadow: "0px 0px 0px rgba(0,0,0,0)",
+          },
+          hover: { 
+            borderColor: "rgba(212, 175, 55, 1)",
+            boxShadow: "0px 10px 30px -10px rgba(212,175,55,0.2)",
+          },
+        }}
+        transition={springs.smooth}
+        className="absolute inset-0 z-0 pointer-events-none"
+      />
+      <div className="relative z-10">
+        <motion.span 
+          variants={{
+            rest: { y: 0, scale: 1 },
+            hover: { y: -4, scale: 1.1 },
+          }}
+          transition={springs.bounce}
+          className="material-symbols-outlined text-primary mb-8 text-4xl block transform-origin-bottom"
+        >
+          {icon}
+        </motion.span>
+        <h3 className="font-display text-2xl mb-4">{title}</h3>
+        <p className="text-on-background/60 font-light leading-relaxed">
+          {description}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
+export const PremiumFeatures = () => {
+  const features = [
+    { icon: "workspace_premium", title: "The Circle Access", description: "Exclusive entry to author salons, private archives, and early access to bespoke physical commissions." },
+    { icon: "inventory_2", title: "Physical Inheritance", description: "A seamless bridge between digital ownership and handcrafted hardcover first editions for your physical library." },
+    { icon: "psychology", title: "The Oracle AI", description: "A proprietary recommendation engine that understands the nuances of your literary taste through semantic analysis." },
+    { icon: "history", title: "Immutable Archives", description: "Your collection is preserved forever on a decentralized ledger, ensuring your digital heritage remains yours." },
+    { icon: "menu_book", title: "Curated Journals", description: "Receive quarterly editorial journals featuring essays and long-form reviews from today's leading critics." },
+    { icon: "support_agent", title: "Archival Concierge", description: "Dedicated assistance for finding rare texts, managing commissions, and navigating our vast archives." }
+  ];
+
+  return (
+    <AnimatedSection variant="C" className="py-section-padding px-gutter relative z-10">
       <div className="max-w-container-max mx-auto">
         <h2 className="font-display text-4xl text-center mb-20 uppercase tracking-[0.2em]">The Patronage Benefits</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          
-          <div className="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
-            <span className="material-symbols-outlined text-primary mb-8 scale-150 block">workspace_premium</span>
-            <h3 className="font-display text-2xl mb-4">The Circle Access</h3>
-            <p className="text-on-background/60 font-light leading-relaxed">
-              Exclusive entry to author salons, private archives, and early access to bespoke physical commissions.
-            </p>
-          </div>
-          
-          <div className="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
-            <span className="material-symbols-outlined text-primary mb-8 scale-150 block">inventory_2</span>
-            <h3 className="font-display text-2xl mb-4">Physical Inheritance</h3>
-            <p className="text-on-background/60 font-light leading-relaxed">
-              A seamless bridge between digital ownership and handcrafted hardcover first editions for your physical library.
-            </p>
-          </div>
-          
-          <div className="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
-            <span className="material-symbols-outlined text-primary mb-8 scale-150 block">psychology</span>
-            <h3 className="font-display text-2xl mb-4">The Oracle AI</h3>
-            <p className="text-on-background/60 font-light leading-relaxed">
-              A proprietary recommendation engine that understands the nuances of your literary taste through semantic analysis.
-            </p>
-          </div>
-          
-          <div className="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
-            <span className="material-symbols-outlined text-primary mb-8 scale-150 block">history</span>
-            <h3 className="font-display text-2xl mb-4">Immutable Archives</h3>
-            <p className="text-on-background/60 font-light leading-relaxed">
-              Your collection is preserved forever on a decentralized ledger, ensuring your digital heritage remains yours.
-            </p>
-          </div>
-          
-          <div className="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
-            <span className="material-symbols-outlined text-primary mb-8 scale-150 block">menu_book</span>
-            <h3 className="font-display text-2xl mb-4">Curated Journals</h3>
-            <p className="text-on-background/60 font-light leading-relaxed">
-              Receive quarterly editorial journals featuring essays and long-form reviews from today's leading critics.
-            </p>
-          </div>
-          
-          <div className="glass-panel p-12 border border-primary/20 group hover:border-primary transition-all">
-            <span className="material-symbols-outlined text-primary mb-8 scale-150 block">support_agent</span>
-            <h3 className="font-display text-2xl mb-4">Archival Concierge</h3>
-            <p className="text-on-background/60 font-light leading-relaxed">
-              Dedicated assistance for finding rare texts, managing commissions, and navigating our vast archives.
-            </p>
-          </div>
-          
-        </div>
+        <motion.div
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: staggers.fast } },
+          }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {features.map((feat, i) => (
+            <FeatureCard key={i} icon={feat.icon} title={feat.title} description={feat.description} />
+          ))}
+        </motion.div>
       </div>
-    </section>
+    </AnimatedSection>
   );
 };
