@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthCard } from "../components/auth/AuthCard";
 import { AuthInput } from "../components/auth/AuthInput";
@@ -9,10 +10,22 @@ import { AuthDivider } from "../components/auth/AuthDivider";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
+const GoogleIcon = () => (
+  <svg className="w-4 h-4 mr-3 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+  </svg>
+);
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, login, loginWithGoogle } = useAuth();
+  
   const [mode, setMode] = useState<AuthMode>("login");
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Form Fields State
   const [name, setName] = useState("");
@@ -25,6 +38,13 @@ export const LoginPage: React.FC = () => {
   // Error States
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Route Guard: Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const validateEmail = (val: string) => {
     return /\S+@\S+\.\S+/.test(val);
@@ -39,6 +59,19 @@ export const LoginPage: React.FC = () => {
     setConfirmPassword("");
   };
 
+  const handleGoogleLogin = async () => {
+    setErrors({});
+    setSuccessMessage("");
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+      // AuthContext will update, triggering the redirect in useEffect
+    } catch (err) {
+      setErrors({ form: "Google authentication failed. Please try again." });
+      setGoogleLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -46,7 +79,6 @@ export const LoginPage: React.FC = () => {
 
     const newErrors: Record<string, string> = {};
 
-    // Validate based on mode
     if (mode === "register" && !name.trim()) {
       newErrors.name = "Full name is required";
     }
@@ -80,33 +112,30 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    // Mock API Submission
-    setLoading(true);
+    setEmailLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (mode === "login") {
-        // Redirect to homepage on successful login
-        navigate("/");
-      } else if (mode === "register") {
-        setSuccessMessage("Account created successfully! Redirecting to sanctuary...");
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
+      if (mode === "login" || mode === "register") {
+        await login(email);
+        // AuthContext will update, triggering the redirect in useEffect
       } else if (mode === "forgot") {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         setSuccessMessage("A restoration link has been sent to your email address.");
+        setEmailLoading(false);
       } else if (mode === "reset") {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         setSuccessMessage("Password reset successfully! Redirecting to login...");
         setTimeout(() => {
           handleModeChange("login");
         }, 1500);
+        setEmailLoading(false);
       }
     } catch (err) {
       setErrors({ form: "An unexpected error occurred. Please try again." });
-    } finally {
-      setLoading(false);
+      setEmailLoading(false);
     }
   };
+
+  const anyLoading = emailLoading || googleLoading;
 
   return (
     <AuthLayout>
@@ -150,7 +179,7 @@ export const LoginPage: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={errors.name}
-              disabled={loading}
+              disabled={anyLoading}
               autoComplete="name"
             />
           )}
@@ -163,7 +192,7 @@ export const LoginPage: React.FC = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             error={errors.email}
-            disabled={loading}
+            disabled={anyLoading}
             autoComplete="email"
           />
 
@@ -175,7 +204,7 @@ export const LoginPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={errors.password}
-              disabled={loading}
+              disabled={anyLoading}
               autoComplete={mode === "register" ? "new-password" : "current-password"}
             />
           )}
@@ -188,7 +217,7 @@ export const LoginPage: React.FC = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               error={errors.confirmPassword}
-              disabled={loading}
+              disabled={anyLoading}
               autoComplete="new-password"
             />
           )}
@@ -202,15 +231,15 @@ export const LoginPage: React.FC = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded border-[rgba(201,162,39,0.3)] bg-[rgba(255,255,255,0.03)] checked:bg-[#C9A227] checked:border-[#C9A227] focus:ring-0 focus:ring-offset-0 accent-[#C9A227] transition-all"
-                  disabled={loading}
+                  disabled={anyLoading}
                 />
                 <span>Remember me</span>
               </label>
               <button
                 type="button"
                 onClick={() => handleModeChange("forgot")}
-                className="text-[#C9A227] hover:text-[#E5C16B] transition-colors focus:outline-none focus:underline font-display text-[10px] tracking-[0.1em] uppercase"
-                disabled={loading}
+                className="text-[#C9A227] hover:text-[#E5C16B] transition-colors focus:outline-none focus:underline font-display text-[10px] tracking-[0.1em] uppercase cursor-pointer"
+                disabled={anyLoading}
               >
                 Forgot Password?
               </button>
@@ -226,7 +255,7 @@ export const LoginPage: React.FC = () => {
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded border-[rgba(201,162,39,0.3)] bg-[rgba(255,255,255,0.03)] checked:bg-[#C9A227] checked:border-[#C9A227] focus:ring-0 focus:ring-offset-0 accent-[#C9A227] transition-all"
-                  disabled={loading}
+                  disabled={anyLoading}
                 />
                 <span>
                   I accept the{" "}
@@ -245,7 +274,7 @@ export const LoginPage: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="mt-2 space-y-4">
-            <AuthButton type="submit" loading={loading}>
+            <AuthButton type="submit" loading={emailLoading} disabled={anyLoading}>
               {mode === "login" && "Access Archives"}
               {mode === "register" && "Initiate Access"}
               {mode === "forgot" && "Send Recovery Link"}
@@ -256,26 +285,16 @@ export const LoginPage: React.FC = () => {
             {(mode === "login" || mode === "register") && (
               <>
                 <AuthDivider>Or continue with</AuthDivider>
-                <div className="grid grid-cols-2 gap-4">
-                  <AuthButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {}}
-                    disabled={loading}
-                    className="h-11"
-                  >
-                    Google
-                  </AuthButton>
-                  <AuthButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {}}
-                    disabled={loading}
-                    className="h-11"
-                  >
-                    Apple
-                  </AuthButton>
-                </div>
+                <AuthButton
+                  type="button"
+                  variant="secondary"
+                  onClick={handleGoogleLogin}
+                  loading={googleLoading}
+                  disabled={anyLoading}
+                >
+                  <GoogleIcon />
+                  <span>Continue with Google</span>
+                </AuthButton>
               </>
             )}
           </div>
@@ -289,8 +308,8 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleModeChange("register")}
-                className="text-[#C9A227] hover:text-[#E5C16B] font-semibold transition-colors focus:outline-none focus:underline"
-                disabled={loading}
+                className="text-[#C9A227] hover:text-[#E5C16B] font-semibold transition-colors focus:outline-none focus:underline cursor-pointer"
+                disabled={anyLoading}
               >
                 Join the Circle
               </button>
@@ -302,8 +321,8 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleModeChange("login")}
-                className="text-[#C9A227] hover:text-[#E5C16B] font-semibold transition-colors focus:outline-none focus:underline"
-                disabled={loading}
+                className="text-[#C9A227] hover:text-[#E5C16B] font-semibold transition-colors focus:outline-none focus:underline cursor-pointer"
+                disabled={anyLoading}
               >
                 Sign In
               </button>
@@ -313,8 +332,8 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleModeChange("login")}
-              className="text-[#C9A227] hover:text-[#E5C16B] font-semibold transition-colors focus:outline-none focus:underline font-body"
-              disabled={loading}
+              className="text-[#C9A227] hover:text-[#E5C16B] font-semibold transition-colors focus:outline-none focus:underline font-body cursor-pointer"
+              disabled={anyLoading}
             >
               Back to Sign In
             </button>

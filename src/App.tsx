@@ -5,8 +5,11 @@ import { CollectionsPage } from "./pages/CollectionsPage";
 import { LibraryPage } from "./pages/Library/LibraryPage";
 import { ReadingJournalPage } from "./pages/ReadingJournal/ReadingJournalPage";
 import { LoginPage } from "./pages/LoginPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { PageWrapper } from "./components/ui/PageWrapper";
 import { ScrollToTop } from "./components/ui/ScrollToTop";
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./routes/ProtectedRoute";
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -19,6 +22,16 @@ const AnimatedRoutes = () => {
         <Route path="/library" element={<PageWrapper><LibraryPage /></PageWrapper>} />
         <Route path="/journal" element={<PageWrapper><ReadingJournalPage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <DashboardPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/authors" element={<PageWrapper><LandingPage /></PageWrapper>} />
         <Route path="/about" element={<PageWrapper><LandingPage /></PageWrapper>} />
       </Routes>
@@ -28,10 +41,12 @@ const AnimatedRoutes = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <AnimatedRoutes />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <AnimatedRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
