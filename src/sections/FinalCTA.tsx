@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
 import { springs } from "../utils/motion";
 
@@ -32,18 +33,20 @@ export const FinalCTA = () => {
         <p className="text-on-background/60 text-xl font-light max-w-2xl mx-auto leading-relaxed">
           Step into the AVELIS sanctuary. Whether you seek the wisdom of the ancients or the thrill of the modern era, your seat in the circle awaits.
         </p>
-        <motion.button 
-          whileHover={{ 
-            y: -2, 
-            boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
-            background: "linear-gradient(45deg, rgba(212,175,55,1) 0%, rgba(230,195,85,1) 100%)"
-          }}
-          whileTap={{ scale: 0.98 }}
-          transition={{ ...springs.buttonClick, y: springs.smooth }}
-          className="bg-primary text-on-primary px-16 py-8 font-display text-[14px] tracking-[0.3em] uppercase transition-colors"
-        >
-          Join the Collective
-        </motion.button>
+        <Link to="/login">
+          <motion.button 
+            whileHover={{ 
+              y: -2, 
+              boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
+              background: "linear-gradient(45deg, rgba(212,175,55,1) 0%, rgba(230,195,85,1) 100%)"
+            }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ ...springs.buttonClick, y: springs.smooth }}
+            className="bg-primary text-on-primary px-16 py-8 font-display text-[14px] tracking-[0.3em] uppercase transition-colors cursor-pointer"
+          >
+            Join the Collective
+          </motion.button>
+        </Link>
       </div>
     </AnimatedSection>
   );

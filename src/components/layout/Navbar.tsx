@@ -82,18 +82,20 @@ export const Navbar = () => {
             >
               search
             </motion.button>
-            <motion.button
-              whileHover={{ 
-                y: -2, 
-                boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.3)",
-                background: "linear-gradient(45deg, rgba(212,175,55,1) 0%, rgba(230,195,85,1) 100%)"
-              }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ ...springs.buttonClick, y: springs.smooth }}
-              className="bg-primary text-on-primary px-8 py-3 font-display text-[10px] tracking-[0.2em] uppercase transition-colors"
-            >
-              Join the Circle
-            </motion.button>
+            <Link to="/login">
+              <motion.button
+                whileHover={{ 
+                  y: -2, 
+                  boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.3)",
+                  background: "linear-gradient(45deg, rgba(212,175,55,1) 0%, rgba(230,195,85,1) 100%)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ ...springs.buttonClick, y: springs.smooth }}
+                className="bg-primary text-on-primary px-8 py-3 font-display text-[10px] tracking-[0.2em] uppercase transition-colors cursor-pointer"
+              >
+                Join the Circle
+              </motion.button>
+            </Link>
           </div>
         </div>
       </motion.nav>

@@ -1,6 +1,6 @@
 export const ReaderExperience = () => {
   return (
-    <section className="py-section-padding px-gutter overflow-hidden relative z-10">
+    <section id="reader-experience" className="py-section-padding px-gutter overflow-hidden relative z-10">
       <div className="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
         
         <div className="relative order-2 lg:order-1">

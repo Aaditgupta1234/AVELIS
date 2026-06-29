@@ -1,7 +1,7 @@
 export const NAVIGATION_LINKS = [
+  { name: "Home", path: "/" },
   { name: "Collections", path: "/collections" },
   { name: "Library", path: "/library" },
-  { name: "The Experience", path: "/experience" },
   { name: "Journal", path: "/journal" }
 ];
 

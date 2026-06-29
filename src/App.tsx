@@ -3,8 +3,8 @@ import { AnimatePresence } from "framer-motion";
 import { LandingPage } from "./pages/LandingPage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { LibraryPage } from "./pages/Library/LibraryPage";
-import { ExperiencePage } from "./pages/Experience/ExperiencePage";
 import { ReadingJournalPage } from "./pages/ReadingJournal/ReadingJournalPage";
+import { LoginPage } from "./pages/LoginPage";
 import { PageWrapper } from "./components/ui/PageWrapper";
 import { ScrollToTop } from "./components/ui/ScrollToTop";
 
@@ -17,8 +17,8 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
         <Route path="/collections" element={<PageWrapper><CollectionsPage /></PageWrapper>} />
         <Route path="/library" element={<PageWrapper><LibraryPage /></PageWrapper>} />
-        <Route path="/experience" element={<PageWrapper><ExperiencePage /></PageWrapper>} />
         <Route path="/journal" element={<PageWrapper><ReadingJournalPage /></PageWrapper>} />
+        <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
         <Route path="/authors" element={<PageWrapper><LandingPage /></PageWrapper>} />
         <Route path="/about" element={<PageWrapper><LandingPage /></PageWrapper>} />
       </Routes>

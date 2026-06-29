@@ -114,13 +114,16 @@ export const Hero = () => {
               Explore Archives
             </motion.button>
             <motion.button 
+              onClick={() => {
+                document.getElementById("reader-experience")?.scrollIntoView({ behavior: "smooth" });
+              }}
               whileHover={{ 
                 y: -2,
                 backgroundColor: "rgba(212,175,55,0.05)",
               }}
               whileTap={{ scale: 0.98 }}
               transition={springs.buttonClick}
-              className="border border-primary/30 text-white px-10 py-4 font-display text-[11px] tracking-[0.2em] uppercase transition-colors"
+              className="border border-primary/30 text-white px-10 py-4 font-display text-[11px] tracking-[0.2em] uppercase transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg"
             >
               The Experience
             </motion.button>
