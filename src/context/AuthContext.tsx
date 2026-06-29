@@ -6,6 +6,9 @@ export interface User {
   avatar: string;
   role: string;
   provider: "email" | "google";
+  biography?: string;
+  memberSince?: string;
+  lastLogin?: string;
 }
 
 interface AuthContextType {
@@ -15,6 +18,9 @@ interface AuthContextType {
   login: (email: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
+  updateProfile: (name: string, biography: string) => Promise<void>;
+  updateAvatar: (dataUrl: string) => Promise<void>;
+  resetAvatar: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,12 +68,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const derivedName = deriveDisplayName(email);
+    const now = new Date();
     const mockUser: User = {
       name: derivedName,
       email: email.toLowerCase(),
       avatar: createDefaultAvatar(derivedName),
       role: "member",
       provider: "email",
+      biography: "",
+      memberSince: now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      lastLogin: now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     };
     localStorage.setItem("avelis_user", JSON.stringify(mockUser));
     setUser(mockUser);
@@ -78,12 +88,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const name = "Demo User";
+    const now = new Date();
     const mockUser: User = {
       name,
       email: "demo@avelis.app",
       avatar: createDefaultAvatar(name),
       role: "member",
       provider: "google",
+      biography: "Avid reader. Seeker of ancient philosophy and modern sci-fi.",
+      memberSince: now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      lastLogin: now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     };
     localStorage.setItem("avelis_user", JSON.stringify(mockUser));
     setUser(mockUser);
@@ -95,6 +109,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updateProfile = async (name: string, biography: string) => {
+    if (!user) return;
+    const updatedUser = {
+      ...user,
+      name,
+      biography
+    };
+    localStorage.setItem("avelis_user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
+  const updateAvatar = async (dataUrl: string) => {
+    if (!user) return;
+    const updatedUser = {
+      ...user,
+      avatar: dataUrl
+    };
+    localStorage.setItem("avelis_user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
+  const resetAvatar = async () => {
+    if (!user) return;
+    const updatedUser = {
+      ...user,
+      avatar: createDefaultAvatar(user.name)
+    };
+    localStorage.setItem("avelis_user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -104,6 +149,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         loginWithGoogle,
         logout,
+        updateProfile,
+        updateAvatar,
+        resetAvatar,
       }}
     >
       {children}
