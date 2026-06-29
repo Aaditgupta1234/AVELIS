@@ -9,6 +9,15 @@
   --color-on-background: #F8F5F0;
   --color-on-surface: #F8F5F0;
   --color-outline: #C9A22733;
+  
+  /* Library Specific Design Tokens */
+  --color-on-surface-variant: #d1c5af;
+  --color-outline-variant: #4d4635;
+  --color-surface-container-lowest: #050d18;
+  --color-surface-container: #13254B;
+  --color-surface-container-low: #1f1b13;
+  --color-surface-container-high: #2e2a21;
+  --color-surface-container-highest: #39342b;
 
   --font-display: "Cinzel", serif;
   --font-body: "Inter", sans-serif;
@@ -100,4 +109,51 @@
   padding: 0 15px;
   color: #C9A227;
   font-size: 14px;
+}
+
+/* Library Specific Styles */
+.gold-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(201, 162, 39, 0.12) 0%, transparent 70%);
+}
+
+.glass-card {
+  background: rgba(19, 37, 75, 0.4);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(201, 162, 39, 0.1);
+}
+
+.book-card-hover {
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.book-card-hover:hover {
+  border-color: #C9A227;
+  box-shadow: 0 10px 30px -10px rgba(201, 162, 39, 0.3);
+  transform: translateY(-8px);
+}
+.book-card-hover:hover img {
+  transform: scale(1.05);
+}
+
+.category-card {
+  position: relative;
+  overflow: hidden;
+}
+.category-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(7, 17, 31, 0.9), transparent);
+  z-index: 1;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #C9A227;
+  border-radius: 2px;
 }
