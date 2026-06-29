@@ -22,7 +22,7 @@ export const AuthorSection = () => {
   };
 
   return (
-    <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-32">
+    <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-24 md:mb-40">
       <div className="flex items-end justify-between mb-16">
         <div>
           <h3 className="font-display text-2xl md:text-3xl text-primary mb-2">
@@ -51,16 +51,20 @@ export const AuthorSection = () => {
           <motion.div
             key={author.id}
             variants={cardVariants}
-            className="text-center group cursor-pointer"
+            whileHover="hover"
+            tabIndex={0}
+            role="button"
+            aria-label={`View works by ${author.name}`}
+            className="text-center group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-xl p-2 transition-all duration-300"
           >
             {/* Avatar Container */}
-            <div className="relative w-full aspect-square rounded-full overflow-hidden mb-6 border border-outline-variant/10 group-hover:border-primary/50 transition-all duration-500 bg-surface-container-lowest shadow-lg">
+            <div className="relative w-full aspect-square rounded-full overflow-hidden mb-6 border border-outline-variant/10 group-hover:border-primary/50 group-hover:shadow-[0_0_25px_rgba(201,162,39,0.25)] transition-all duration-500 bg-surface-container-lowest shadow-lg">
               <motion.img
                 alt={author.name}
                 src={author.avatar}
                 loading="lazy"
                 variants={{
-                  hover: { scale: 1.1 }
+                  hover: { scale: 1.05 }
                 }}
                 transition={{ duration: 0.5, ease: easeOut }}
                 className="w-full h-full object-cover"

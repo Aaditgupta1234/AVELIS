@@ -8,7 +8,7 @@ const FooterLink = ({ children, href }: { children: React.ReactNode; href: strin
     <li>
       <motion.a 
         href={href}
-        className="relative inline-block text-white/40 hover:text-primary transition-colors duration-300"
+        className="relative inline-block text-white/40 hover:text-primary transition-colors duration-300 focus:outline-none focus:text-primary focus:ring-1 focus:ring-primary/40 rounded px-1"
         initial="rest"
         whileHover="hover"
       >
@@ -41,11 +41,14 @@ export const Footer = () => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <footer className="py-section-padding border-t border-white/5 bg-background">
+    <footer className="py-section-padding relative bg-background border-t border-white/5">
+      {/* Subtle Gold Gradient Top Border Accent */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      
       <div className="max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-4 gap-20">
         <div className="lg:col-span-1">
-          <Link to="/">
-            <div className="font-display text-4xl text-primary mb-8 tracking-[0.2em] cursor-pointer inline-block">AVELIS</div>
+          <Link to="/" className="focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg inline-block mb-8">
+            <div className="font-display text-4xl text-primary tracking-[0.2em] cursor-pointer">AVELIS</div>
           </Link>
           <p className="text-on-background/50 font-light text-sm leading-relaxed mb-8">
             An ecosystem dedicated to the preservation and elevation of the written word. Crafting digital sanctuaries for the discerning bibliophile.
@@ -94,11 +97,17 @@ export const Footer = () => {
               animate={{
                 opacity: isFocused ? 1 : 0.6,
               }}
+              aria-label="Email address for newsletter"
               className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs w-full text-white placeholder:text-white/20 uppercase tracking-widest transition-opacity duration-300" 
               placeholder={isFocused ? "" : "EMAIL ADDRESS"} 
               type="email"
             />
-            <button className="material-symbols-outlined text-primary hover:text-white transition-colors">chevron_right</button>
+            <button 
+              aria-label="Subscribe to newsletter"
+              className="material-symbols-outlined text-primary hover:text-white transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40 rounded px-1"
+            >
+              chevron_right
+            </button>
           </motion.div>
         </div>
       </div>
@@ -108,8 +117,8 @@ export const Footer = () => {
           © 2024 AVELIS. CRAFTED FOR THE DISCERNING BIBLIOPHILE.
         </p>
         <div className="flex gap-10">
-          <span className="material-symbols-outlined text-white/20 text-sm">volume_up</span>
-          <span className="material-symbols-outlined text-white/20 text-sm">visibility</span>
+          <span className="material-symbols-outlined text-white/20 text-sm cursor-pointer hover:text-primary transition-colors" aria-label="Toggle audio">volume_up</span>
+          <span className="material-symbols-outlined text-white/20 text-sm cursor-pointer hover:text-primary transition-colors" aria-label="Toggle contrast">visibility</span>
         </div>
       </div>
     </footer>

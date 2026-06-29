@@ -3,7 +3,7 @@ import { booksData } from "../data/books";
 
 export const useLibrary = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<string[]>(["Mystery"]); // Set "Mystery" as default active filter matching the design
+  const [activeFilters, setActiveFilters] = useState<string[]>([]); // Empty by default to show all books
   const [selectedSort, setSelectedSort] = useState("Recommended");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 

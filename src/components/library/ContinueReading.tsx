@@ -22,7 +22,7 @@ export const ContinueReading = () => {
   };
 
   return (
-    <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-32">
+    <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-24 md:mb-40">
       <div className="flex items-end justify-between mb-12">
         <div>
           <h3 className="font-display text-2xl md:text-3xl text-primary mb-2">
@@ -99,9 +99,10 @@ export const ContinueReading = () => {
 
                 <motion.button
                   whileHover={{ x: 3 }}
-                  className="text-primary font-display text-[9px] tracking-widest font-bold flex items-center gap-1.5 hover:text-white transition-colors uppercase"
+                  aria-label={`Resume reading ${item.title}`}
+                  className="text-primary font-body text-[10px] tracking-widest font-bold flex items-center gap-1.5 hover:text-white transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40 rounded px-1"
                 >
-                  RESUME READING{" "}
+                  Resume Reading{" "}
                   <span className="material-symbols-outlined text-[12px] block">arrow_forward</span>
                 </motion.button>
               </div>

@@ -9,12 +9,12 @@ export const FeaturedBook = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={revealVariants.A}
-      className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-32"
+      className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-24 md:mb-40"
     >
-      <div className="relative w-full aspect-[21/10] lg:aspect-[21/8] rounded-2xl overflow-hidden group shadow-[0_40px_100px_-20px_rgba(0,0,0,0.6)]">
+      <div className="relative w-full aspect-[21/10] lg:aspect-[21/8] min-h-[480px] sm:min-h-[520px] lg:min-h-[560px] rounded-2xl overflow-hidden group shadow-[0_40px_100px_-20px_rgba(0,0,0,0.6)]">
         {/* Cinematic Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#07111F] via-[#07111F]/70 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#07111F]/80 via-transparent to-transparent z-10" />
         
         <motion.img
           alt={`${featuredBook.title} cover`}
@@ -25,7 +25,7 @@ export const FeaturedBook = () => {
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         />
         
-        <div className="absolute inset-0 z-20 flex flex-col justify-center px-12 md:px-24 max-w-4xl">
+        <div className="absolute inset-0 z-20 flex flex-col justify-center py-8 md:py-12 px-12 md:px-24 max-w-4xl">
           <div className="flex items-center gap-3 mb-6">
             <span className="inline-block px-4 py-1.5 bg-primary/20 text-primary font-body text-[10px] tracking-[0.2em] border border-primary/30 font-semibold uppercase">
               EDITOR'S MASTERPIECE

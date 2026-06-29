@@ -6,6 +6,7 @@ interface SearchToolbarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   activeFilters: string[];
+  addFilter: (filter: string) => void;
   removeFilter: (filter: string) => void;
   clearAllFilters: () => void;
   selectedSort: string;
@@ -19,6 +20,7 @@ export const SearchToolbar = ({
   searchQuery,
   setSearchQuery,
   activeFilters,
+  addFilter,
   removeFilter,
   clearAllFilters,
   selectedSort,
@@ -28,9 +30,20 @@ export const SearchToolbar = ({
   resultCount,
 }: SearchToolbarProps) => {
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const sortOptions = ["Recommended", "Newest", "A-Z"];
+  const categories = [
+    "Mystery",
+    "Philosophy",
+    "Science & Tech",
+    "Historical Fiction",
+    "Classics",
+    "Biography",
+    "Business",
+    "Literature"
+  ];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -56,7 +69,8 @@ export const SearchToolbar = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl pl-12 pr-6 py-4 focus:ring-1 focus:ring-primary/30 focus:border-primary/30 text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all"
+              aria-label="Search the digital library"
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl pl-12 pr-6 py-4 focus:ring-2 focus:ring-primary/40 focus:border-primary/40 text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all duration-300"
               placeholder="Search by author, title, genre, or ISBN..."
             />
           </div>
@@ -66,7 +80,13 @@ export const SearchToolbar = ({
             <motion.button
               whileHover={{ y: -1, backgroundColor: "rgba(255,255,255,0.05)" }}
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-5 py-4 bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl font-display text-[11px] tracking-[0.15em] uppercase text-on-surface-variant hover:text-primary hover:border-primary/30 transition-all"
+              onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+              aria-label="Toggle advanced search options"
+              className={`flex items-center gap-2 px-5 py-4 border rounded-xl font-display text-[11px] tracking-[0.15em] uppercase transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-primary/40 ${
+                isAdvancedOpen 
+                  ? "bg-primary/25 border-primary/40 text-primary shadow-[0_0_15px_rgba(201,162,39,0.15)]"
+                  : "bg-surface-container-lowest/50 border-outline-variant/20 text-on-surface-variant hover:text-primary hover:border-primary/30"
+              }`}
             >
               <span className="material-symbols-outlined text-lg">tune</span>
               Advanced
@@ -78,7 +98,8 @@ export const SearchToolbar = ({
                 whileHover={{ y: -1, backgroundColor: "rgba(255,255,255,0.05)" }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setIsSortOpen(!isSortOpen)}
-                className="flex items-center gap-2 px-5 py-4 bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl font-display text-[11px] tracking-[0.15em] uppercase text-on-surface-variant justify-between min-w-[180px]"
+                aria-label={`Sort books. Current sorting is ${selectedSort}`}
+                className="flex items-center gap-2 px-5 py-4 bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl font-display text-[11px] tracking-[0.15em] uppercase text-on-surface-variant justify-between min-w-[180px] focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all duration-300"
               >
                 <span>Sort: {selectedSort}</span>
                 <motion.span 
@@ -119,11 +140,13 @@ export const SearchToolbar = ({
             </div>
 
             {/* View Toggle */}
-            <div className="flex bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl p-1">
+            <div className="flex bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl p-1 h-[54px] items-center">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2.5 rounded-lg transition-all ${
-                  viewMode === "grid" ? "bg-primary/10 text-primary" : "text-on-surface-variant/50 hover:text-primary"
+                className={`p-2 rounded-lg transition-all duration-300 flex items-center justify-center ${
+                  viewMode === "grid" 
+                    ? "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_12px_rgba(201,162,39,0.1)]" 
+                    : "text-on-surface-variant/50 hover:text-primary hover:bg-white/5"
                 }`}
                 aria-label="Grid View"
               >
@@ -131,8 +154,10 @@ export const SearchToolbar = ({
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2.5 rounded-lg transition-all ${
-                  viewMode === "list" ? "bg-primary/10 text-primary" : "text-on-surface-variant/50 hover:text-primary"
+                className={`p-2 rounded-lg transition-all duration-300 flex items-center justify-center ${
+                  viewMode === "list" 
+                    ? "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_12px_rgba(201,162,39,0.1)]" 
+                    : "text-on-surface-variant/50 hover:text-primary hover:bg-white/5"
                 }`}
                 aria-label="List View"
               >
@@ -148,12 +173,48 @@ export const SearchToolbar = ({
               }}
               whileTap={{ scale: 0.98 }}
               transition={springs.buttonClick}
-              className="bg-primary text-on-primary px-10 py-4 rounded-xl font-display text-[11px] tracking-[0.2em] uppercase hover:brightness-110 transition-all shadow-lg shadow-primary/10"
+              aria-label="Search Library"
+              className="bg-primary text-on-primary px-10 py-4 rounded-xl font-display text-[11px] tracking-[0.2em] uppercase hover:brightness-110 transition-all shadow-lg shadow-primary/10 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               Search Library
             </motion.button>
           </div>
         </div>
+
+        {/* Advanced Filters Panel */}
+        <AnimatePresence>
+          {isAdvancedOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={springs.smooth}
+              className="overflow-hidden border-t border-outline-variant/10 mt-4 pt-4"
+            >
+              <div className="space-y-4">
+                <h5 className="text-[10px] font-display tracking-[0.2em] text-primary uppercase font-semibold">Filter by Category</h5>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat) => {
+                    const isActive = activeFilters.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => isActive ? removeFilter(cat) : addFilter(cat)}
+                        className={`px-4 py-2 rounded-lg text-xs font-medium border transition-all duration-300 ${
+                          isActive
+                            ? "bg-primary/20 text-primary border-primary/40 shadow-[0_0_12px_rgba(201,162,39,0.1)]"
+                            : "bg-surface-container-lowest/30 border-outline-variant/20 text-on-surface-variant hover:text-primary hover:border-primary/30"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Active Filter Chips */}
         {activeFilters.length > 0 && (
@@ -173,6 +234,7 @@ export const SearchToolbar = ({
                   <span className="text-[10px] font-medium text-primary tracking-wider uppercase font-display">{filter}</span>
                   <button
                     onClick={() => removeFilter(filter)}
+                    aria-label={`Remove filter ${filter}`}
                     className="material-symbols-outlined text-[14px] text-primary hover:text-white transition-colors"
                   >
                     close
@@ -182,6 +244,7 @@ export const SearchToolbar = ({
             </div>
             <button
               onClick={clearAllFilters}
+              aria-label="Clear all search filters"
               className="text-[10px] text-primary hover:text-white underline underline-offset-4 font-semibold font-display tracking-wider ml-auto transition-colors"
             >
               Clear all filters

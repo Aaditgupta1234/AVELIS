@@ -21,7 +21,7 @@ export const BookGrid = ({ books, viewMode }: BookGridProps) => {
   };
 
   return (
-    <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-32">
+    <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-24 md:mb-40">
       <div className="flex items-end justify-between mb-12">
         <div>
           <h3 className="font-display text-2xl md:text-3xl text-primary mb-2">
@@ -35,7 +35,7 @@ export const BookGrid = ({ books, viewMode }: BookGridProps) => {
           <motion.button
             whileHover={{ scale: 1.05, borderColor: "rgba(201, 162, 39, 0.5)", color: "var(--color-primary)" }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 flex items-center justify-center border border-white/10 rounded-full text-on-surface transition-all"
+            className="w-10 h-10 flex items-center justify-center border border-outline-variant/20 rounded-full text-on-surface transition-all focus:outline-none focus:ring-1 focus:ring-primary/40"
             aria-label="Previous page"
           >
             <span className="material-symbols-outlined text-lg">chevron_left</span>
@@ -43,7 +43,7 @@ export const BookGrid = ({ books, viewMode }: BookGridProps) => {
           <motion.button
             whileHover={{ scale: 1.05, borderColor: "rgba(201, 162, 39, 0.5)", color: "var(--color-primary)" }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 flex items-center justify-center border border-white/10 rounded-full text-on-surface transition-all"
+            className="w-10 h-10 flex items-center justify-center border border-outline-variant/20 rounded-full text-on-surface transition-all focus:outline-none focus:ring-1 focus:ring-primary/40"
             aria-label="Next page"
           >
             <span className="material-symbols-outlined text-lg">chevron_right</span>

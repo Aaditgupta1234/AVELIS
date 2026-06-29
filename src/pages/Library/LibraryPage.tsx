@@ -17,6 +17,7 @@ export const LibraryPage = () => {
     searchQuery,
     setSearchQuery,
     activeFilters,
+    addFilter,
     removeFilter,
     clearAllFilters,
     selectedSort,
@@ -25,6 +26,14 @@ export const LibraryPage = () => {
     setViewMode,
     filteredBooks,
   } = useLibrary();
+
+  const handleCategoryClick = (category: string) => {
+    if (activeFilters.includes(category)) {
+      removeFilter(category);
+    } else {
+      addFilter(category);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#07111F] text-on-background relative flex flex-col">
@@ -55,6 +64,7 @@ export const LibraryPage = () => {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           activeFilters={activeFilters}
+          addFilter={addFilter}
           removeFilter={removeFilter}
           clearAllFilters={clearAllFilters}
           selectedSort={selectedSort}
@@ -74,7 +84,7 @@ export const LibraryPage = () => {
         <BookGrid books={filteredBooks} viewMode={viewMode} />
 
         {/* Browse by Category */}
-        <CategorySection />
+        <CategorySection activeFilters={activeFilters} onCategoryClick={handleCategoryClick} />
 
         {/* Popular Authors */}
         <AuthorSection />
