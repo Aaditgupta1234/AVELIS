@@ -1,0 +1,16 @@
+/**
+ * @fileoverview Utilities barrel file.
+ *
+ * Re-exports all utility modules for clean, centralized imports.
+ *
+ * @module utils
+ *
+ * @example
+ * import { ApiError, ApiResponse, getPagination } from '../utils/index.js';
+ */
+
+export { ApiError } from './ApiError.js';
+export { ApiResponse } from './ApiResponse.js';
+export { getPagination, getPaginationMeta } from './pagination.js';
+export { generateToken } from './generateToken.js';
+export { slugify } from './slugify.js';

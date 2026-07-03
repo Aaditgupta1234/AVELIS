@@ -1,0 +1,14 @@
+/**
+ * @fileoverview Configuration barrel file.
+ *
+ * Re-exports all configuration modules for clean, centralized imports.
+ *
+ * @module config
+ *
+ * @example
+ * import { config, logger, connectDB } from './config/index.js';
+ */
+
+export { config } from './env.js';
+export { logger } from './logger.js';
+export { connectDB } from './database.js';
