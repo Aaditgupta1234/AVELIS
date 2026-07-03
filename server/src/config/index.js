@@ -6,9 +6,8 @@
  * @module config
  *
  * @example
- * import { config, logger, connectDB } from './config/index.js';
+ * import { config, logger } from './config/index.js';
  */
 
 export { config } from './env.js';
 export { logger } from './logger.js';
-export { connectDB } from './database.js';

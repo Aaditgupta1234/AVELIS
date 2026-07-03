@@ -1,11 +1,12 @@
 /**
  * @fileoverview Express application configuration.
  *
- * Creates and configures the Express application with all
- * required middleware, routes, and error handlers.
+ * Creates and configures the Express application with
+ * production-ready middleware. This module does NOT start
+ * the server — that is handled by server.js.
  *
- * This module does NOT start the server — that is handled
- * by server.js.
+ * No routes, no custom middleware, no business logic.
+ * This is the Phase 2 bootstrap only.
  *
  * @module app
  */
@@ -17,9 +18,6 @@ import compression from 'compression';
 import morgan from 'morgan';
 
 import { config } from './config/index.js';
-import apiRoutes from './routes/index.js';
-import { notFound } from './middleware/error/notFound.js';
-import { errorHandler } from './middleware/error/errorHandler.js';
 
 /**
  * Create and configure the Express application.
@@ -58,28 +56,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Request Logging
 // ---------------------------------------------------------------------------
 
-/** HTTP request logger — use 'dev' format in development */
-if (config.nodeEnv === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
-
-// ---------------------------------------------------------------------------
-// API Routes
-// ---------------------------------------------------------------------------
-
-/** Mount all API routes under /api/v1 */
-app.use('/api/v1', apiRoutes);
-
-// ---------------------------------------------------------------------------
-// Error Handling
-// ---------------------------------------------------------------------------
-
-/** Catch-all for unmatched routes */
-app.use(notFound);
-
-/** Global error handler — must be last */
-app.use(errorHandler);
+/** HTTP request logger */
+app.use(morgan('dev'));
 
 export default app;
