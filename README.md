@@ -14,6 +14,31 @@ A premium, full-stack Library Management System with a modern, fluid user experi
 
 ---
 
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Motivation / Purpose](#motivation--purpose)
+- [Project Status](#project-status)
+- [Project Statistics](#project-statistics)
+- [Implemented Features](#implemented-features)
+- [Tech Stack](#tech-stack)
+- [Project Architecture](#project-architecture)
+- [Database Design](#database-design)
+- [Folder Structure](#folder-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Overview](#api-overview)
+- [Current Development Progress](#current-development-progress)
+- [Future Enhancements](#future-enhancements)
+- [Roadmap](#roadmap)
+- [Deployment Status](#deployment-status)
+- [Screenshots](#screenshots)
+- [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
+
+---
+
 ## Project Overview
 
 AVELIS is a production-quality, premium Library Management System designed to serve as an advanced full-stack portfolio showcase. It demonstrates how a highly interactive, animation-rich frontend interface can be seamlessly integrated with an enterprise-grade backend architecture. 
@@ -31,9 +56,40 @@ The primary goals of this project are:
 
 ## Project Status
 
-The **AVELIS** project is currently in the active development phase. 
-- The **Frontend** interface is fully implemented with high-fidelity, responsive mock views and interactive layout components.
-- The **Backend** has been initialized with its structural framework patterns and Prisma schema configurations. Direct PostgreSQL integration, middleware validations, and API routes are currently in active development.
+AVELIS is in active development. The initial database modeling and structural infrastructure phases are complete.
+
+### Completed
+- **React frontend**: React 19 single-page application scaffolding.
+- **Responsive UI**: Responsive page layouts tailored for desktop, tablet, and mobile displays.
+- **Express backend initialization**: Layered Express server core with Helmet, Morgan, CORS, and Gzip compression.
+- **PostgreSQL integration**: Direct communication with the PostgreSQL database server.
+- **Prisma ORM configuration**: Initialized datasource environment variables mappings.
+- **Prisma schema**: 11 core database models resolving users, authors, categories, book records, individual copies, loans, orders, items, and reviews.
+- **Prisma migrations**: Version-controlled SQL migration scripts generated and successfully executed.
+- **Prisma Client generation**: Built type-safe database client.
+- **Prisma Studio verification**: Visual table browsing and record administration confirmed.
+- **pgAdmin verification**: Direct structural check of tables, columns, constraints, and custom enum types completed.
+
+### Currently In Progress
+- **JWT Authentication**: Implementing secure authentication processes, login, register, and refresh tokens.
+- **Backend API development**: Writing Express routers and controller handlers linking core domains.
+- **Validation middleware**: Configuring request payload validation schemes.
+- **CRUD implementation**: Writing CRUD database operations across books, loans, and orders.
+
+## Project Statistics
+
+| Property | Value |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, Framer Motion |
+| **Backend** | Node.js, Express.js |
+| **Database** | PostgreSQL |
+| **ORM** | Prisma ORM |
+| **Architecture** | Layered (Controllers, Services, Models, Routes) |
+| **Database Tables** | 11 Application Tables |
+| **Deployment Status** | Deploys Pending API Completion |
+| **License** | ISC License |
+
+---
 
 ## Implemented Features
 
@@ -100,6 +156,230 @@ graph TD
         Prisma --> PostgreSQL[("PostgreSQL Database")]
     end
 ```
+
+---
+
+## Database Design
+
+AVELIS uses PostgreSQL as its primary relational database engine. All database access, schema definition, and table generation are managed via Prisma ORM. The database schema follows Third Normal Form (3NF) design to prevent redundancy, assure data consistency, and enforce strict referential integrity. All models utilize UUIDs as primary keys, and foreign keys enforce referential integrity across related datasets.
+
+The Prisma schema configuration file located at `server/prisma/schema.prisma` is the single source of truth for the database schema.
+
+### Database at a Glance
+
+| Property | Value |
+| :--- | :--- |
+| **Database Engine** | PostgreSQL |
+| **ORM** | Prisma ORM |
+| **Normalization** | Third Normal Form (3NF) |
+| **Primary Keys** | UUID (v4) |
+| **Relationship Types** | One-to-One, One-to-Many, Many-to-Many |
+| **Timestamp Strategy** | Automatic `createdAt` and `updatedAt` |
+| **Many-to-Many Strategy** | Explicit junction tables (`BookAuthor`, `BookCategory`) |
+
+### Entity Relationship Diagram
+
+[![AVELIS ER Diagram](docs/images/er-diagram.png)](docs/images/er-diagram.png)
+
+> The following Entity Relationship Diagram illustrates the complete AVELIS database architecture, including entities, relationships, constraints, cardinalities, and business rules.
+>
+> Click the diagram to view the full-resolution version.
+
+### Database Overview
+
+| Table | Purpose |
+| :--- | :--- |
+| **User** | Stores user credentials, profiles, contact details, account statuses, and authorization roles. |
+| **Book** | Stores abstract catalog metadata for book titles, including pricing, ISBN codes, and sale/borrow settings. |
+| **Author** | Stores writer details, biographical descriptions, and references to profile photos. |
+| **Category** | Stores genres, classifications, and category descriptions. |
+| **BookAuthor** | Explicit junction table resolving the many-to-many relationship between books and authors. |
+| **BookCategory** | Explicit junction table resolving the many-to-many relationship between books and categories. |
+| **BookCopy** | Stores physical inventory tracking records, barcodes, conditions, and locations for individual copies. |
+| **Loan** | Tracks checkout transactions, due dates, return timestamps, and overdue fine amounts. |
+| **Order** | Stores customer book purchase order headers, shipping details, and billing totals. |
+| **OrderItem** | Stores line-item details of books purchased in a single purchase order. |
+| **Review** | Stores customer ratings and written feedback for book catalog entries. |
+
+### Table Dictionary
+
+#### User
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **username** | String | Unique display name used for profile access. |
+| **email** | String | Unique email address used for login and notifications. |
+| **passwordHash** | String | Cryptographic hash of the user password. |
+| **phone** | String | Optional contact telephone number. |
+| **avatar** | String | Optional URL referencing the user profile picture. |
+| **role** | Enum | Authorization level (ADMIN, MEMBER). |
+| **isActive** | Boolean | Flag determining if the user account is active. |
+| **createdAt** | DateTime | Timestamp when the user account was registered. |
+| **updatedAt** | DateTime | Timestamp when the user profile was last updated. |
+
+#### Book
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **title** | String | The official title of the cataloged book. |
+| **isbn** | String | Unique International Standard Book Number. |
+| **publisher** | String | Optional publishing house name. |
+| **publicationYear** | Integer | Optional year the book edition was released. |
+| **language** | String | Primary language of the text. |
+| **description** | String | Optional synopsis or review of the book content. |
+| **coverImage** | String | Optional URL referencing the cover artwork. |
+| **sellingPrice** | Decimal | Retail purchase price for bookstore sales. |
+| **stockQuantity** | Integer | Quantity of copies available for commercial purchase. |
+| **isBorrowable** | Boolean | Flag determining if the book copies are rentable. |
+| **isForSale** | Boolean | Flag determining if the book is available for purchase. |
+| **createdAt** | DateTime | Timestamp when the catalog entry was created. |
+| **updatedAt** | DateTime | Timestamp when the catalog entry was last updated. |
+
+#### Author
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **fullName** | String | The complete name of the writer. |
+| **biography** | String | Optional summary of the author's history. |
+| **photo** | String | Optional URL referencing the author's image. |
+| **createdAt** | DateTime | Timestamp when the author record was created. |
+| **updatedAt** | DateTime | Timestamp when the author record was last updated. |
+
+#### Category
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **name** | String | Unique name representing the category or genre. |
+| **description** | String | Optional explanation of the genre parameters. |
+| **createdAt** | DateTime | Timestamp when the category was created. |
+| **updatedAt** | DateTime | Timestamp when the category was last updated. |
+
+#### BookAuthor
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **bookId** | UUID | Foreign key referencing the associated Book. |
+| **authorId** | UUID | Foreign key referencing the associated Author. |
+
+#### BookCategory
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **bookId** | UUID | Foreign key referencing the associated Book. |
+| **categoryId** | UUID | Foreign key referencing the associated Category. |
+
+#### BookCopy
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **bookId** | UUID | Foreign key referencing the parent Book catalog item. |
+| **barcode** | String | Unique serial barcode sticker for scanner tracking. |
+| **shelfLocation** | String | Optional warehouse or library shelf location. |
+| **condition** | Enum | Quality condition of the physical copy (NEW, GOOD, FAIR, DAMAGED). |
+| **status** | Enum | Availability status (AVAILABLE, BORROWED, LOST, MAINTENANCE). |
+| **purchaseDate** | Date | Optional date when the physical copy was acquired. |
+| **createdAt** | DateTime | Timestamp when the inventory copy was logged. |
+| **updatedAt** | DateTime | Timestamp when the inventory copy was last modified. |
+
+#### Loan
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **userId** | UUID | Foreign key referencing the borrowing User. |
+| **copyId** | UUID | Foreign key referencing the specific physical BookCopy. |
+| **issueDate** | DateTime | Date and time when the loan was checked out. |
+| **dueDate** | DateTime | Expected return deadline for the book. |
+| **returnDate** | DateTime | Optional date and time when the copy was returned. |
+| **fineAmount** | Decimal | Overdue penalty fees assessed on the loan transaction. |
+| **status** | Enum | Lifecycle status of the loan (BORROWED, RETURNED, OVERDUE). |
+| **createdAt** | DateTime | Timestamp when the loan record was initialized. |
+| **updatedAt** | DateTime | Timestamp when the loan record was last modified. |
+
+#### Order
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **userId** | UUID | Foreign key referencing the customer User. |
+| **orderNumber** | String | Unique purchase transaction reference number. |
+| **totalAmount** | Decimal | Total financial amount invoiced for the order. |
+| **paymentStatus** | Enum | Processing status of the payment (PENDING, PAID, FAILED, REFUNDED). |
+| **orderStatus** | Enum | Processing status of order fulfillment (PLACED, PROCESSING, SHIPPED, DELIVERED, CANCELLED). |
+| **shippingAddress** | String | Delivery location for dispatch. |
+| **orderedAt** | DateTime | Date and time when the order was submitted. |
+| **createdAt** | DateTime | Timestamp when the order was created. |
+| **updatedAt** | DateTime | Timestamp when the order was last updated. |
+
+#### OrderItem
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **orderId** | UUID | Foreign key referencing the parent purchase Order. |
+| **bookId** | UUID | Foreign key referencing the retail Book purchased. |
+| **quantity** | Integer | Number of units purchased for this book entry. |
+| **unitPrice** | Decimal | Price charged per unit at the time of order placement. |
+
+#### Review
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Unique identifier and primary key. |
+| **userId** | UUID | Foreign key referencing the author User. |
+| **bookId** | UUID | Foreign key referencing the evaluated Book. |
+| **rating** | Integer | User rating score (integer value between 1 and 5). |
+| **comment** | String | Optional written commentary detailing user feedback. |
+| **createdAt** | DateTime | Timestamp when the review was written. |
+| **updatedAt** | DateTime | Timestamp when the review was last modified. |
+
+### Database Relationships
+
+Relationships enforce cardinality and database integrity:
+- **User ⇄ Loans** (One-to-Many): A user can check out multiple book copies over time.
+- **User ⇄ Orders** (One-to-Many): A customer can place multiple purchase orders.
+- **User ⇄ Reviews** (One-to-Many): A user can write reviews for multiple books.
+- **Book ⇄ Authors** (Many-to-Many): A book can have multiple authors, and an author can write multiple books. This is explicitly resolved through the `BookAuthor` junction table.
+- **Book ⇄ Categories** (Many-to-Many): A book can belong to multiple categories, and a category can contain multiple books. This is explicitly resolved through the `BookCategory` junction table.
+- **Book ⇄ BookCopies** (One-to-Many): A catalog book can own multiple physical book copies.
+- **Book ⇄ Reviews** (One-to-Many): A book catalog entry can have multiple reviews written by different users.
+- **Book ⇄ OrderItems** (One-to-Many): A catalog book can be referenced in multiple purchase order line-items.
+- **Order ⇄ OrderItems** (One-to-Many): A single order header owns multiple order line-items.
+- **BookCopy ⇄ Loans** (One-to-Many): A specific physical copy can have multiple checkout transactions over its lifecycle.
+
+### Business Rules
+
+Database constraints and validations protect data logic:
+- **Unique Identifiers**: User email addresses, usernames, ISBN numbers, order numbers, and copy barcodes must be globally unique.
+- **Feedback Limitation**: A user can review a specific book only once. This is enforced by a composite unique index on (userId, bookId).
+- **Consolidated Orders**: A book can appear only once in a purchase order. Multiple units of the same book are consolidated under the quantity field on the OrderItem using a composite unique index on (orderId, bookId).
+- **Physical Copy Lending**: A physical copy can only be borrowed by one user in an active Loan at any given time. Copies marked `BORROWED` or `MAINTENANCE` cannot be checked out for a new loan.
+- **Retail Restrictions**: Books not marked with `isForSale` cannot appear in orders.
+- **Validation Boundaries**: Ratings must be integers bounded between 1 and 5. Stock quantity and order item quantity must remain non-negative.
+- **Auditing Integrity**: Foreign key constraints maintain referential integrity. Custom enumerations restrict values to valid system states.
+
+### Design Principles
+
+The design philosophy follows enterprise relational database principles:
+- **Third Normal Form (3NF)**: Normalizes tables to avoid redundant storage and update anomalies.
+- **UUID Primary Keys**: Ensures global uniqueness, shields against enumeration attacks, and prepares for distributed database clustering.
+- **Junction Tables**: Manages many-to-many relationships explicitly, permitting future column additions.
+- **Prisma Migrations**: Tracks all schema upgrades via version-controlled SQL files.
+- **Foreign Key Constraints**: Standardizes cascades (`onDelete: Cascade` for dependencies like junction tables and reviews) and restrictions (`onDelete: Restrict` for audit records like loans and orders).
+- **Index Optimization**: B-tree database indexes (`@@index`) are placed on all foreign key columns to speed up query JOIN execution paths.
+- **Automatic Timestamps**: Automatic track of creation (`createdAt`) and update (`updatedAt`) dates simplifies auditing.
+- **Enumerations**: Constrains values to predefined, type-safe states.
+
+### Schema Evolution
+
+The database schema evolves through version-controlled Prisma Migrations. Developers must modify the schema file at `server/prisma/schema.prisma` before generating a new migration using `npx prisma migrate dev`. Editing PostgreSQL tables directly is discouraged except for maintenance operations.
 
 ---
 
@@ -219,9 +499,28 @@ JWT_REFRESH_SECRET=
 
 ---
 
+## API Overview
+
+AVELIS exposes a JSON RESTful API. Below are the primary endpoints that are either planned or currently under development:
+
+| Method | Endpoint | Purpose | Status |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/api/auth/register` | Register a new user profile. | In Progress |
+| **POST** | `/api/auth/login` | Authenticate user credentials and return access tokens. | In Progress |
+| **GET** | `/api/auth/me` | Fetch active profile details for the authorized session. | In Progress |
+| **GET** | `/api/books` | Retrieve a catalog listing of all books. | In Progress |
+| **POST** | `/api/books` | Create a new catalog book entry (Admin only). | Planned |
+| **PUT** | `/api/books/:id` | Update metadata details of a catalog book (Admin only). | Planned |
+| **DELETE** | `/api/books/:id` | Remove a book entry from the catalog database (Admin only). | Planned |
+| **GET** | `/api/loans` | Retrieve borrowing loan histories. | In Progress |
+| **POST** | `/api/loans` | Create a new borrowing transaction for a physical copy. | Planned |
+| **GET** | `/api/orders` | Fetch user purchase order invoices. | Planned |
+
+---
+
 ## Current Development Progress
 
-### ✅ Completed
+### Completed
 - Premium layout landing page
 - Responsive user navigation headers
 - Visual assets hero panel
@@ -230,20 +529,36 @@ JWT_REFRESH_SECRET=
 - Interactive Dashboard metrics UI
 - Framer Motion micro-interactions
 - Reusable modular components structure
-- Express API server shell setup
-- Prisma ORM definitions and client mappings
+- Express API server initialization
+- Prisma configuration and schema mapping
+- Relational schema initial migration and client generation
 
-### 🚧 In Progress
-- PostgreSQL schema setup and active connections
-- Backend user authentication routing patterns
-- HTTP request validation middleware routines
+### In Progress
+- User JWT authentication and session endpoints
+- Request payload validation schemas and middleware
+- CRUD operations for catalog books and borrowing loans
 
-### ⏳ Planned
-- Complete JSON Web Token login authentication flow
-- Complete Book database CRUD api endpoints
-- User borrowing and book returning history transaction logic
-- Role-based user/admin access control configurations
-- Production build setups and server deployment
+### Planned
+- Role-based user/admin authorization guards
+- Order invoicing and bookstore purchase pipeline
+- Production build configurations and server deployment
+
+---
+
+## Future Enhancements
+
+The following features are planned for future releases to expand the capabilities of AVELIS:
+- **QR Code Book Checkout**: Generate unique QR codes for physical book copies to allow mobile checking out.
+- **Barcode Scanner Integration**: Integrate camera scanning modules to look up book catalog items automatically via barcodes.
+- **Email Notifications**: Automate dispatch of borrow summaries, return deadlines, and overdue fines reminders.
+- **Wishlist**: Allow users to bookmark books for future loans or purchases.
+- **Personalized Book Recommendations**: Build a genre recommendation engine matching books to user reading history.
+- **Reading Analytics Dashboard**: Display reading history statistics, pages read counts, and loan statistics visually.
+- **Docker Support**: Containerize application environments to simplify deployments.
+- **CI/CD Pipeline (GitHub Actions)**: Automate linting, schema validation, and builds through GitHub Actions.
+- **Progressive Web App (PWA)**: Add manifest and service workers for offline accessibility.
+- **Dark / Light Theme**: Standardize visual configurations to allow system theme preferences.
+- **Multi-language Support**: Support localized translations for English, Spanish, and other languages.
 
 ---
 
@@ -259,28 +574,40 @@ JWT_REFRESH_SECRET=
 
 ## Deployment Status
 
-- **Frontend**: Not deployed yet
-- **Backend**: Not deployed yet
-
-*Deployment pipelines will be configured and added after backend API development and authentication systems are fully completed.*
+| Component | Status |
+| :--- | :--- |
+| **Frontend** | Planned |
+| **Backend** | Planned |
+| **Database** | Planned |
+| **Production** | Planned |
 
 ---
 
 ## Screenshots
 
-![Home Screen](https://via.placeholder.com/800x450/111116/ffffff?text=AVELIS+-+Home+Landing+Page)
-*Figure 1: High-fidelity home page featuring responsive typography and navigation.*
+<!-- Replace with actual Home Page screenshot -->
+### Home Page
+![Home Page Placeholder](docs/images/screenshots/home.png)
+*Figure 1: High-fidelity landing page featuring modern typography and navigation.*
 
-![Collections Screen](https://via.placeholder.com/800x450/111116/ffffff?text=AVELIS+-+Collections+View)
+<!-- Replace with actual Collections screenshot -->
+### Collections
+![Collections Placeholder](docs/images/screenshots/collections.png)
 *Figure 2: Curated catalog collections interface allowing users to explore library lists.*
 
-![Library Screen](https://via.placeholder.com/800x450/111116/ffffff?text=AVELIS+-+Library+Catalog)
+<!-- Replace with actual Library Shelf screenshot -->
+### Library Shelf
+![Library Shelf Placeholder](docs/images/screenshots/library.png)
 *Figure 3: Personal index where users can manage their private bookshelves.*
 
-![Dashboard Screen](https://via.placeholder.com/800x450/111116/ffffff?text=AVELIS+-+User+Dashboard)
-*Figure 4: Core user dashboard displaying charts, statistics, and recent book logs.*
+<!-- Replace with actual User Dashboard screenshot -->
+### User Dashboard
+![Dashboard Placeholder](docs/images/screenshots/dashboard.png)
+*Figure 4: Dynamic statistics visualizing user activity metrics.*
 
-![Reading Journal Screen](https://via.placeholder.com/800x450/111116/ffffff?text=AVELIS+-+Reading+Journal)
+<!-- Replace with actual Reading Journal screenshot -->
+### Reading Journal
+![Reading Journal Placeholder](docs/images/screenshots/journal.png)
 *Figure 5: Personal journal for documenting thoughts, page completions, and reviews.*
 
 ---
