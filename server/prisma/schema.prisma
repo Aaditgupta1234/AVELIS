@@ -9,3 +9,43 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum CopyStatus {
+  AVAILABLE
+  BORROWED
+  LOST
+  MAINTENANCE
+}
+
+enum CopyCondition {
+  NEW
+  GOOD
+  FAIR
+  DAMAGED
+}
+
+enum LoanStatus {
+  BORROWED
+  RETURNED
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PLACED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
