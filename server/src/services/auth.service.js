@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
-import { ApiError, hashPassword } from '../utils/index.js';
+import { ApiError, hashPassword, comparePassword, generateToken } from '../utils/index.js';
+import { UserRole } from '@prisma/client';
 
 /**
  * Register a new user and persist them in the database.
@@ -42,7 +43,7 @@ export const registerUser = async ({ name, email, password }) => {
       username: normalizedName,
       email: normalizedEmail,
       passwordHash,
-      role: 'MEMBER',
+      role: UserRole.MEMBER,
     },
   });
 
@@ -56,13 +57,57 @@ export const registerUser = async ({ name, email, password }) => {
 };
 
 /**
- * Login user placeholder.
+ * Authenticate a user and generate a JWT access token.
  *
- * @returns {Promise<null>}
+ * @param {Object} credentials - User credentials
+ * @param {string} credentials.email - User's email
+ * @param {string} credentials.password - User's password
+ * @returns {Promise<Object>} Object containing token and sanitized user details
+ * @throws {ApiError} If lookup, password check, or account status validation fails
  */
-export const loginUser = async () => {
-  // Placeholder: database operations and verification will be added in Phase 6.2
-  return null;
+export const loginUser = async ({ email, password }) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // 1. Look up user by email
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (!user) {
+    throw new ApiError(401, 'Invalid credentials.');
+  }
+
+  // 2. Verify password
+  const isPasswordValid = await comparePassword(password, user.passwordHash);
+  if (!isPasswordValid) {
+    throw new ApiError(401, 'Invalid credentials.');
+  }
+
+  // 3. Verify account status
+  if (!user.isActive) {
+    throw new ApiError(
+      403,
+      'Your account is inactive. Please contact an administrator.'
+    );
+  }
+
+  // 4. Generate JWT with minimal payload
+  const token = generateToken({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  });
+
+  // 5. Return token and sanitized user object
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.username,
+      email: user.email,
+      role: user.role,
+    },
+  };
 };
 
 /**

@@ -8,7 +8,7 @@
  */
 
 import { sendSuccess } from '../utils/response.js';
-import { registerUser } from '../services/auth.service.js';
+import { registerUser, loginUser } from '../services/auth.service.js';
 
 /**
  * Handle user registration request.
@@ -34,7 +34,7 @@ export const register = async (req, res, next) => {
 };
 
 /**
- * Handle user login request placeholder.
+ * Handle user login request.
  *
  * @param {import('express').Request} req - Express request
  * @param {import('express').Response} res - Express response
@@ -42,11 +42,14 @@ export const register = async (req, res, next) => {
  */
 export const login = async (req, res, next) => {
   try {
+    const { email, password } = req.body;
+    const authData = await loginUser({ email, password });
+
     return sendSuccess(
       res,
       200,
-      null,
-      'Authentication endpoint scaffolded. Implementation will be added in Phase 6.2.'
+      authData,
+      'Login successful.'
     );
   } catch (error) {
     next(error);

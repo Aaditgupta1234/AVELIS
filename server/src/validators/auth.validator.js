@@ -72,11 +72,40 @@ export const registerValidator = (req, res, next) => {
 /**
  * Validator placeholder for user login requests.
  *
- * @param {import('express').Request} _req - Express request
- * @param {import('express').Response} _res - Express response
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
  * @param {import('express').NextFunction} next - Express next function
  */
-export const loginValidator = (_req, _res, next) => {
-  // Placeholder: validation schemas and checks will be added in Phase 6.2
+export const loginValidator = (req, res, next) => {
+  const errors = [];
+  let { email, password } = req.body;
+
+  // Validate Email
+  if (email === undefined || email === null) {
+    errors.push({ field: 'email', message: 'Email is required.' });
+  } else {
+    email = String(email).trim();
+    if (email === '') {
+      errors.push({ field: 'email', message: 'Email cannot be empty.' });
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        errors.push({ field: 'email', message: 'Email is invalid.' });
+      }
+    }
+  }
+
+  // Validate Password
+  if (password === undefined || password === null || String(password) === '') {
+    errors.push({ field: 'password', message: 'Password is required.' });
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // Update request body with trimmed/normalized email
+  req.body.email = email.toLowerCase();
+
   next();
 };
