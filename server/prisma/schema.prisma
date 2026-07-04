@@ -184,13 +184,13 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   orderId   String
   bookId    String
-  quantity  Int      @default(1)
+  quantity  Int     @default(1)
   unitPrice Decimal
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book      Book    @relation(fields: [bookId], references: [id], onDelete: Restrict)
 
   @@unique([orderId, bookId])
   @@index([orderId])
@@ -212,6 +212,3 @@ model Review {
   @@index([userId])
   @@index([bookId])
 }
-
-
-
