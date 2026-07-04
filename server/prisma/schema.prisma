@@ -80,3 +80,19 @@ model Category {
   updatedAt   DateTime @updatedAt
 }
 
+model Book {
+  id              String   @id @default(uuid())
+  title           String
+  isbn            String   @unique
+  publisher       String?
+  publicationYear Int?
+  language        String   @default("English")
+  description     String?
+  coverImage      String?
+  sellingPrice    Decimal  @default(0)
+  stockQuantity   Int      @default(0)
+  isBorrowable    Boolean  @default(true)
+  isForSale       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
