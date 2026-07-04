@@ -8,14 +8,14 @@
  */
 
 import { Router } from 'express';
+import { register, login, me, logout } from '../controllers/auth.controller.js';
+import { registerValidator, loginValidator } from '../validators/auth.validator.js';
 
 const router = Router();
 
-// TODO: Add auth routes
-// POST   /register  — Register a new user
-// POST   /login     — Login and receive token
-// POST   /logout    — Invalidate token
-// POST   /refresh   — Refresh access token
-// GET    /me        — Get current user profile
+router.post('/register', registerValidator, register);
+router.post('/login', loginValidator, login);
+router.get('/me', me);
+router.post('/logout', logout);
 
 export default router;

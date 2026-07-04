@@ -12,5 +12,7 @@
 export { ApiError } from './ApiError.js';
 export { ApiResponse } from './ApiResponse.js';
 export { getPagination, getPaginationMeta } from './pagination.js';
-export { generateToken } from './generateToken.js';
+export { generateToken, verifyToken } from './jwt.js';
+export { hashPassword, comparePassword } from './hash.js';
+export { sendSuccess, sendError } from './response.js';
 export { slugify } from './slugify.js';

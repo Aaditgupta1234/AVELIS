@@ -59,4 +59,24 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 /** HTTP request logger */
 app.use(morgan('dev'));
 
+// ---------------------------------------------------------------------------
+// API Routing
+// ---------------------------------------------------------------------------
+
+import apiRoutes from './routes/index.js';
+app.use('/api', apiRoutes);
+
+// ---------------------------------------------------------------------------
+// Fallback & Error Handling Middleware
+// ---------------------------------------------------------------------------
+
+import { notFound } from './middleware/error/notFound.js';
+import { errorHandler } from './middleware/error/errorHandler.js';
+
+/** Handle 404 - Route not found */
+app.use(notFound);
+
+/** Global error handler (must be registered last) */
+app.use(errorHandler);
+
 export default app;
