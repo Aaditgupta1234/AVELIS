@@ -62,6 +62,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   loans        Loan[]
+  orders       Order[]
+  reviews      Review[]
 }
 
 model Author {
@@ -101,6 +103,8 @@ model Book {
   authors         BookAuthor[]
   categories      BookCategory[]
   copies          BookCopy[]
+  orderItems      OrderItem[]
+  reviews         Review[]
 }
 
 model BookAuthor {
@@ -161,5 +165,53 @@ model Loan {
   @@index([userId])
   @@index([copyId])
 }
+
+model Order {
+  id              String        @id @default(uuid())
+  userId          String
+  orderNumber     String        @unique
+  totalAmount     Decimal
+  paymentStatus   PaymentStatus
+  orderStatus     OrderStatus
+  shippingAddress String
+  orderedAt       DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  bookId    String
+  quantity  Int      @default(1)
+  unitPrice Decimal
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, bookId])
+  @@index([orderId])
+  @@index([bookId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  bookId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+}
+
 
 
