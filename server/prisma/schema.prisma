@@ -64,35 +64,64 @@ model User {
 }
 
 model Author {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   fullName  String
   biography String?
   photo     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  books     BookAuthor[]
 }
 
 model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String         @id @default(uuid())
+  name        String         @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  books       BookCategory[]
 }
 
 model Book {
-  id              String   @id @default(uuid())
+  id              String         @id @default(uuid())
   title           String
-  isbn            String   @unique
+  isbn            String         @unique
   publisher       String?
   publicationYear Int?
-  language        String   @default("English")
+  language        String         @default("English")
   description     String?
   coverImage      String?
-  sellingPrice    Decimal  @default(0)
-  stockQuantity   Int      @default(0)
-  isBorrowable    Boolean  @default(true)
-  isForSale       Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  sellingPrice    Decimal        @default(0)
+  stockQuantity   Int            @default(0)
+  isBorrowable    Boolean        @default(true)
+  isForSale       Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  authors         BookAuthor[]
+  categories      BookCategory[]
 }
+
+model BookAuthor {
+  id       String @id @default(uuid())
+  bookId   String
+  authorId String
+  book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author   Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, authorId])
+  @@index([bookId])
+  @@index([authorId])
+}
+
+model BookCategory {
+  id         String   @id @default(uuid())
+  bookId     String
+  categoryId String
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, categoryId])
+  @@index([bookId])
+  @@index([categoryId])
+}
+
