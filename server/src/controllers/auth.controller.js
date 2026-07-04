@@ -8,7 +8,7 @@
  */
 
 import { sendSuccess } from '../utils/response.js';
-import { registerUser, loginUser } from '../services/auth.service.js';
+import { registerUser, loginUser, getCurrentUser } from '../services/auth.service.js';
 
 /**
  * Handle user registration request.
@@ -57,7 +57,7 @@ export const login = async (req, res, next) => {
 };
 
 /**
- * Handle get current user request placeholder.
+ * Handle get current user request.
  *
  * @param {import('express').Request} req - Express request
  * @param {import('express').Response} res - Express response
@@ -65,11 +65,14 @@ export const login = async (req, res, next) => {
  */
 export const me = async (req, res, next) => {
   try {
+    const userId = req.user.id;
+    const userProfile = await getCurrentUser(userId);
+
     return sendSuccess(
       res,
       200,
-      null,
-      'Authentication endpoint scaffolded. Implementation will be added in Phase 6.2.'
+      userProfile,
+      'User profile retrieved successfully.'
     );
   } catch (error) {
     next(error);

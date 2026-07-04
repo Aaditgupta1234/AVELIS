@@ -111,11 +111,42 @@ export const loginUser = async ({ email, password }) => {
 };
 
 /**
- * Get current user placeholder.
+ * Retrieve user profile and verify account activity status.
  *
- * @returns {Promise<null>}
+ * @param {string} userId - User UUID
+ * @returns {Promise<Object>} Sanitized user profile data
+ * @throws {ApiError} If user not found (404) or is inactive (403)
  */
-export const getCurrentUser = async () => {
-  // Placeholder: user database fetch will be added in Phase 6.2
-  return null;
+export const getCurrentUser = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+      isActive: true,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(404, 'User not found.');
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(
+      403,
+      'Your account is inactive. Please contact an administrator.'
+    );
+  }
+
+  return {
+    id: user.id,
+    name: user.username,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+  };
 };
