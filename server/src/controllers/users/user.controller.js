@@ -1,4 +1,4 @@
-import { getUserProfile, updateUserProfile } from '../../services/users/user.service.js';
+import { getUserProfile, updateUserProfile, changePassword as changeUserPassword } from '../../services/users/user.service.js';
 import { sendSuccess } from '../../utils/response.js';
 
 /**
@@ -42,6 +42,31 @@ export const updateMe = async (req, res, next) => {
       200,
       updatedProfile,
       'Profile updated successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Handle change password request.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const changePassword = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    await changeUserPassword(userId, { currentPassword, newPassword });
+
+    return sendSuccess(
+      res,
+      200,
+      null,
+      'Password updated successfully.'
     );
   } catch (error) {
     next(error);
