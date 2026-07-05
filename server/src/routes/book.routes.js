@@ -1,23 +1,33 @@
 /**
- * @fileoverview Book routes.
+ * @fileoverview Book module routes.
  *
- * Placeholder router for book-related endpoints.
- * Future endpoints: CRUD operations, search, categories, etc.
+ * Mounts book endpoints to their matching controller handlers.
+ * base endpoint: /api/books (mounted via routes/index.js)
  *
  * @module routes/book
  */
 
 import { Router } from 'express';
+import * as bookController from '../controllers/book.controller.js';
 
 const router = Router();
 
-// TODO: Add book routes
-// GET    /          — List all books (with pagination)
-// GET    /:id       — Get a single book
-// POST   /          — Create a new book
-// PUT    /:id       — Update a book
-// DELETE /:id       — Delete a book
-// GET    /search    — Search books
-// GET    /category/:category — Get books by category
+// POST   / — Create a new book
+router.post('/', bookController.createBook);
+
+// GET    / — Retrieve paginated/filtered list of books
+router.get('/', bookController.getBooks);
+
+// GET    /:id — Retrieve specific book details
+router.get('/:id', bookController.getBookById);
+
+// PATCH  /:id — Update details of a book
+router.patch('/:id', bookController.updateBook);
+
+// DELETE /:id — Delete a book
+router.delete('/:id', bookController.deleteBook);
+
+// PATCH  /:id/restore — Restore a deleted book
+router.patch('/:id/restore', bookController.restoreBook);
 
 export default router;

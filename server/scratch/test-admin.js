@@ -1,4 +1,4 @@
-import { getUsers, getUserById, updateUserRole, updateUserStatus } from '../src/controllers/admin.controller.js';
+import { getUsers, getUserById, updateUserStatus } from '../src/controllers/admin.controller.js';
 import { prisma } from '../src/lib/prisma.js';
 import { ApiError } from '../src/utils/index.js';
 import { UserRole } from '@prisma/client';
