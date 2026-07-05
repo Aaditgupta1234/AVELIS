@@ -55,7 +55,7 @@ The application provides readers with a modern, high-fidelity experience for bro
 | Frontend Landing Experience | ✅ Complete |
 | Backend Authentication | ✅ Complete |
 | Database | ✅ Complete |
-| User Management | 🚧 In Progress |
+| User Management | ✅ Complete |
 | Books Module | ⏳ Planned |
 | Deployment | ⏳ Planned |
 
@@ -70,7 +70,7 @@ The primary goals of this project are:
 
 ## Project Status
 
-AVELIS is in active development. The backend authentication system and core database configurations are complete.
+AVELIS is in active development. The backend authentication, user management, profiles, and administration layers are complete.
 
 ### Completed
 * **Express Backend** – Layered backend architecture with routing, controllers, services, and middleware.
@@ -88,25 +88,31 @@ AVELIS is in active development. The backend authentication system and core data
 * **Prisma migrations** – Version-controlled SQL migration scripts generated and successfully executed.
 * **Prisma Studio verification** – Visual table browsing and record administration confirmed.
 * **pgAdmin verification** – Direct structural check of tables, columns, constraints, and custom enum types completed.
+* **User Profile & Password Actions** – Profile detail retrieval (`GET /me`), username updates (`PATCH /me`), and secure password updates with current password checks (`PATCH /me/password`).
+* **Role-Based Access Control (RBAC)** – Authorization layer (`adminMiddleware`) guarding administrative actions for `ADMIN` role users.
+* **Admin User & Status Management** – Administrative endpoints to retrieve paginated/filtered user lists, view user details, update user roles, and activate/deactivate user status.
+* **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 7 – User Management & Profiles**
+* 🚧 **Phase 8 – Books Module**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 6 – Backend Authentication**, establishing a production-grade, secure authentication system.
+AVELIS has successfully completed **Phase 7 — User Management & Profiles**, establishing secure user profile administration and management.
 
 The following components were implemented and verified during this milestone:
-* **Backend Authentication Setup**: A modular system handling registration, session creation, and endpoint guards.
-* **User Registration**: Secure register endpoint verifying input parameters and uniqueness constraints.
-* **User Login**: Credentials verification and JWT issuance.
-* **JWT Authentication**: Bearer-token authentication utilizing secure headers.
-* **Protected Routes**: Verification middleware intercepting paths.
-* **Current Authenticated User Endpoint**: Active user data payload retrieval.
+* **Phase 7.1 — Current User Profile API**: Secure endpoint (`GET /api/users/me`) retrieving public details of the logged-in user.
+* **Phase 7.2 — Update Current User Profile**: Secure endpoint (`PATCH /api/users/me`) to update the user's username, with trim validations and uniqueness checks.
+* **Phase 7.3 — Change Password**: Secure endpoint (`PATCH /api/users/me/password`) allowing password changes by verifying current password and hashing the new one using bcrypt.
+* **Phase 7.4.1 — Admin Authorization Middleware**: Role-Based Access Control (`adminMiddleware`) restricting paths to users with the `ADMIN` role.
+* **Phase 7.4.2 — Admin Dashboard Statistics API**: Aggregate statistics retrieval (`GET /api/admin/dashboard`) executing concurrent counts with Prisma enums.
+* **Phase 7.4.3 — Get All Users & Get User by ID APIs**: Secure endpoints (`GET /api/admin/users` and `GET /api/admin/users/:id`) with type-normalized paginations, filters, search, and deterministic sorting.
+* **Phase 7.4.4 — Update User Role API**: Secure endpoint (`PATCH /api/admin/users/:id/role`) enabling user role modifications, preventing duplicate status requests.
+* **Phase 7.4.5 — Activate / Deactivate User API**: Secure endpoint (`PATCH /api/admin/users/:id/status`) for user status management, preventing self-deactivation.
 
-> **Next Milestone:** Phase 7 – User Management & Profiles
+> **Next Milestone:** Phase 8 – Books Module
 
 ## Project Statistics
 
@@ -620,6 +626,9 @@ Below are the primary endpoints and their current status:
 | **POST** | `/api/v1/auth/login` | Authenticate user credentials and return access tokens. | ✅ Completed |
 | **GET** | `/api/v1/auth/me` | Fetch active profile details for the authorized session. | ✅ Completed |
 | **POST** | `/api/v1/auth/logout` | Clear token credentials. | 🟡 Scaffolded (Placeholder) |
+| **GET** | `/api/v1/users/me` | Retrieve active profile details for the authorized session. | ✅ Completed |
+| **PATCH** | `/api/v1/users/me` | Update current user profile username. | ✅ Completed |
+| **PATCH** | `/api/v1/users/me/password` | Securely update password. | ✅ Completed |
 | **GET** | `/api/v1/books` | Retrieve a catalog listing of all books. | In Progress |
 | **POST** | `/api/v1/books` | Create a new catalog book entry (Admin only). | Planned |
 | **PUT** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | Planned |
@@ -627,6 +636,18 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
 | **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
+
+### Administrative API Overview
+
+The following administrative endpoints are protected by `authMiddleware` and `adminMiddleware`:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **GET** | `/api/v1/admin/dashboard` | Retrieve aggregated dashboard counts. |
+| **GET** | `/api/v1/admin/users` | Retrieve all users (paginated, sorted, and filtered). |
+| **GET** | `/api/v1/admin/users/:id` | Retrieve details of a specific user. |
+| **PATCH** | `/api/v1/admin/users/:id/role` | Update a user's role. |
+| **PATCH** | `/api/v1/admin/users/:id/status` | Activate or deactivate a user (with self-deactivation protection). |
 
 ---
 
@@ -675,6 +696,14 @@ The following features are planned for future releases to expand the capabilitie
 - **Dark / Light Theme**: Standardize visual configurations to allow system theme preferences.
 - **Multi-language Support**: Support localized translations for English, Spanish, and other languages.
 
+### Upcoming Administrative Enhancements
+- **Admin Safety Guard**: Prevent deactivation of the last active administrator account to avoid system lockout.
+- **Administrative Audit Logging**: Track all administrative actions, details, and timestamps.
+- **Role Change History**: Maintain a ledger of user role transitions and the admin who authorized them.
+- **Administrative Activity Logs**: Provide visual log explorer interfaces for administrators to trace system edits.
+- **Configurable User Sorting and Filtering**: Allow sorting list results by multiple database fields.
+- **Pagination for Large User Datasets**: Further scaling of large user datasets with cursor-based pagination.
+
 ---
 
 ## Roadmap
@@ -686,9 +715,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ User Registration
 * ✅ User Login
 * ✅ Protected Routes
+* ✅ Phase 7 – User Management & Profiles
 
 #### Current Focus
-* 🚧 Phase 7 – User Management & Profiles
+* 🚧 Phase 8 – Books Module
 
 #### Planned
 * Books Module
@@ -705,7 +735,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes | User Management & Profile APIs, CRUD books logic | checkout/checkin transactions, admin authorization |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs (including admin utilities) | CRUD books logic, inventory management | checkout/checkin transactions |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
