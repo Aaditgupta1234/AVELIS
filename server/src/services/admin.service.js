@@ -123,3 +123,45 @@ export const getUserById = async (id) => {
 
   return user;
 };
+
+/**
+ * Update user role.
+ *
+ * @param {string} id - User ID
+ * @param {string} role - New role value
+ * @returns {Promise<Object>} Updated user profile details
+ * @throws {ApiError} If user not found (404) or role matches current role (400)
+ */
+export const updateUserRole = async (id, role) => {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(404, 'User not found.');
+  }
+
+  // Prevent unnecessary database updates when the role is already assigned
+  if (user.role === role) {
+    throw new ApiError(400, 'User already has this role.');
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: { role },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return updatedUser;
+};

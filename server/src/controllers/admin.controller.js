@@ -104,3 +104,27 @@ export const getUserById = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Update user role.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const updateUserRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const updatedUser = await adminService.updateUserRole(id, role);
+
+    return sendSuccess(
+      res,
+      200,
+      updatedUser,
+      'User role updated successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};

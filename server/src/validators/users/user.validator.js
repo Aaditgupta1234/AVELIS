@@ -1,4 +1,5 @@
 import { sendError } from '../../utils/index.js';
+import { UserRole } from '@prisma/client';
 
 /**
  * Validator for user profile update requests.
@@ -83,6 +84,36 @@ export const changePasswordValidator = (req, res, next) => {
       field: 'confirmPassword',
       message: 'Confirm password must match the new password.',
     });
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  next();
+};
+
+/**
+ * Validator for user role update requests.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const updateUserRoleValidator = (req, res, next) => {
+  const errors = [];
+  const { role } = req.body;
+
+  if (role === undefined || role === null || String(role).trim() === '') {
+    errors.push({ field: 'role', message: 'Role is required.' });
+  } else {
+    const rolesList = Object.values(UserRole);
+    if (!rolesList.includes(role)) {
+      errors.push({
+        field: 'role',
+        message: `Role must be one of: ${rolesList.join(', ')}.`,
+      });
+    }
   }
 
   if (errors.length > 0) {
