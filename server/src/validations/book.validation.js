@@ -125,6 +125,157 @@ export const createBookValidator = (req, res, next) => {
  * @param {import('express').NextFunction} next - Express next function
  */
 export const updateBookValidator = (req, res, next) => {
+  const { id } = req.params;
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+  if (!id || typeof id !== 'string' || !uuidRegex.test(id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid book ID.'
+    });
+  }
+
+  const errors = [];
+  const {
+    title,
+    isbn,
+    publisher,
+    publicationYear,
+    language,
+    description,
+    coverImage,
+    sellingPrice,
+    stockQuantity,
+    isBorrowable,
+    isForSale,
+    authorIds,
+    categoryIds
+  } = req.body;
+
+  // Title validation (if provided)
+  if (title !== undefined && title !== null) {
+    if (typeof title !== 'string' || title.trim() === '') {
+      errors.push({ field: 'title', message: 'Title must be a non-empty string.' });
+    } else {
+      req.body.title = title.trim();
+    }
+  }
+
+  // ISBN validation (if provided)
+  if (isbn !== undefined && isbn !== null) {
+    if (typeof isbn !== 'string' || isbn.trim() === '') {
+      errors.push({ field: 'isbn', message: 'ISBN must be a non-empty string.' });
+    } else {
+      req.body.isbn = isbn.trim();
+    }
+  }
+
+  // Publisher validation (if provided)
+  if (publisher !== undefined && publisher !== null) {
+    if (typeof publisher !== 'string' || publisher.trim() === '') {
+      errors.push({ field: 'publisher', message: 'Publisher must be a non-empty string.' });
+    } else {
+      req.body.publisher = publisher.trim();
+    }
+  }
+
+  // Language validation (if provided)
+  if (language !== undefined && language !== null) {
+    if (typeof language !== 'string' || language.trim() === '') {
+      errors.push({ field: 'language', message: 'Language must be a non-empty string.' });
+    } else {
+      req.body.language = language.trim();
+    }
+  }
+
+  // Description validation (if provided)
+  if (description !== undefined && description !== null) {
+    if (typeof description !== 'string') {
+      errors.push({ field: 'description', message: 'Description must be a string.' });
+    } else {
+      req.body.description = description.trim();
+    }
+  }
+
+  // Cover Image validation (if provided)
+  if (coverImage !== undefined && coverImage !== null) {
+    if (typeof coverImage !== 'string') {
+      errors.push({ field: 'coverImage', message: 'Cover image must be a string.' });
+    } else {
+      const trimmedUrl = coverImage.trim();
+      try {
+        new URL(trimmedUrl);
+        req.body.coverImage = trimmedUrl;
+      } catch (_) {
+        errors.push({ field: 'coverImage', message: 'Cover image must be a valid URL.' });
+      }
+    }
+  }
+
+  // Publication Year validation (if provided)
+  if (publicationYear !== undefined && publicationYear !== null) {
+    if (!Number.isInteger(publicationYear)) {
+      errors.push({ field: 'publicationYear', message: 'Publication year must be an integer.' });
+    }
+  }
+
+  // Selling Price validation (if provided)
+  if (sellingPrice !== undefined && sellingPrice !== null) {
+    if (typeof sellingPrice !== 'number' || sellingPrice < 0) {
+      errors.push({ field: 'sellingPrice', message: 'Selling price must be a non-negative number.' });
+    }
+  }
+
+  // Stock Quantity validation (if provided)
+  if (stockQuantity !== undefined && stockQuantity !== null) {
+    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+      errors.push({ field: 'stockQuantity', message: 'Stock quantity must be a non-negative integer.' });
+    }
+  }
+
+  // Helper for boolean fields
+  const validateBoolean = (val, fieldName) => {
+    if (val !== undefined && val !== null) {
+      if (val === 'true' || val === true) {
+        req.body[fieldName] = true;
+      } else if (val === 'false' || val === false) {
+        req.body[fieldName] = false;
+      } else {
+        errors.push({ field: fieldName, message: `${fieldName} must be a boolean.` });
+      }
+    }
+  };
+
+  validateBoolean(isBorrowable, 'isBorrowable');
+  validateBoolean(isForSale, 'isForSale');
+
+  // Helper for ID array validations (UUID arrays)
+  const validateIdArray = (ids, fieldName) => {
+    if (ids !== undefined && ids !== null) {
+      if (!Array.isArray(ids) || ids.length === 0) {
+        errors.push({ field: fieldName, message: `${fieldName} must be a non-empty array.` });
+      } else {
+        if (new Set(ids).size !== ids.length) {
+          errors.push({ field: fieldName, message: `${fieldName} cannot contain duplicate IDs.` });
+        }
+        ids.forEach((id, index) => {
+          if (typeof id !== 'string' || id.trim() === '' || !uuidRegex.test(id.trim())) {
+            errors.push({ field: `${fieldName}[${index}]`, message: `${fieldName.slice(0, -3)} ID must be a valid UUID string.` });
+          } else {
+            ids[index] = id.trim();
+          }
+        });
+      }
+    }
+  };
+
+  validateIdArray(authorIds, 'authorIds');
+  validateIdArray(categoryIds, 'categoryIds');
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', [errors[0]]);
+  }
+
   next();
 };
 
