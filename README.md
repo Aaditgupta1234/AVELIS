@@ -19,8 +19,11 @@ A premium, full-stack Library Management System with a modern, fluid user experi
 - [Project Overview](#project-overview)
 - [Motivation / Purpose](#motivation--purpose)
 - [Project Status](#project-status)
+- [Latest Milestone](#latest-milestone)
 - [Project Statistics](#project-statistics)
 - [Implemented Features](#implemented-features)
+- [Authentication Features](#authentication-features)
+- [Authentication Technology Stack](#authentication-technology-stack)
 - [Tech Stack](#tech-stack)
 - [Project Architecture](#project-architecture)
 - [Database Design](#database-design)
@@ -45,6 +48,17 @@ AVELIS is a production-quality, premium Library Management System designed to se
 
 The application provides readers with a modern, high-fidelity experience for browsing curated collections, cataloging their personal library, logging reading history, and analyzing stats through a polished administration dashboard.
 
+### Project Snapshot
+
+| Category | Status |
+| :--- | :--- |
+| Frontend Landing Experience | ✅ Complete |
+| Backend Authentication | ✅ Complete |
+| Database | ✅ Complete |
+| User Management | 🚧 In Progress |
+| Books Module | ⏳ Planned |
+| Deployment | ⏳ Planned |
+
 ## Motivation / Purpose
 
 Traditional library management systems often suffer from outdated user interfaces, rigid flows, and tightly coupled monolithic backends. AVELIS was built to solve this problem by showing that utility software can feel both premium and exceptionally responsive. 
@@ -56,25 +70,43 @@ The primary goals of this project are:
 
 ## Project Status
 
-AVELIS is in active development. The initial database modeling and structural infrastructure phases are complete.
+AVELIS is in active development. The backend authentication system and core database configurations are complete.
 
 ### Completed
-- **React frontend**: React 19 single-page application scaffolding.
-- **Responsive UI**: Responsive page layouts tailored for desktop, tablet, and mobile displays.
-- **Express backend initialization**: Layered Express server core with Helmet, Morgan, CORS, and Gzip compression.
-- **PostgreSQL integration**: Direct communication with the PostgreSQL database server.
-- **Prisma ORM configuration**: Initialized datasource environment variables mappings.
-- **Prisma schema**: 11 core database models resolving users, authors, categories, book records, individual copies, loans, orders, items, and reviews.
-- **Prisma migrations**: Version-controlled SQL migration scripts generated and successfully executed.
-- **Prisma Client generation**: Built type-safe database client.
-- **Prisma Studio verification**: Visual table browsing and record administration confirmed.
-- **pgAdmin verification**: Direct structural check of tables, columns, constraints, and custom enum types completed.
+* **Express Backend** – Layered backend architecture with routing, controllers, services, and middleware.
+* **PostgreSQL Database** – Relational database configured with normalized schema, constraints, and indexes.
+* **Prisma ORM** – Type-safe database access, schema management, and migration support.
+* **JWT Authentication** – Secure stateless authentication using signed JWT access tokens.
+* **User Registration** – Input validation, uniqueness checks, password hashing, and account creation.
+* **User Login** – Credential verification and JWT token generation.
+* **Protected Routes** – Authorization middleware protecting authenticated endpoints.
+* **Password Hashing (bcrypt)** – Secure hashing of user passwords before persistence.
+* **Authentication Middleware** – Centralized JWT verification and authenticated user attachment.
+* **Current Authenticated User Endpoint (`/api/v1/auth/me`)** – Safe retrieval of the currently authenticated user's profile.
+* **React frontend** – React 19 single-page application scaffolding.
+* **Responsive UI** – Responsive page layouts tailored for desktop, tablet, and mobile displays.
+* **Prisma migrations** – Version-controlled SQL migration scripts generated and successfully executed.
+* **Prisma Studio verification** – Visual table browsing and record administration confirmed.
+* **pgAdmin verification** – Direct structural check of tables, columns, constraints, and custom enum types completed.
 
-### Currently In Progress
-- **JWT Authentication**: Implementing secure authentication processes, login, register, and refresh tokens.
-- **Backend API development**: Writing Express routers and controller handlers linking core domains.
-- **Validation middleware**: Configuring request payload validation schemes.
-- **CRUD implementation**: Writing CRUD database operations across books, loans, and orders.
+### Current Focus
+* 🚧 **Phase 7 – User Management & Profiles**
+
+---
+
+## Latest Milestone
+
+AVELIS has successfully completed **Phase 6 – Backend Authentication**, establishing a production-grade, secure authentication system.
+
+The following components were implemented and verified during this milestone:
+* **Backend Authentication Setup**: A modular system handling registration, session creation, and endpoint guards.
+* **User Registration**: Secure register endpoint verifying input parameters and uniqueness constraints.
+* **User Login**: Credentials verification and JWT issuance.
+* **JWT Authentication**: Bearer-token authentication utilizing secure headers.
+* **Protected Routes**: Verification middleware intercepting paths.
+* **Current Authenticated User Endpoint**: Active user data payload retrieval.
+
+> **Next Milestone:** Phase 7 – User Management & Profiles
 
 ## Project Statistics
 
@@ -110,6 +142,42 @@ AVELIS is in active development. The initial database modeling and structural in
 - **Prisma ORM Setup**: Prisma Client configured alongside active database schema declarations.
 - **PostgreSQL Configuration**: Outlined datasource details ready for relational database mapping.
 
+---
+
+## Authentication Features
+
+The following backend authentication features are fully implemented and integrated:
+* Secure user registration
+* Secure user login
+* JWT-based authentication
+* Protected API routes
+* Authentication middleware
+* Current authenticated user retrieval
+* Centralized authentication error handling
+* Production-ready layered backend architecture
+
+### Security Highlights
+
+Key security practices implemented to protect user credentials and sessions:
+* **Password Hashing (bcrypt)** – User credentials are securely hashed before storage using bcrypt with a salt factor of 10.
+* **JWT Authentication** – Stateless authentication using signed JWT access tokens containing only essential user information (ID, email, role).
+* **Protected Route Middleware** – Restricts access to authenticated endpoints.
+* **Authentication Middleware** – Centralized JWT verification and authenticated request context.
+* **Secure Password Verification** – Password comparison performed using bcrypt's secure verification mechanism without exposing plaintext credentials.
+* **Environment Secret Isolation** – Cryptographic secrets loaded from environment variables (`JWT_SECRET`).
+* **Centralized Authentication Error Handling** – Unified handling of authentication and authorization failures.
+
+### Authentication Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| Runtime | Node.js |
+| Backend Framework | Express.js |
+| Authentication | JWT |
+| Password Hashing | bcrypt |
+| ORM | Prisma |
+| Database | PostgreSQL |
+
 ## Tech Stack
 
 ### Frontend
@@ -140,20 +208,61 @@ The block diagram below demonstrates the clean flow of data through AVELIS, sepa
 ```mermaid
 graph TD
     subgraph Frontend Client
-        React[React 19 Components] --> Router[React Router]
-        Router --> Axios[Axios API Client]
+        React[React Client] --> Axios[Axios]
     end
 
     subgraph Express Server
-        Axios -- HTTPS Requests --> Routes[Express Routes]
-        Routes --> Middleware[Validation / Auth Middleware]
-        Middleware --> Controllers[Controllers HTTP Handlers]
-        Controllers --> Services[Services Business Logic]
-        Services --> Prisma[Prisma Client ORM]
+        Axios -- HTTPS Requests --> Router[Express Router]
+        Router --> ValMiddleware[Validation Middleware]
+        ValMiddleware --> AuthMiddleware[Authentication Middleware]
+        AuthMiddleware --> Controller[Controller]
+        Controller --> Service[Service]
+        Service --> Prisma[Prisma Client]
     end
 
     subgraph Database Layer
-        Prisma --> PostgreSQL[("PostgreSQL Database")]
+        Prisma --> PostgreSQL[PostgreSQL]
+    end
+```
+
+### Authentication Sequence Diagram
+
+The sequence diagram below illustrates the request/response lifecycle for the user login authentication flow:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Router as Express Router (POST /api/v1/auth/login)
+    participant Val as Validation Middleware
+    participant Ctrl as Authentication Controller
+    participant Serv as Authentication Service
+    participant Prisma as Prisma Client
+    participant DB as PostgreSQL
+
+    Client->>Router: POST login request
+    Router->>Val: Forward request for schema validation
+    
+    alt Validation failure
+        Val-->>Client: 400 Bad Request
+    else Validation success
+        Val->>Ctrl: Forward payload to controller
+        Ctrl->>Serv: Call loginUser()
+        Serv->>Prisma: Request user details by email
+        Prisma->>DB: Query User record
+        DB-->>Prisma: User Record
+        Prisma-->>Serv: User Record
+        
+        alt Invalid credentials or inactive account
+            Serv->>Serv: bcrypt password verification (fails) / check isActive
+            Serv-->>Ctrl: Throw error
+            Ctrl-->>Client: 401 Unauthorized / 403 Forbidden
+        else Successful authentication
+            Serv->>Serv: bcrypt password verification (passes)
+            Serv->>Serv: JWT generation
+            Serv-->>Ctrl: Return token and sanitized user details
+            Ctrl-->>Client: 200 OK with JWT access token and sanitized user info
+        end
     end
 ```
 
@@ -501,20 +610,23 @@ JWT_REFRESH_SECRET=
 
 ## API Overview
 
-AVELIS exposes a JSON RESTful API. Below are the primary endpoints that are either planned or currently under development:
+AVELIS exposes a JSON RESTful API. All backend endpoints are versioned under `/api/v1` to support future API evolution and maintain backward compatibility.
+
+Below are the primary endpoints and their current status:
 
 | Method | Endpoint | Purpose | Status |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/auth/register` | Register a new user profile. | In Progress |
-| **POST** | `/api/auth/login` | Authenticate user credentials and return access tokens. | In Progress |
-| **GET** | `/api/auth/me` | Fetch active profile details for the authorized session. | In Progress |
-| **GET** | `/api/books` | Retrieve a catalog listing of all books. | In Progress |
-| **POST** | `/api/books` | Create a new catalog book entry (Admin only). | Planned |
-| **PUT** | `/api/books/:id` | Update metadata details of a catalog book (Admin only). | Planned |
-| **DELETE** | `/api/books/:id` | Remove a book entry from the catalog database (Admin only). | Planned |
-| **GET** | `/api/loans` | Retrieve borrowing loan histories. | In Progress |
-| **POST** | `/api/loans` | Create a new borrowing transaction for a physical copy. | Planned |
-| **GET** | `/api/orders` | Fetch user purchase order invoices. | Planned |
+| **POST** | `/api/v1/auth/register` | Register a new user profile. | ✅ Completed |
+| **POST** | `/api/v1/auth/login` | Authenticate user credentials and return access tokens. | ✅ Completed |
+| **GET** | `/api/v1/auth/me` | Fetch active profile details for the authorized session. | ✅ Completed |
+| **POST** | `/api/v1/auth/logout` | Clear token credentials. | 🟡 Scaffolded (Placeholder) |
+| **GET** | `/api/v1/books` | Retrieve a catalog listing of all books. | In Progress |
+| **POST** | `/api/v1/books` | Create a new catalog book entry (Admin only). | Planned |
+| **PUT** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | Planned |
+| **DELETE** | `/api/v1/books/:id` | Remove a book entry from the catalog database (Admin only). | Planned |
+| **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
+| **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
+| **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ---
 
@@ -532,11 +644,14 @@ AVELIS exposes a JSON RESTful API. Below are the primary endpoints that are eith
 - Express API server initialization
 - Prisma configuration and schema mapping
 - Relational schema initial migration and client generation
+- Secure JWT-based backend authentication system (Phase 6)
+- Password hashing using bcrypt and custom request payload validation
+- Request interception middleware and current authenticated user retrieval endpoint
 
 ### In Progress
-- User JWT authentication and session endpoints
-- Request payload validation schemas and middleware
-- CRUD operations for catalog books and borrowing loans
+- Phase 7 – User Management & Profiles (CRUD endpoints, profile updates)
+- Books Module (CRUD operations for catalog books)
+- Loan Management (CRUD operations for borrowing loans)
 
 ### Planned
 - Role-based user/admin authorization guards
@@ -564,10 +679,33 @@ The following features are planned for future releases to expand the capabilitie
 
 ## Roadmap
 
+### Project Phases
+
+#### Completed
+* ✅ Backend Authentication Setup
+* ✅ User Registration
+* ✅ User Login
+* ✅ Protected Routes
+
+#### Current Focus
+* 🚧 Phase 7 – User Management & Profiles
+
+#### Planned
+* Books Module
+* Inventory Management
+* Loan Management
+* Orders
+* Reviews
+* Production Security
+* Testing
+* Deployment
+
+### Component Roadmap
+
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration | PostgreSQL migrations, JWT routes structure, validation middleware | CRUD books logic, checkout/checkin transactions, user access authorization |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes | User Management & Profile APIs, CRUD books logic | checkout/checkin transactions, admin authorization |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
