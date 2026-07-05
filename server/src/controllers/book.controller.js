@@ -19,10 +19,9 @@ import { sendSuccess } from '../utils/index.js';
  */
 export const createBook = async (req, res, next) => {
   try {
-    // Delegate to service, ignoring placeholder return
-    await bookService.createBook(req.body);
+    const createdBook = await bookService.createBook(req.body);
 
-    return sendSuccess(res, 201, null, 'Book module placeholder endpoint.');
+    return sendSuccess(res, 201, createdBook, 'Book created successfully.');
   } catch (error) {
     next(error);
   }

@@ -9,11 +9,14 @@
 
 import { Router } from 'express';
 import * as bookController from '../controllers/book.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { adminMiddleware } from '../middleware/admin.middleware.js';
+import { createBookValidator } from '../validations/book.validation.js';
 
 const router = Router();
 
-// POST   / — Create a new book
-router.post('/', bookController.createBook);
+// POST   / — Create a new book (Admin only)
+router.post('/', authMiddleware, adminMiddleware, createBookValidator, bookController.createBook);
 
 // GET    / — Retrieve paginated/filtered list of books
 router.get('/', bookController.getBooks);
