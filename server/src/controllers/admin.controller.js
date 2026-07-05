@@ -128,3 +128,28 @@ export const updateUserRole = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Update user active status.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const updateUserStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    const adminId = req.user.id;
+    const updatedUser = await adminService.updateUserStatus(id, isActive, adminId);
+
+    return sendSuccess(
+      res,
+      200,
+      updatedUser,
+      'User status updated successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};

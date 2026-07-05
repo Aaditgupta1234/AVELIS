@@ -165,3 +165,55 @@ export const updateUserRole = async (id, role) => {
 
   return updatedUser;
 };
+
+/**
+ * Update user active status.
+ *
+ * @param {string} id - User ID to update
+ * @param {boolean} isActive - New status value
+ * @param {string} authenticatedUserId - Authenticated administrator ID
+ * @returns {Promise<Object>} Updated user profile details
+ * @throws {ApiError} If user not found (404), self-deactivation (400), or status matches current status (400)
+ */
+export const updateUserStatus = async (id, isActive, authenticatedUserId) => {
+  // 1. Target User Lookup
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      isActive: true,
+    },
+  });
+
+  // 2. Existence Check
+  if (!user) {
+    throw new ApiError(404, 'User not found.');
+  }
+
+  // 3. Prevent Administrator Self-Deactivation
+  if (id === authenticatedUserId && isActive === false) {
+    throw new ApiError(400, 'You cannot deactivate your own account.');
+  }
+
+  // 4. Prevent Unnecessary Database Updates
+  if (user.isActive === isActive) {
+    throw new ApiError(400, 'User already has this status.');
+  }
+
+  // 5. Execute Prisma Update & 6. Return Safe Public User Object
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: { isActive },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return updatedUser;
+};

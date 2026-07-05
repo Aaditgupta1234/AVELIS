@@ -122,3 +122,27 @@ export const updateUserRoleValidator = (req, res, next) => {
 
   next();
 };
+
+/**
+ * Validator for user status update requests.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const updateUserStatusValidator = (req, res, next) => {
+  const errors = [];
+  const { isActive } = req.body;
+
+  if (isActive === undefined || isActive === null) {
+    errors.push({ field: 'isActive', message: 'isActive status is required.' });
+  } else if (typeof isActive !== 'boolean') {
+    errors.push({ field: 'isActive', message: 'isActive must be a boolean.' });
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  next();
+};
