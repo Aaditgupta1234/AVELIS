@@ -11,7 +11,7 @@ import { Router } from 'express';
 import * as bookController from '../controllers/book.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
-import { createBookValidator } from '../validations/book.validation.js';
+import { createBookValidator, queryBookValidator } from '../validations/book.validation.js';
 
 const router = Router();
 
@@ -19,7 +19,7 @@ const router = Router();
 router.post('/', authMiddleware, adminMiddleware, createBookValidator, bookController.createBook);
 
 // GET    / — Retrieve paginated/filtered list of books
-router.get('/', bookController.getBooks);
+router.get('/', queryBookValidator, bookController.getBooks);
 
 // GET    /:id — Retrieve specific book details
 router.get('/:id', bookController.getBookById);

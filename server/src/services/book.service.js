@@ -97,8 +97,101 @@ export const createBook = async (bookData) => {
  * @param {Object} _query - Filtering queries
  * @returns {Promise<null>} Intentionally returns null during foundation phase
  */
-export const getBooks = async (_query) => {
-  return null;
+export const getBooks = async (query) => {
+  const { page, limit, search, sortBy, order, language, publicationYear, isBorrowable, isForSale } = query;
+
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  // Build dynamic where conditions
+  const where = {};
+
+  // Case-insensitive language filtering
+  if (language) {
+    where.language = {
+      equals: language.trim(),
+      mode: 'insensitive'
+    };
+  }
+  if (publicationYear) where.publicationYear = publicationYear;
+  if (isBorrowable !== undefined) where.isBorrowable = isBorrowable;
+  if (isForSale !== undefined) where.isForSale = isForSale;
+
+  // Normalize search string
+  const normalizedSearch = search?.trim();
+  if (normalizedSearch) {
+    where.OR = [
+      { title: { contains: normalizedSearch, mode: 'insensitive' } },
+      { isbn: { contains: normalizedSearch, mode: 'insensitive' } },
+      { publisher: { contains: normalizedSearch, mode: 'insensitive' } }
+    ];
+  }
+
+  // Deterministic secondary sorting
+  const orderBy = [
+    { [sortBy]: order },
+    { id: 'asc' }
+  ];
+
+  // Execute count and list queries concurrently inside a transaction
+  const [books, totalItems] = await prisma.$transaction([
+    prisma.book.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        title: true,
+        isbn: true,
+        publisher: true,
+        publicationYear: true,
+        language: true,
+        coverImage: true,
+        sellingPrice: true,
+        stockQuantity: true,
+        isBorrowable: true,
+        isForSale: true,
+        createdAt: true,
+        authors: {
+          select: {
+            author: {
+              select: {
+                id: true,
+                fullName: true
+              }
+            }
+          }
+        },
+        categories: {
+          select: {
+            category: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    }),
+    prisma.book.count({ where })
+  ]);
+
+  // Enforce predictable totalPages (minimum 1)
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    books,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1
+    }
+  };
 };
 
 /**

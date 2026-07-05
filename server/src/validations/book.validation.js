@@ -8,6 +8,7 @@
  */
 
 import { sendError } from '../utils/index.js';
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER } from '../constants/book.constants.js';
 
 /**
  * Validator middleware for creating a book.
@@ -135,5 +136,105 @@ export const updateBookValidator = (req, res, next) => {
  * @param {import('express').NextFunction} next - Express next function
  */
 export const queryBookValidator = (req, res, next) => {
+  const errors = [];
+  const { page, limit, search, sortBy, order, language, publicationYear, isBorrowable, isForSale } = req.query;
+
+  // 1. Pagination Validation & Casting
+  if (page !== undefined && page !== null) {
+    const pageNum = Number(page);
+    if (!Number.isInteger(pageNum) || pageNum <= 0) {
+      errors.push({ field: 'page', message: 'Page must be a positive integer.' });
+    } else {
+      req.query.page = pageNum;
+    }
+  } else {
+    req.query.page = 1;
+  }
+
+  if (limit !== undefined && limit !== null) {
+    const limitNum = Number(limit);
+    if (!Number.isInteger(limitNum) || limitNum <= 0 || limitNum > MAX_PAGE_SIZE) {
+      errors.push({ field: 'limit', message: `Limit must be a positive integer not exceeding ${MAX_PAGE_SIZE}.` });
+    } else {
+      req.query.limit = limitNum;
+    }
+  } else {
+    req.query.limit = DEFAULT_PAGE_SIZE;
+  }
+
+  // 2. Search Parameter Normalization
+  if (search !== undefined && search !== null) {
+    if (typeof search !== 'string') {
+      errors.push({ field: 'search', message: 'Search query must be a string.' });
+    } else {
+      const trimmedSearch = search.trim();
+      req.query.search = trimmedSearch !== '' ? trimmedSearch : undefined;
+    }
+  }
+
+  // 3. Sorting Parameter Validation & Normalization
+  const allowedSortFields = ['title', 'isbn', 'publisher', 'publicationYear', 'language', 'sellingPrice', 'stockQuantity', 'createdAt'];
+  if (sortBy !== undefined && sortBy !== null) {
+    if (!allowedSortFields.includes(sortBy)) {
+      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${allowedSortFields.join(', ')}.` });
+    }
+  } else {
+    req.query.sortBy = DEFAULT_SORT_FIELD;
+  }
+
+  if (order !== undefined && order !== null) {
+    const normalizedOrder = String(order).toLowerCase();
+    if (normalizedOrder !== 'asc' && normalizedOrder !== 'desc') {
+      errors.push({ field: 'order', message: "Order must be 'asc' or 'desc'." });
+    } else {
+      req.query.order = normalizedOrder;
+    }
+  } else {
+    req.query.order = DEFAULT_SORT_ORDER;
+  }
+
+  // 4. Filters Validation & Normalization
+  if (language !== undefined && language !== null) {
+    if (typeof language !== 'string') {
+      errors.push({ field: 'language', message: 'Language must be a string.' });
+    } else {
+      const trimmedLanguage = language.trim();
+      req.query.language = trimmedLanguage !== '' ? trimmedLanguage : undefined;
+    }
+  }
+
+  if (publicationYear !== undefined && publicationYear !== null) {
+    const yearNum = Number(publicationYear);
+    if (!Number.isInteger(yearNum)) {
+      errors.push({ field: 'publicationYear', message: 'publicationYear must be a valid integer.' });
+    } else {
+      req.query.publicationYear = yearNum;
+    }
+  }
+
+  if (isBorrowable !== undefined && isBorrowable !== null) {
+    if (isBorrowable === 'true') {
+      req.query.isBorrowable = true;
+    } else if (isBorrowable === 'false') {
+      req.query.isBorrowable = false;
+    } else {
+      errors.push({ field: 'isBorrowable', message: "isBorrowable must be 'true' or 'false'." });
+    }
+  }
+
+  if (isForSale !== undefined && isForSale !== null) {
+    if (isForSale === 'true') {
+      req.query.isForSale = true;
+    } else if (isForSale === 'false') {
+      req.query.isForSale = false;
+    } else {
+      errors.push({ field: 'isForSale', message: "isForSale must be 'true' or 'false'." });
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
   next();
 };
