@@ -1,21 +1,10 @@
-/**
- * @fileoverview User routes.
- *
- * Placeholder router for user management endpoints.
- * Future endpoints: CRUD operations, profile, roles, etc.
- *
- * @module routes/user
- */
-
 import { Router } from 'express';
+import { getMe } from '../controllers/users/user.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// TODO: Add user routes
-// GET    /          — List all users (admin)
-// GET    /:id       — Get a single user
-// PUT    /:id       — Update user profile
-// DELETE /:id       — Delete a user (admin)
-// PATCH  /:id/role  — Update user role (admin)
+// GET /me — Get currently authenticated user profile
+router.get('/me', authMiddleware, getMe);
 
 export default router;
