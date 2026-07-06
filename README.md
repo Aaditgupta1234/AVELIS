@@ -94,22 +94,20 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 8.9 – Book Module Production Refinement**
+* 🚧 **Phase 9.2 – Borrow Book Service**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 8.8 — Book Management Testing & Documentation**, finalizing the entire Book Management module with comprehensive end-to-end verification and consolidated documentation.
+AVELIS has successfully completed **Phase 9.1 — Loan Database Review & Business Rules**, verifying that the database schema fully supports the upcoming Loan Management module and documenting all business constraints, planned APIs, and transactional consistency rules.
 
-The Book module now provides a complete catalog lifecycle:
-* **Phase 8 (Core)** — Create Book, Get All Books, Get Book By ID, Update Book APIs.
-* **Phase 8.5 — Soft Delete Book API**: Transactional soft deletion with public read integration.
-* **Phase 8.6 — Restore Book API**: Transactional restoration with visibility reintegration.
-* **Phase 8.7 — Permanent Delete Book API**: Irreversible physical deletion with soft-delete prerequisite enforcement.
-* **Phase 8.8 — Book Management Testing & Documentation**: Comprehensive E2E verification of all 7 Book APIs (21 test scenarios, all passed) and consolidated module documentation.
+The completed milestone confirms:
+* **Prisma Schema Readiness**: The `User`, `Book`, `BookCopy`, and `Loan` models are fully configured with appropriate relationships, foreign keys, timestamps, indexes, enums, and nullability.
+* **Circulation & Transaction Design**: Established transaction boundaries for borrowing and returning, as well as access controls (MEMBER as borrower, ADMIN as operator) and loan history preservation.
+* **Deferred Features Roadmap**: Identified future loan enhancements (renewals, reservation queues, automatic overdue checks, etc.) as deferred features for future phases.
 
-> **Next Milestone:** Phase 8.9 — Book Module Production Refinement
+> **Next Milestone:** Phase 9.2 — Borrow Book Service
 
 ## Project Statistics
 
@@ -1177,10 +1175,11 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 8.5 – Soft Delete Book API
 * ✅ Phase 8.6 – Restore Book API
 * ✅ Phase 8.7 – Permanent Delete Book API
-* ✅ Phase 8.8 – Book Management Testing & Documentation
+* ✅ Phase 8.9 – Book Module Production Refinement
+* ✅ Phase 9.1 – Loan Database Review & Business Rules
 
 #### Current Focus
-* 🚧 Phase 8.9 – Book Module Production Refinement
+* 🚧 Phase 9.2 – Borrow Book Service
 
 #### Planned
 * Loan Management
@@ -1195,7 +1194,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete) | Book Module Production Refinement | Inventory management, Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete) | Borrow Book Service | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
