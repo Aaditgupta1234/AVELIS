@@ -394,13 +394,38 @@ export const softDeleteBook = async (bookId) => {
   });
 };
 /**
- * Service to delete a book entry.
+ * Service to permanently delete a previously soft-deleted book.
  *
- * @param {string} _id - Book ID
- * @returns {Promise<null>} Intentionally returns null during foundation phase
+ * @param {string} bookId - Book ID
+ * @returns {Promise<Object>} The deleted book record
+ * @throws {ApiError} 404 if book not found, 400 if book is not soft-deleted
  */
-export const deleteBook = async (_id) => {
-  return null;
+export const permanentDeleteBook = async (bookId) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Retrieve the book by its ID within the transaction
+    const book = await tx.book.findUnique({
+      where: { id: bookId }
+    });
+
+    // 2. If the book does not exist, throw standard 404 error
+    if (!book) {
+      throw new ApiError(404, 'Book not found.');
+    }
+
+    // 3. If the book is not soft-deleted, throw standard 400 error
+    if (!book.isDeleted) {
+      throw new ApiError(400, 'Book must be soft deleted before permanent deletion.');
+    }
+
+    // 4. Permanently remove the book using Prisma's delete() method
+    const deletedBook = await tx.book.delete({
+      where: { id: bookId },
+      include: BOOK_PUBLIC_INCLUDE
+    });
+
+    // 5. Return the deleted book object
+    return deletedBook;
+  });
 };
 
 /**
