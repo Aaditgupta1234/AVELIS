@@ -55,4 +55,28 @@ export const getLoanById = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle paginated retrieval of loans.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getLoans = async (req, res, next) => {
+  try {
+    const result = await loanService.getLoans(req.query);
+
+    return sendSuccess(
+      res,
+      200,
+      result.loans,
+      'Loans retrieved successfully.',
+      result.pagination
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 

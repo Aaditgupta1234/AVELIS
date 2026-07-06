@@ -94,20 +94,20 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 9.5 – Get All Loans**
+* 🚧 **Phase 9.6 – Get Current User Loans**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 9.4 — Get Loan by ID**, implementing a secure, read-only endpoint with a structured request validator, a custom select-based service query, and access controls that verify user role permissions and resource ownership.
+AVELIS has successfully completed **Phase 9.5 — Get All Loans**, implementing an administrator-only endpoint with a structured query validator, dynamic filter compilation, custom sorting options, offset pagination support, and select-based response shaping.
 
 The completed milestone confirms:
-* **Least Privilege Query Design**: Applied explicit Prisma `select` queries to retrieve only the fields required for the public API response, preventing exposure of internal database structures.
-* **Service-Level Access Control**: Implemented role-based and ownership-based authorization checking inside the service layer (`getLoanById`), permitting `ADMIN` to retrieve any loan, but limiting a `MEMBER` to retrieving only their own loans.
-* **E2E Validation Coverage**: Built and ran a verification suite confirming proper return states for successful lookups, invalid UUID formats (400), non-existent loans (404), and permission violations (403).
+* **Rich Filtering & Sorting**: Supports pagination (`page`, `limit`), sorting by existing `Loan` fields, and filtering by `status`, `userId`, and `copyId`.
+* **RBAC Restrictions**: Protected by `adminMiddleware`, preventing non-admin members from querying all user records.
+* **Standardized Paginated Responses**: Integrates the standard API envelope with page counts, offset sizes, and record totals in the `meta` response block.
 
-> **Next Milestone:** Phase 9.5 — Get All Loans
+> **Next Milestone:** Phase 9.6 — Get Current User Loans
 
 ## Project Statistics
 
@@ -631,7 +631,7 @@ Below are the primary endpoints and their current status:
 | **DELETE** | `/api/v1/books/:id` | Soft delete a catalog book entry (Admin only). | ✅ Completed |
 | **PATCH** | `/api/v1/books/:id/restore` | Restore a soft-deleted catalog book (Admin only). | ✅ Completed |
 | **DELETE** | `/api/v1/books/:id/permanent` | Permanently delete a soft-deleted catalog book (Admin only). | ✅ Completed |
-| **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
+| **GET** | `/api/v1/loans` | Retrieve a paginated list of all loans with filtering and sorting (Admin only). | ✅ Completed |
 | **POST** | `/api/v1/loans` | Create a new loan transaction for a member (performed by an administrator or through member self-checkout). | ✅ Completed |
 | **POST** | `/api/v1/loans/:id/return` | Complete an active loan by returning its borrowed book copy (Admin only). | ✅ Completed |
 | **GET** | `/api/v1/loans/:id` | Retrieve details of a specific loan (Admin or Member with ownership). | ✅ Completed |
@@ -1404,6 +1404,110 @@ Retrieve details of a specific loan by its ID.
   }
   ```
 
+### Get All Loans API Specification
+
+**GET** `/api/v1/loans`
+
+#### Purpose
+Retrieve a paginated, sorted, and filtered list of all loans (Admin only).
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Query Parameters
+All query parameters are optional.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `page` | Integer | `1` | Current page number. |
+| `limit` | Integer | `10` | Number of items per page (maximum `100`). |
+| `sortBy` | String | `createdAt` | Field to sort by. Allowed: `issueDate`, `dueDate`, `returnDate`, `createdAt`. |
+| `sortOrder` | String | `desc` | Sorting direction. Allowed: `asc`, `desc`. |
+| `status` | String | None | Filter by loan status. Allowed: `BORROWED`, `RETURNED`. |
+| `userId` | String (UUID) | None | Filter by borrower user ID. |
+| `copyId` | String (UUID) | None | Filter by physical book copy ID. |
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Loans retrieved successfully.",
+  "data": [
+    {
+      "id": "e4dc3a9b-c40d-45db-9c3f-801abeef7b9d",
+      "userId": "d77b81ea-6619-450f-bb00-f91a92e1ee81",
+      "copyId": "34c3a9bd-831d-452f-b43d-092b1ea8ef03",
+      "issueDate": "2026-07-06T18:00:00.000Z",
+      "dueDate": "2026-07-20T18:00:00.000Z",
+      "returnDate": "2026-07-06T18:30:00.000Z",
+      "fineAmount": "0",
+      "status": "RETURNED",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:30:00.000Z",
+      "user": {
+        "id": "d77b81ea-6619-450f-bb00-f91a92e1ee81",
+        "username": "borrower_member",
+        "email": "member@avelis.com"
+      },
+      "bookCopy": {
+        "id": "34c3a9bd-831d-452f-b43d-092b1ea8ef03",
+        "bookId": "a90f23cb-f14d-452c-bd7e-a092b1eaef01",
+        "barcode": "BARCODE-1783328839393",
+        "shelfLocation": "Shelf A",
+        "condition": "NEW",
+        "status": "AVAILABLE",
+        "purchaseDate": null,
+        "createdAt": "2026-07-06T09:00:00.000Z",
+        "updatedAt": "2026-07-06T18:30:00.000Z",
+        "book": {
+          "id": "a90f23cb-f14d-452c-bd7e-a092b1eaef01",
+          "title": "Book Title",
+          "isbn": "978-3-16-148410-0"
+        }
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "totalResults": 1,
+    "totalPages": 1
+  }
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Invalid query parameter types, negative integer values, invalid UUID filters, invalid sort fields, or invalid statuses.
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      {
+        "field": "page",
+        "message": "Page must be a positive integer."
+      }
+    ]
+  }
+  ```
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+
 ---
 
 
@@ -1486,9 +1590,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 9.2 – Borrow Book Service
 * ✅ Phase 9.3 – Return Book Service
 * ✅ Phase 9.4 – Get Loan by ID
+* ✅ Phase 9.5 – Get All Loans
 
 #### Current Focus
-* 🚧 Phase 9.5 – Get All Loans
+* 🚧 Phase 9.6 – Get Current User Loans
 
 #### Planned
 * Loan Management
@@ -1503,7 +1608,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service | Get All Loans Service | Inventory management, Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service, Get All Loans Service | Get Current User Loans Service | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---

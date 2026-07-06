@@ -2,9 +2,18 @@ import { Router } from 'express';
 import * as loanController from '../controllers/loan.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
-import { borrowValidator, returnValidator, loanIdParamValidator } from '../validations/loan.validation.js';
+import { borrowValidator, returnValidator, loanIdParamValidator, queryLoansValidator } from '../validations/loan.validation.js';
 
 const router = Router();
+
+// GET / — Retrieve a paginated list of all loans (Admin only)
+router.get(
+  '/',
+  queryLoansValidator,
+  authMiddleware,
+  adminMiddleware,
+  loanController.getLoans
+);
 
 // GET /:id — Retrieve details of a specific loan (Admin or Member with ownership)
 router.get(

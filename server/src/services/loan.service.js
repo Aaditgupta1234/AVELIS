@@ -232,4 +232,87 @@ export const getLoanById = async ({ loanId, currentUser }) => {
   return loan;
 };
 
+/**
+ * Service to retrieve a paginated collection of loans.
+ *
+ * @param {Object} query - Validated query parameters
+ * @returns {Promise<Object>} Object containing the list of loans and pagination metadata
+ */
+export const getLoans = async ({ page, limit, sortBy, sortOrder, status, userId, copyId }) => {
+  const where = {};
 
+  if (status) {
+    where.status = status;
+  }
+  if (userId) {
+    where.userId = userId;
+  }
+  if (copyId) {
+    where.copyId = copyId;
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [loans, total] = await Promise.all([
+    prisma.loan.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder
+      },
+      select: {
+        id: true,
+        userId: true,
+        copyId: true,
+        issueDate: true,
+        dueDate: true,
+        returnDate: true,
+        fineAmount: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true
+          }
+        },
+        bookCopy: {
+          select: {
+            id: true,
+            bookId: true,
+            barcode: true,
+            shelfLocation: true,
+            condition: true,
+            status: true,
+            purchaseDate: true,
+            createdAt: true,
+            updatedAt: true,
+            book: {
+              select: {
+                id: true,
+                title: true,
+                isbn: true
+              }
+            }
+          }
+        }
+      }
+    }),
+    prisma.loan.count({ where })
+  ]);
+
+  const totalPages = Math.ceil(total / limit) || 0;
+
+  return {
+    loans,
+    pagination: {
+      page,
+      limit,
+      totalResults: total,
+      totalPages
+    }
+  };
+};
