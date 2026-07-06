@@ -94,20 +94,20 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 9.9 – Loan History Consistency & Production Refinement**
+* 🚧 **Phase 10 – Order Invoicing & Bookstore Purchase Pipeline**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 9.8 — Overdue Loan Detection & Status Management**, implementing a secure administrative batch endpoint to synchronize overdue loans.
+AVELIS has successfully completed **Phase 9.9 — Loan Module Production Refinement**, finalizing code audits, validations consolidation, and regression testing for the complete Loan Management module.
 
 The completed milestone confirms:
-* **Overdue Status Transition**: Safely transitions active, past-due loans from `BORROWED` to `OVERDUE` status based on date constraints.
-* **Idempotency and Date Boundary Safety**: Ensures future-due, returned, and already-overdue loans are left unchanged. Repeated sync calls return `updatedCount: 0`.
-* **Execution Timestamp Metadata**: Returns `checkedAt` timestamp metadata to support scheduled jobs, application logging, and admin dashboard monitoring.
+* **Consolidated Parameter Validation**: Merged `returnValidator` and `loanIdParamValidator` to eliminate code duplication.
+* **Separation of Controller Handlers**: Kept `returnBook` and `returnLoan` distinct to support future extensibility as they map to separate service layer entry points.
+* **Comprehensive Regression Testing**: Verified all E2E integration test suites for Borrow, Return, Get, and Sync status transitions pass successfully.
 
-> **Next Milestone:** Phase 9.9 — Loan History Consistency & Production Refinement
+> **Next Milestone:** Phase 10 — Order Invoicing & Bookstore Purchase Pipeline
 
 ## Project Statistics
 
@@ -1768,13 +1768,13 @@ Detect active loans whose due date has passed and transition them from `BORROWED
 - Restore Book API (validation, service, controller, route, and visibility integrations) (Phase 8.6)
 - Permanent Delete Book API (service, controller, route, and E2E testing) (Phase 8.7)
 - Book Management Testing & Documentation (comprehensive E2E verification and module documentation) (Phase 8.8)
+- Book Module Production Refinement (Phase 8.9)
+- Loan Management Module (CRUD, checkout/checkin, ownership isolation, and overdue sync operations) (Phase 9)
 
 ### In Progress
-- Book Module Production Refinement (Phase 8.9)
-- Loan Management (CRUD operations for borrowing loans) (Phase 9)
+- Order invoicing and bookstore purchase pipeline (Phase 10)
 
 ### Planned
-- Order invoicing and bookstore purchase pipeline
 - Production build configurations and server deployment
 
 ---
@@ -1827,9 +1827,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 9.6 – Get Current User Loans
 * ✅ Phase 9.7 – Return Book / Complete Loan
 * ✅ Phase 9.8 – Overdue Loan Detection & Status Management
+* ✅ Phase 9.9 – Loan History Consistency & Production Refinement
 
 #### Current Focus
-* 🚧 Phase 9.9 – Loan History Consistency & Production Refinement
+* 🚧 Phase 10 – Order Invoicing & Bookstore Purchase Pipeline
 
 #### Planned
 * Loan Management
@@ -1844,7 +1845,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service, Get All Loans Service, Get Current User Loans Service, Return Book / Complete Loan Service, Overdue Loan Detection & Status Sync Service | Return Book / Complete Loan Service | Inventory management, Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service, Get All Loans Service, Get Current User Loans Service, Return Book / Complete Loan Service, Overdue Loan Detection & Status Sync Service, Production Audited Code | ✅ Complete & Production-Ready | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
