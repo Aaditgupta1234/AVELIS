@@ -18,3 +18,22 @@ export const borrowBook = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle returning a book copy.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const returnBook = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const loan = await loanService.returnBook({ loanId: id });
+
+    return sendSuccess(res, 200, loan, 'Book returned successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+

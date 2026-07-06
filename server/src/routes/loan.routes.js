@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as loanController from '../controllers/loan.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
-import { borrowValidator } from '../validations/loan.validation.js';
+import { borrowValidator, returnValidator } from '../validations/loan.validation.js';
 
 const router = Router();
 
@@ -13,6 +13,15 @@ router.post(
   authMiddleware,
   adminMiddleware,
   loanController.borrowBook
+);
+
+// POST /:id/return — Complete an active loan (Admin only)
+router.post(
+  '/:id/return',
+  returnValidator,
+  authMiddleware,
+  adminMiddleware,
+  loanController.returnBook
 );
 
 export default router;

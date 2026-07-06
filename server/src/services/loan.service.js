@@ -93,3 +93,78 @@ export const borrowBook = async ({ userId, copyId }) => {
     return loan;
   });
 };
+
+/**
+ * Service to return a borrowed book copy.
+ *
+ * @param {Object} returnData - Input data containing loanId
+ * @returns {Promise<Object>} The updated loan record
+ * @throws {ApiError} 404 if loan or associated copy not found
+ * @throws {ApiError} 400 if loan is already returned
+ */
+export const returnBook = async ({ loanId }) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Verify loan exists
+    const loan = await tx.loan.findUnique({
+      where: { id: loanId }
+    });
+    if (!loan) {
+      throw new ApiError(404, 'Loan not found.');
+    }
+
+    // 2. Verify loan is not already returned
+    if (loan.status === LoanStatus.RETURNED) {
+      throw new ApiError(400, 'Loan already returned.');
+    }
+
+    // 3. Verify associated BookCopy exists
+    const copy = await tx.bookCopy.findUnique({
+      where: { id: loan.copyId }
+    });
+    if (!copy) {
+      throw new ApiError(404, 'Copy not found.');
+    }
+
+    const returnDate = new Date();
+
+    // 4. Update Loan
+    const updatedLoan = await tx.loan.update({
+      where: { id: loanId },
+      data: {
+        status: LoanStatus.RETURNED,
+        returnDate
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true
+          }
+        },
+        bookCopy: {
+          include: {
+            book: {
+              select: {
+                id: true,
+                title: true,
+                isbn: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 5. Update BookCopy status back to AVAILABLE
+    await tx.bookCopy.update({
+      where: { id: loan.copyId },
+      data: {
+        status: CopyStatus.AVAILABLE
+      }
+    });
+
+    return updatedLoan;
+  });
+};
+
