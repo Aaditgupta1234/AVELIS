@@ -318,7 +318,67 @@ export const updateBook = async (id, bookData) => {
     return updatedBook;
   });
 };
+const BOOK_PUBLIC_INCLUDE = {
+  authors: {
+    select: {
+      author: {
+        select: {
+          id: true,
+          fullName: true
+        }
+      }
+    }
+  },
+  categories: {
+    select: {
+      category: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  }
+};
 
+/**
+ * Service to soft delete a book.
+ *
+ * @param {string} bookId - Book ID
+ * @returns {Promise<Object>} The updated book record
+ * @throws {ApiError} 404 if book not found, 400 if already soft deleted
+ */
+export const softDeleteBook = async (bookId) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Retrieve the book by its ID within the transaction
+    const book = await tx.book.findUnique({
+      where: { id: bookId }
+    });
+
+    // 2. If the book does not exist, throw 404 Not Found error
+    if (!book) {
+      throw new ApiError(404, 'Book not found.');
+    }
+
+    // 3. If the book is already soft deleted, throw 400 Bad Request error
+    if (book.isDeleted) {
+      throw new ApiError(400, 'Book has already been deleted.');
+    }
+
+    // 4. Update the record inside the transaction
+    const updatedBook = await tx.book.update({
+      where: { id: bookId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date()
+      },
+      include: BOOK_PUBLIC_INCLUDE
+    });
+
+    // 5. Return the updated book using the selection helper
+    return updatedBook;
+  });
+};
 /**
  * Service to delete a book entry.
  *
