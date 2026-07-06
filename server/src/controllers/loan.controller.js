@@ -78,5 +78,32 @@ export const getLoans = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle paginated retrieval of loans for the current authenticated user.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getCurrentUserLoans = async (req, res, next) => {
+  try {
+    const result = await loanService.getLoans({
+      ...req.query,
+      userId: req.user.id
+    });
+
+    return sendSuccess(
+      res,
+      200,
+      result.loans,
+      'Loans retrieved successfully.',
+      result.pagination
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 

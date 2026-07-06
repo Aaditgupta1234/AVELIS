@@ -15,6 +15,14 @@ router.get(
   loanController.getLoans
 );
 
+// GET /me — Retrieve a paginated list of the current authenticated user's loans
+router.get(
+  '/me',
+  authMiddleware,
+  queryLoansValidator,
+  loanController.getCurrentUserLoans
+);
+
 // GET /:id — Retrieve details of a specific loan (Admin or Member with ownership)
 router.get(
   '/:id',
