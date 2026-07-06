@@ -25,7 +25,7 @@ router.get('/', queryBookValidator, bookController.getBooks);
 router.get('/:id', bookController.getBookById);
 
 // PATCH  /:id — Update details of a book
-router.patch('/:id', updateBookValidator, bookController.updateBook);
+router.patch('/:id', authMiddleware, adminMiddleware, updateBookValidator, bookController.updateBook);
 
 // DELETE /:id — Delete a book
 router.delete('/:id', bookController.deleteBook);
