@@ -1,0 +1,33 @@
+import { sendError } from '../utils/index.js';
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * Validator middleware for borrowing a book copy.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const borrowValidator = (req, res, next) => {
+  const errors = [];
+  const { userId, copyId } = req.body;
+
+  if (userId === undefined || userId === null || typeof userId !== 'string' || !UUID_REGEX.test(userId.trim())) {
+    errors.push({ field: 'userId', message: 'userId is required and must be a valid UUID.' });
+  } else {
+    req.body.userId = userId.trim();
+  }
+
+  if (copyId === undefined || copyId === null || typeof copyId !== 'string' || !UUID_REGEX.test(copyId.trim())) {
+    errors.push({ field: 'copyId', message: 'copyId is required and must be a valid UUID.' });
+  } else {
+    req.body.copyId = copyId.trim();
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  next();
+};

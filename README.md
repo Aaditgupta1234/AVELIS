@@ -94,20 +94,20 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 9.2 – Borrow Book Service**
+* 🚧 **Phase 9.3 – Return Book Service**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 9.1 — Loan Database Review & Business Rules**, verifying that the database schema fully supports the upcoming Loan Management module and documenting all business constraints, planned APIs, and transactional consistency rules.
+AVELIS has successfully completed **Phase 9.2 — Borrow Book Service**, initializing the Loan module, implementing transactional borrowing logic, creating payload validators, and confirming business constraint enforcement with E2E verification test suites.
 
 The completed milestone confirms:
-* **Prisma Schema Readiness**: The `User`, `Book`, `BookCopy`, and `Loan` models are fully configured with appropriate relationships, foreign keys, timestamps, indexes, enums, and nullability.
-* **Circulation & Transaction Design**: Established transaction boundaries for borrowing and returning, as well as access controls (MEMBER as borrower, ADMIN as operator) and loan history preservation.
-* **Deferred Features Roadmap**: Identified future loan enhancements (renewals, reservation queues, automatic overdue checks, etc.) as deferred features for future phases.
+* **Transactional Consistency**: Created loans and updated copy statuses are bundled in a single transaction, preventing inconsistent states during check-out.
+* **CIRCULATION & RBAC ENFORCEMENT**: Ensures that borrowers have the `MEMBER` role, while transaction initialization is restricted to `ADMIN` users on behalf of members.
+* **E2E Validation Coverage**: All 10 verification test cases pass successfully.
 
-> **Next Milestone:** Phase 9.2 — Borrow Book Service
+> **Next Milestone:** Phase 9.3 — Return Book Service
 
 ## Project Statistics
 
@@ -632,7 +632,7 @@ Below are the primary endpoints and their current status:
 | **PATCH** | `/api/v1/books/:id/restore` | Restore a soft-deleted catalog book (Admin only). | ✅ Completed |
 | **DELETE** | `/api/v1/books/:id/permanent` | Permanently delete a soft-deleted catalog book (Admin only). | ✅ Completed |
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
-| **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
+| **POST** | `/api/v1/loans` | Create a new loan transaction for a member (performed by an administrator or through member self-checkout). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -1099,6 +1099,126 @@ Permanently delete a previously soft-deleted book catalog entry. This operation 
   }
   ```
 
+### Borrow Book API Specification
+
+**POST** `/api/v1/loans`
+
+#### Purpose
+Create a new loan transaction for a member (performed by an administrator or through member self-checkout).
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Body
+The request body is a JSON object. Both fields are required.
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `userId` | String (UUID) | Unique identifier of the borrowing member user. |
+| `copyId` | String (UUID) | Unique identifier of the specific physical book copy. |
+
+#### Success Response
+- **Status Code**: `201 Created`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Book borrowed successfully.",
+  "data": {
+    "id": "e4dc3a9b-c40d-45db-9c3f-801abeef7b9d",
+    "userId": "d77b81ea-6619-450f-bb00-f91a92e1ee81",
+    "copyId": "34c3a9bd-831d-452f-b43d-092b1ea8ef03",
+    "issueDate": "2026-07-06T18:00:00.000Z",
+    "dueDate": "2026-07-20T18:00:00.000Z",
+    "returnDate": null,
+    "fineAmount": "0",
+    "status": "BORROWED",
+    "createdAt": "2026-07-06T18:00:00.000Z",
+    "updatedAt": "2026-07-06T18:00:00.000Z",
+    "user": {
+      "id": "d77b81ea-6619-450f-bb00-f91a92e1ee81",
+      "username": "borrower_member",
+      "email": "member@avelis.com"
+    },
+    "bookCopy": {
+      "id": "34c3a9bd-831d-452f-b43d-092b1ea8ef03",
+      "bookId": "a90f23cb-f14d-452c-bd7e-a092b1eaef01",
+      "barcode": "BARCODE-1783328839393",
+      "shelfLocation": "Shelf A",
+      "condition": "NEW",
+      "status": "BORROWED",
+      "purchaseDate": null,
+      "createdAt": "2026-07-06T09:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "book": {
+        "id": "a90f23cb-f14d-452c-bd7e-a092b1eaef01",
+        "title": "Book Title",
+        "isbn": "978-3-16-148410-0"
+      }
+    }
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Invalid UUID parameter check failed, or the book copy's parent book is soft-deleted, or the user is not a member.
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      {
+        "field": "userId",
+        "message": "userId is required and must be a valid UUID."
+      }
+    ]
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Only members can borrow books."
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Book is soft deleted and cannot be borrowed."
+  }
+  ```
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+- **404 Not Found** — The user, book copy, or book record does not exist.
+  ```json
+  {
+    "success": false,
+    "message": "Book copy not found."
+  }
+  ```
+- **409 Conflict** — The book copy is already borrowed or is unavailable.
+  ```json
+  {
+    "success": false,
+    "message": "Book copy is unavailable."
+  }
+  ```
+
 ---
 
 ## Current Development Progress
@@ -1177,9 +1297,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 8.7 – Permanent Delete Book API
 * ✅ Phase 8.9 – Book Module Production Refinement
 * ✅ Phase 9.1 – Loan Database Review & Business Rules
+* ✅ Phase 9.2 – Borrow Book Service
 
 #### Current Focus
-* 🚧 Phase 9.2 – Borrow Book Service
+* 🚧 Phase 9.3 – Return Book Service
 
 #### Planned
 * Loan Management
