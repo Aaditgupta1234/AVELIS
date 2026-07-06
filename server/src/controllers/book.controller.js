@@ -136,3 +136,21 @@ export const restoreBook = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle restoring a deleted book.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const restoreBookController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const restoredBook = await bookService.restoreBook(id);
+
+    return sendSuccess(res, 200, restoredBook, 'Book restored successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
