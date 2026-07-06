@@ -73,10 +73,9 @@ export const getBookById = async (req, res, next) => {
 export const updateBook = async (req, res, next) => {
   try {
     const { id } = req.params;
-    // Delegate to service, ignoring placeholder return
-    await bookService.updateBook(id, req.body);
+    const updatedBook = await bookService.updateBook(id, req.body);
 
-    return sendSuccess(res, 200, null, 'Book module placeholder endpoint.');
+    return sendSuccess(res, 200, updatedBook, 'Book updated successfully.');
   } catch (error) {
     next(error);
   }
