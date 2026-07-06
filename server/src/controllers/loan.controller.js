@@ -104,6 +104,25 @@ export const getCurrentUserLoans = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle completing an active loan (returning a book copy) for Phase 9.7.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const returnLoan = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updatedLoan = await loanService.returnLoan({ loanId: id });
+
+    return sendSuccess(res, 200, updatedLoan, 'Book returned successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 
 

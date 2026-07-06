@@ -49,4 +49,13 @@ router.post(
   loanController.returnBook
 );
 
+// PATCH /:id/return — Complete an active loan (Admin only) for Phase 9.7
+router.patch(
+  '/:id/return',
+  authMiddleware,
+  adminMiddleware,
+  loanIdParamValidator,
+  loanController.returnLoan
+);
+
 export default router;

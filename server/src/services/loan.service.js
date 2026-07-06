@@ -316,3 +316,12 @@ export const getLoans = async ({ page, limit, sortBy, sortOrder, status, userId,
     }
   };
 };
+
+/**
+ * Service to return a borrowed book copy (delegate of returnBook for Phase 9.7).
+ *
+ * @param {Object} data - Input data containing loanId
+ * @returns {Promise<Object>} The updated loan record
+ */
+export const returnLoan = returnBook;
+
