@@ -100,16 +100,15 @@ AVELIS is in active development. The backend authentication, user management, pr
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 8.5 — Soft Delete Book API**, establishing a secure and transactional soft-deletion pipeline that excludes inactive records from public queries.
+AVELIS has successfully completed **Phase 8.6 — Restore Book API**, establishing a secure and transactional endpoint to restore previously soft-deleted books back to the active catalog and verify visibility integration.
 
 The following components were implemented and verified during this milestone:
-* **Phase 8.5.1 — Soft Delete Book Service**: Domain service executing soft deletion inside an atomic database transaction (`prisma.$transaction`), setting `isDeleted = true` and `deletedAt = new Date()`, and performing validation checks.
-* **Phase 8.5.2 — Soft Delete Book Controller**: Decoupled, thin Express controller routing delete calls to the service layer and wrapping outputs with standardized API JSON responses.
-* **Phase 8.5.3 — Soft Delete Book Route**: Router binding mounting `DELETE /api/v1/books/:id` behind authentication (`authMiddleware`), administrator authorization (`adminMiddleware`), and a dedicated UUID parameter validator (`bookIdParamValidator`).
-* **Phase 8.5.4 — Public Read Endpoint Integration**: Excluded soft-deleted books from all active query listing counts (`GET /api/v1/books`) and detail lookups (`GET /api/v1/books/:id`), returning a standard `404 Not Found` response for soft-deleted book IDs.
-* **Phase 8.5.5 — Soft Delete Book Integration Testing & Documentation**: Conducted E2E integration test runs via custom Express execution stacks and completed API documentation.
+* **Phase 8.6.1 — Restore Book Service**: Domain service reversing soft deletion inside a transactional block (`prisma.$transaction`), setting `isDeleted = false` and `deletedAt = null`, and validating existence and delete status.
+* **Phase 8.6.2 — Restore Book Controller**: Decoupled, thin Express controller routing restore calls to the service layer and wrapping outputs with standardized API JSON responses.
+* **Phase 8.6.3 — Restore Book Route**: Router binding mounting `PATCH /api/v1/books/:id/restore` behind authentication (`authMiddleware`), administrator authorization (`adminMiddleware`), and a dedicated UUID parameter validator (`bookIdParamValidator`).
+* **Phase 8.6.4 — Restore Book Testing & Documentation**: Conducted E2E integration test runs via custom Express execution stacks, verified public visibility reintegration, and completed API documentation.
 
-> **Next Milestone:** Phase 8.6 — Book Restore & Permanent Delete APIs
+> **Next Milestone:** Phase 8.7 — Book Permanent Delete API
 
 ## Project Statistics
 
@@ -631,6 +630,7 @@ Below are the primary endpoints and their current status:
 | **POST** | `/api/v1/books` | Create a new catalog book entry (Admin only). | ✅ Completed |
 | **PATCH** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | ✅ Completed |
 | **DELETE** | `/api/v1/books/:id` | Soft delete a catalog book entry (Admin only). | ✅ Completed |
+| **PATCH** | `/api/v1/books/:id/restore` | Restore a soft-deleted catalog book (Admin only). | ✅ Completed |
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
 | **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
@@ -859,6 +859,102 @@ Soft delete a book catalog entry. Soft-deleted books are hidden from public read
   }
   ```
 
+### Book Restore API Specification
+
+**PATCH** `/api/v1/books/:id/restore`
+
+#### Purpose
+Restore a previously soft-deleted book catalog entry.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Parameters
+- `id` (UUID, path parameter) — Unique identifier of the book.
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Book restored successfully.",
+  "data": {
+    "id": "246ee81b-fdca-4aa2-b62d-603c4a8fedeb",
+    "title": "Route SD Book Title",
+    "isbn": "TEST-R-SD-ISBN-1783328839393",
+    "publisher": "Test Publisher",
+    "publicationYear": 2026,
+    "language": "English",
+    "description": null,
+    "coverImage": null,
+    "sellingPrice": "19.99",
+    "stockQuantity": 10,
+    "isBorrowable": true,
+    "isForSale": true,
+    "isDeleted": false,
+    "deletedAt": null,
+    "createdAt": "2026-07-06T09:07:19.395Z",
+    "updatedAt": "2026-07-06T09:07:19.454Z",
+    "authors": [
+      {
+        "author": {
+          "id": "10dda513-51a2-4374-a961-76ff1716ce75",
+          "fullName": "Route SD Author"
+        }
+      }
+    ],
+    "categories": [
+      {
+        "category": {
+          "id": "f0c8fd88-8eb5-493b-b6c8-dbf37d45779c",
+          "name": "Route SD Category 1783328839390"
+        }
+      }
+    ]
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Invalid UUID path parameter, or the book is already active (not soft deleted).
+  ```json
+  {
+    "success": false,
+    "message": "Invalid book ID."
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Book is not deleted."
+  }
+  ```
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+- **404 Not Found** — The requested book could not be found. (This is returned if the book does not exist).
+  ```json
+  {
+    "success": false,
+    "message": "Book not found."
+  }
+  ```
+
 ---
 
 ## Current Development Progress
@@ -882,6 +978,7 @@ Soft delete a book catalog entry. Soft-deleted books are hidden from public read
 - Admin User & Status Management (Retrieve users list, view user details, update user roles, and activate/deactivate status) (Phase 7)
 - Book Management APIs (Create Book, Get All Books, Get Book by ID, and Update Book APIs) (Phase 8)
 - Soft Delete Book API (validation, service, controller, route, and public read integrations) (Phase 8.5)
+- Restore Book API (validation, service, controller, route, and visibility integrations) (Phase 8.6)
 
 ### In Progress
 - Inventory Management (Physical copy tracking) (Phase 8)
@@ -930,6 +1027,7 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 7 – User Management & Profiles
 * ✅ Phase 8.4 – Book Update API
 * ✅ Phase 8.5 – Soft Delete Book API
+* ✅ Phase 8.6 – Restore Book API
 
 #### Current Focus
 * 🚧 Phase 8 – Inventory Management
@@ -947,7 +1045,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management & Soft Delete APIs (Create, Get All, Get by ID, Update, Soft Delete) | Inventory management | Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management, Soft Delete, & Restore APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore) | Inventory management | Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
