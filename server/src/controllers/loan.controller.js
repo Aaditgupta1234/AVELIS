@@ -37,3 +37,22 @@ export const returnBook = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle retrieving a single loan by its ID.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getLoanById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const loan = await loanService.getLoanById({ loanId: id, currentUser: req.user });
+
+    return sendSuccess(res, 200, loan, 'Loan retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+

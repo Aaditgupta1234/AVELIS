@@ -53,3 +53,25 @@ export const returnValidator = (req, res, next) => {
   next();
 };
 
+/**
+ * Validator middleware for retrieving a loan by ID.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const loanIdParamValidator = (req, res, next) => {
+  const { id } = req.params;
+
+  if (!id || typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid loan ID.'
+    });
+  }
+
+  req.params.id = id.trim();
+  next();
+};
+
+

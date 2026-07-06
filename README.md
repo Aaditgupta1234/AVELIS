@@ -94,20 +94,20 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 9.4 – Get Loan by ID**
+* 🚧 **Phase 9.5 – Get All Loans**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 9.3 — Return Book Service**, implementing payload structure validators, transactional return processing logic (ensuring Loan record completion and BookCopy status updates execute within a single Prisma transaction), and E2E integration test suites.
+AVELIS has successfully completed **Phase 9.4 — Get Loan by ID**, implementing a secure, read-only endpoint with a structured request validator, a custom select-based service query, and access controls that verify user role permissions and resource ownership.
 
 The completed milestone confirms:
-* **Transactional Reliability**: Atomicity of Loan state changes (`RETURNED`, `returnDate`) and BookCopy state changes (`AVAILABLE`) is strictly enforced, preventing split-brain inventory data.
-* **REST API Coverage**: Added route registration at `POST /api/v1/loans/:id/return` restricted to `ADMIN` users on behalf of members.
-* **E2E Validation Coverage**: Test cases cover structural parameter validation, loan presence, loan duplicate return protection, and full database state transitions.
+* **Least Privilege Query Design**: Applied explicit Prisma `select` queries to retrieve only the fields required for the public API response, preventing exposure of internal database structures.
+* **Service-Level Access Control**: Implemented role-based and ownership-based authorization checking inside the service layer (`getLoanById`), permitting `ADMIN` to retrieve any loan, but limiting a `MEMBER` to retrieving only their own loans.
+* **E2E Validation Coverage**: Built and ran a verification suite confirming proper return states for successful lookups, invalid UUID formats (400), non-existent loans (404), and permission violations (403).
 
-> **Next Milestone:** Phase 9.4 — Get Loan by ID
+> **Next Milestone:** Phase 9.5 — Get All Loans
 
 ## Project Statistics
 
@@ -634,6 +634,7 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
 | **POST** | `/api/v1/loans` | Create a new loan transaction for a member (performed by an administrator or through member self-checkout). | ✅ Completed |
 | **POST** | `/api/v1/loans/:id/return` | Complete an active loan by returning its borrowed book copy (Admin only). | ✅ Completed |
+| **GET** | `/api/v1/loans/:id` | Retrieve details of a specific loan (Admin or Member with ownership). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -1315,6 +1316,94 @@ Complete an active loan by returning its borrowed book copy.
   }
   ```
 
+### Get Loan by ID API Specification
+
+**GET** `/api/v1/loans/:id`
+
+#### Purpose
+Retrieve details of a specific loan by its ID.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Accessible by `ADMIN` users, or by the owning `MEMBER` of the loan.
+
+#### Request Parameters
+- `id` (UUID, path parameter) — Unique identifier of the loan.
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Loan retrieved successfully.",
+  "data": {
+    "id": "e4dc3a9b-c40d-45db-9c3f-801abeef7b9d",
+    "userId": "d77b81ea-6619-450f-bb00-f91a92e1ee81",
+    "copyId": "34c3a9bd-831d-452f-b43d-092b1ea8ef03",
+    "issueDate": "2026-07-06T18:00:00.000Z",
+    "dueDate": "2026-07-20T18:00:00.000Z",
+    "returnDate": "2026-07-06T18:30:00.000Z",
+    "fineAmount": "0",
+    "status": "RETURNED",
+    "createdAt": "2026-07-06T18:00:00.000Z",
+    "updatedAt": "2026-07-06T18:30:00.000Z",
+    "user": {
+      "id": "d77b81ea-6619-450f-bb00-f91a92e1ee81",
+      "username": "borrower_member",
+      "email": "member@avelis.com"
+    },
+    "bookCopy": {
+      "id": "34c3a9bd-831d-452f-b43d-092b1ea8ef03",
+      "bookId": "a90f23cb-f14d-452c-bd7e-a092b1eaef01",
+      "barcode": "BARCODE-1783328839393",
+      "shelfLocation": "Shelf A",
+      "condition": "NEW",
+      "status": "AVAILABLE",
+      "purchaseDate": null,
+      "createdAt": "2026-07-06T09:00:00.000Z",
+      "updatedAt": "2026-07-06T18:30:00.000Z",
+      "book": {
+        "id": "a90f23cb-f14d-452c-bd7e-a092b1eaef01",
+        "title": "Book Title",
+        "isbn": "978-3-16-148410-0"
+      }
+    }
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Invalid UUID path parameter format.
+  ```json
+  {
+    "success": false,
+    "message": "Invalid loan ID."
+  }
+  ```
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — A `MEMBER` user attempts to retrieve another user's loan record.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. You can only retrieve your own loans."
+  }
+  ```
+- **404 Not Found** — The loan record does not exist.
+  ```json
+  {
+    "success": false,
+    "message": "Loan not found."
+  }
+  ```
+
 ---
 
 
@@ -1396,9 +1485,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 9.1 – Loan Database Review & Business Rules
 * ✅ Phase 9.2 – Borrow Book Service
 * ✅ Phase 9.3 – Return Book Service
+* ✅ Phase 9.4 – Get Loan by ID
 
 #### Current Focus
-* 🚧 Phase 9.4 – Get Loan by ID
+* 🚧 Phase 9.5 – Get All Loans
 
 #### Planned
 * Loan Management
@@ -1413,7 +1503,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service | Get Loan by ID Service | Inventory management, Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service | Get All Loans Service | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---

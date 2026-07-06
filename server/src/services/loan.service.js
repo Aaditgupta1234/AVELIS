@@ -168,3 +168,68 @@ export const returnBook = async ({ loanId }) => {
   });
 };
 
+/**
+ * Service to retrieve a single loan by its ID.
+ *
+ * @param {Object} queryData - Input data containing loanId and currentUser
+ * @returns {Promise<Object>} The loan record
+ * @throws {ApiError} 404 if loan not found
+ * @throws {ApiError} 403 if member attempts to retrieve another user's loan
+ */
+export const getLoanById = async ({ loanId, currentUser }) => {
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    select: {
+      id: true,
+      userId: true,
+      copyId: true,
+      issueDate: true,
+      dueDate: true,
+      returnDate: true,
+      fineAmount: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      user: {
+        select: {
+          id: true,
+          username: true,
+          email: true
+        }
+      },
+      bookCopy: {
+        select: {
+          id: true,
+          bookId: true,
+          barcode: true,
+          shelfLocation: true,
+          condition: true,
+          status: true,
+          purchaseDate: true,
+          createdAt: true,
+          updatedAt: true,
+          book: {
+            select: {
+              id: true,
+              title: true,
+              isbn: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!loan) {
+    throw new ApiError(404, 'Loan not found.');
+  }
+
+  // Enforce access control: Admin can retrieve any loan, Member only their own.
+  if (currentUser.role !== UserRole.ADMIN && loan.userId !== currentUser.id) {
+    throw new ApiError(403, 'Access denied. You can only retrieve your own loans.');
+  }
+
+  return loan;
+};
+
+
