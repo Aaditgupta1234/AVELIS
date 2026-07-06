@@ -101,6 +101,24 @@ export const deleteBook = async (req, res, next) => {
 };
 
 /**
+ * Handle soft deleting a book.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const softDeleteBook = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const deletedBook = await bookService.softDeleteBook(id);
+
+    return sendSuccess(res, 200, deletedBook, 'Book deleted successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Handle restoring a deleted book.
  *
  * @param {import('express').Request} req - Express request
