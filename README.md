@@ -100,15 +100,16 @@ AVELIS is in active development. The backend authentication, user management, pr
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 8.4 — Book Update API**, establishing a secure and transactional endpoint to partially update book details and junction table relations.
+AVELIS has successfully completed **Phase 8.5 — Soft Delete Book API**, establishing a secure and transactional soft-deletion pipeline that excludes inactive records from public queries.
 
 The following components were implemented and verified during this milestone:
-* **Phase 8.4.1 — Book Update Validation**: Request schema validator checking UUID path parameters, string lengths, valid URLs, numeric ranges, and duplicate IDs within input arrays.
-* **Phase 8.4.2 — Book Update Service**: Domain service executing updates inside an atomic database transaction (`prisma.$transaction`), verifying entity existence, performing conditional ISBN uniqueness conflict lookups, and updating explicit junction mappings (`BookAuthor`, `BookCategory`).
-* **Phase 8.4.3 — Book Update Controller**: Decoupled, thin Express controller routing validated payloads to the service layer and wrapping outputs with standardized API JSON responses.
-* **Phase 8.4.4 — Book Update Route Integration**: Router binding mounting `PATCH /api/v1/books/:id` behind authentication (`authMiddleware`) and administrator checks (`adminMiddleware`).
+* **Phase 8.5.1 — Soft Delete Book Service**: Domain service executing soft deletion inside an atomic database transaction (`prisma.$transaction`), setting `isDeleted = true` and `deletedAt = new Date()`, and performing validation checks.
+* **Phase 8.5.2 — Soft Delete Book Controller**: Decoupled, thin Express controller routing delete calls to the service layer and wrapping outputs with standardized API JSON responses.
+* **Phase 8.5.3 — Soft Delete Book Route**: Router binding mounting `DELETE /api/v1/books/:id` behind authentication (`authMiddleware`), administrator authorization (`adminMiddleware`), and a dedicated UUID parameter validator (`bookIdParamValidator`).
+* **Phase 8.5.4 — Public Read Endpoint Integration**: Excluded soft-deleted books from all active query listing counts (`GET /api/v1/books`) and detail lookups (`GET /api/v1/books/:id`), returning a standard `404 Not Found` response for soft-deleted book IDs.
+* **Phase 8.5.5 — Soft Delete Book Integration Testing & Documentation**: Conducted E2E integration test runs via custom Express execution stacks and completed API documentation.
 
-> **Next Milestone:** Phase 9 — Inventory & Loan Management
+> **Next Milestone:** Phase 8.6 — Book Restore & Permanent Delete APIs
 
 ## Project Statistics
 
@@ -629,7 +630,7 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/books/:id` | Retrieve details of a specific book. | ✅ Completed |
 | **POST** | `/api/v1/books` | Create a new catalog book entry (Admin only). | ✅ Completed |
 | **PATCH** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | ✅ Completed |
-| **DELETE** | `/api/v1/books/:id` | Remove a book entry from the catalog database (Admin only). | Planned |
+| **DELETE** | `/api/v1/books/:id` | Soft delete a catalog book entry (Admin only). | ✅ Completed |
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
 | **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
@@ -762,6 +763,102 @@ The request body is a JSON object. All fields are optional. Only the fields supp
   }
   ```
 
+### Book Soft Delete API Specification
+
+**DELETE** `/api/v1/books/:id`
+
+#### Purpose
+Soft delete a book catalog entry. Soft-deleted books are hidden from public read queries but preserved in the database for references and statistics.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Parameters
+- `id` (UUID, path parameter) — Unique identifier of the book.
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Book deleted successfully.",
+  "data": {
+    "id": "246ee81b-fdca-4aa2-b62d-603c4a8fedeb",
+    "title": "Route SD Book Title",
+    "isbn": "TEST-R-SD-ISBN-1783328839393",
+    "publisher": "Test Publisher",
+    "publicationYear": 2026,
+    "language": "English",
+    "description": null,
+    "coverImage": null,
+    "sellingPrice": "19.99",
+    "stockQuantity": 10,
+    "isBorrowable": true,
+    "isForSale": true,
+    "isDeleted": true,
+    "deletedAt": "2026-07-06T09:07:19.444Z",
+    "createdAt": "2026-07-06T09:07:19.395Z",
+    "updatedAt": "2026-07-06T09:07:19.454Z",
+    "authors": [
+      {
+        "author": {
+          "id": "10dda513-51a2-4374-a961-76ff1716ce75",
+          "fullName": "Route SD Author"
+        }
+      }
+    ],
+    "categories": [
+      {
+        "category": {
+          "id": "f0c8fd88-8eb5-493b-b6c8-dbf37d45779c",
+          "name": "Route SD Category 1783328839390"
+        }
+      }
+    ]
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Invalid UUID path parameter, or the book has already been soft deleted.
+  ```json
+  {
+    "success": false,
+    "message": "Invalid book ID."
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Book has already been deleted."
+  }
+  ```
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+- **404 Not Found** — The requested book could not be found. (This is returned if the book does not exist or has already been soft deleted, keeping the existence of deleted items confidential).
+  ```json
+  {
+    "success": false,
+    "message": "Book not found."
+  }
+  ```
+
 ---
 
 ## Current Development Progress
@@ -784,6 +881,7 @@ The request body is a JSON object. All fields are optional. Only the fields supp
 - User Profile & Password Actions (Profile retrieval, username updates, and password updates) (Phase 7)
 - Admin User & Status Management (Retrieve users list, view user details, update user roles, and activate/deactivate status) (Phase 7)
 - Book Management APIs (Create Book, Get All Books, Get Book by ID, and Update Book APIs) (Phase 8)
+- Soft Delete Book API (validation, service, controller, route, and public read integrations) (Phase 8.5)
 
 ### In Progress
 - Inventory Management (Physical copy tracking) (Phase 8)
@@ -831,6 +929,7 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Protected Routes
 * ✅ Phase 7 – User Management & Profiles
 * ✅ Phase 8.4 – Book Update API
+* ✅ Phase 8.5 – Soft Delete Book API
 
 #### Current Focus
 * 🚧 Phase 8 – Inventory Management
@@ -848,7 +947,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update) | Inventory management | Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management & Soft Delete APIs (Create, Get All, Get by ID, Update, Soft Delete) | Inventory management | Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
