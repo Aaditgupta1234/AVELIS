@@ -1,6 +1,30 @@
 import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/index.js';
 
+const BOOK_PUBLIC_INCLUDE = {
+  authors: {
+    select: {
+      author: {
+        select: {
+          id: true,
+          fullName: true
+        }
+      }
+    }
+  },
+  categories: {
+    select: {
+      category: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  }
+};
+
+
 /**
  * Service to register a new catalog book.
  *
@@ -104,7 +128,9 @@ export const getBooks = async (query) => {
   const take = limit;
 
   // Build dynamic where conditions
-  const where = {};
+  const where = {
+    isDeleted: false
+  };
 
   // Case-insensitive language filtering
   if (language) {
@@ -197,11 +223,21 @@ export const getBooks = async (query) => {
 /**
  * Service to retrieve details of a specific book by its ID.
  *
- * @param {string} _id - Book ID
- * @returns {Promise<null>} Intentionally returns null during foundation phase
+ * @param {string} id - Book ID
+ * @returns {Promise<Object>} The book record
+ * @throws {ApiError} 404 if book not found or soft-deleted
  */
-export const getBookById = async (_id) => {
-  return null;
+export const getBookById = async (id) => {
+  const book = await prisma.book.findUnique({
+    where: { id },
+    include: BOOK_PUBLIC_INCLUDE
+  });
+
+  if (!book || book.isDeleted) {
+    throw new ApiError(404, 'Book not found.');
+  }
+
+  return book;
 };
 
 /**
@@ -317,28 +353,6 @@ export const updateBook = async (id, bookData) => {
 
     return updatedBook;
   });
-};
-const BOOK_PUBLIC_INCLUDE = {
-  authors: {
-    select: {
-      author: {
-        select: {
-          id: true,
-          fullName: true
-        }
-      }
-    }
-  },
-  categories: {
-    select: {
-      category: {
-        select: {
-          id: true,
-          name: true
-        }
-      }
-    }
-  }
 };
 
 /**
