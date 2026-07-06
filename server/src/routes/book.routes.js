@@ -39,4 +39,13 @@ router.patch(
   bookController.restoreBookController
 );
 
+// DELETE /:id/permanent — Permanently delete a soft-deleted book (Admin only)
+router.delete(
+  '/:id/permanent',
+  authMiddleware,
+  adminMiddleware,
+  bookIdParamValidator,
+  bookController.permanentDeleteBookController
+);
+
 export default router;
