@@ -56,7 +56,7 @@ The application provides readers with a modern, high-fidelity experience for bro
 | Backend Authentication | ✅ Complete |
 | Database | ✅ Complete |
 | User Management | ✅ Complete |
-| Books Module | 🚧 In Progress |
+| Books Module | ✅ Complete |
 | Deployment | ⏳ Planned |
 
 ## Motivation / Purpose
@@ -94,21 +94,22 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 8 – Books Module**
+* 🚧 **Phase 8.9 – Book Module Production Refinement**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 8.6 — Restore Book API**, establishing a secure and transactional endpoint to restore previously soft-deleted books back to the active catalog and verify visibility integration.
+AVELIS has successfully completed **Phase 8.8 — Book Management Testing & Documentation**, finalizing the entire Book Management module with comprehensive end-to-end verification and consolidated documentation.
 
-The following components were implemented and verified during this milestone:
-* **Phase 8.6.1 — Restore Book Service**: Domain service reversing soft deletion inside a transactional block (`prisma.$transaction`), setting `isDeleted = false` and `deletedAt = null`, and validating existence and delete status.
-* **Phase 8.6.2 — Restore Book Controller**: Decoupled, thin Express controller routing restore calls to the service layer and wrapping outputs with standardized API JSON responses.
-* **Phase 8.6.3 — Restore Book Route**: Router binding mounting `PATCH /api/v1/books/:id/restore` behind authentication (`authMiddleware`), administrator authorization (`adminMiddleware`), and a dedicated UUID parameter validator (`bookIdParamValidator`).
-* **Phase 8.6.4 — Restore Book Testing & Documentation**: Conducted E2E integration test runs via custom Express execution stacks, verified public visibility reintegration, and completed API documentation.
+The Book module now provides a complete catalog lifecycle:
+* **Phase 8 (Core)** — Create Book, Get All Books, Get Book By ID, Update Book APIs.
+* **Phase 8.5 — Soft Delete Book API**: Transactional soft deletion with public read integration.
+* **Phase 8.6 — Restore Book API**: Transactional restoration with visibility reintegration.
+* **Phase 8.7 — Permanent Delete Book API**: Irreversible physical deletion with soft-delete prerequisite enforcement.
+* **Phase 8.8 — Book Management Testing & Documentation**: Comprehensive E2E verification of all 7 Book APIs (21 test scenarios, all passed) and consolidated module documentation.
 
-> **Next Milestone:** Phase 8.7 — Book Permanent Delete API
+> **Next Milestone:** Phase 8.9 — Book Module Production Refinement
 
 ## Project Statistics
 
@@ -631,6 +632,7 @@ Below are the primary endpoints and their current status:
 | **PATCH** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | ✅ Completed |
 | **DELETE** | `/api/v1/books/:id` | Soft delete a catalog book entry (Admin only). | ✅ Completed |
 | **PATCH** | `/api/v1/books/:id/restore` | Restore a soft-deleted catalog book (Admin only). | ✅ Completed |
+| **DELETE** | `/api/v1/books/:id/permanent` | Permanently delete a soft-deleted catalog book (Admin only). | ✅ Completed |
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
 | **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
@@ -646,6 +648,50 @@ The following administrative endpoints are protected by `authMiddleware` and `ad
 | **GET** | `/api/v1/admin/users/:id` | Retrieve details of a specific user. |
 | **PATCH** | `/api/v1/admin/users/:id/role` | Update a user's role. |
 | **PATCH** | `/api/v1/admin/users/:id/status` | Activate or deactivate a user (with self-deactivation protection). |
+
+### Book Management Module Summary
+
+The Book Management module provides a complete catalog lifecycle for the AVELIS Library Management System. It exposes **7 RESTful API endpoints** covering creation, retrieval, updating, and a full soft-delete lifecycle.
+
+#### Core Features
+
+| Feature | Endpoint | Method | Access |
+| :--- | :--- | :--- | :--- |
+| Create Book | `/api/v1/books` | POST | Admin only |
+| Get All Books | `/api/v1/books` | GET | Public |
+| Get Book By ID | `/api/v1/books/:id` | GET | Public |
+| Update Book | `/api/v1/books/:id` | PATCH | Admin only |
+| Soft Delete Book | `/api/v1/books/:id` | DELETE | Admin only |
+| Restore Book | `/api/v1/books/:id/restore` | PATCH | Admin only |
+| Permanent Delete Book | `/api/v1/books/:id/permanent` | DELETE | Admin only |
+
+#### Authentication & Authorization
+- **Authentication**: All write operations require a valid JWT Bearer Token in the `Authorization` header.
+- **Authorization**: Write operations (create, update, soft delete, restore, permanent delete) are restricted to users with the `ADMIN` role. Read operations (list, detail) are publicly accessible.
+
+#### Validation Strategy
+- **Request body validators**: Enforce required fields, data types, and constraints for create and update operations.
+- **UUID parameter validators**: Validate `req.params.id` format for all ID-based operations.
+- **Query validators**: Validate pagination, sorting, filtering, and search query parameters.
+
+#### Soft-Delete Lifecycle
+Books follow a managed deletion lifecycle:
+
+```
+Active → Soft Deleted → Restored (back to Active)
+                      → Permanently Deleted (physically removed)
+```
+
+- **Soft-deleted books** are excluded from public listing and detail endpoints.
+- **Restoration** reintegrates the book into the public catalog.
+- **Permanent deletion** requires the book to be soft-deleted first, preventing accidental irreversible data loss.
+
+#### Testing & Production Readiness
+- All 7 endpoints have been verified through comprehensive end-to-end integration testing (21 test scenarios).
+- Authentication, authorization, validation, business rules, visibility integration, and database integrity have all been confirmed.
+- The module is **production-ready**.
+
+---
 
 ### Book Update API Specification
 
@@ -955,6 +1001,106 @@ Restore a previously soft-deleted book catalog entry.
   }
   ```
 
+### Book Permanent Delete API Specification
+
+**DELETE** `/api/v1/books/:id/permanent`
+
+#### Purpose
+Permanently delete a previously soft-deleted book catalog entry. This operation is irreversible and physically removes the record from the database.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Parameters
+- `id` (UUID, path parameter) — Unique identifier of the book.
+
+#### Prerequisites
+- The book must be soft-deleted (`isDeleted === true`) before it can be permanently deleted.
+- Attempting to permanently delete an active book will return `400 Bad Request`.
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Book permanently deleted successfully.",
+  "data": {
+    "id": "bdc3ffb9-e3d5-4f06-9b7e-6a0f901abeef",
+    "title": "Permanently Deleted Book Title",
+    "isbn": "PD-ISBN-1783328839393",
+    "publisher": "Publisher Name",
+    "publicationYear": 2026,
+    "language": "English",
+    "description": null,
+    "coverImage": null,
+    "sellingPrice": "19.99",
+    "stockQuantity": 10,
+    "isBorrowable": true,
+    "isForSale": true,
+    "isDeleted": true,
+    "deletedAt": "2026-07-06T10:45:00.000Z",
+    "createdAt": "2026-07-06T09:07:19.395Z",
+    "updatedAt": "2026-07-06T10:45:00.000Z",
+    "authors": [
+      {
+        "author": {
+          "id": "10dda513-51a2-4374-a961-76ff1716ce75",
+          "fullName": "Author Name"
+        }
+      }
+    ],
+    "categories": [
+      {
+        "category": {
+          "id": "f0c8fd88-8eb5-493b-b6c8-dbf37d45779c",
+          "name": "Category Name"
+        }
+      }
+    ]
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Invalid UUID path parameter, or the book is not soft-deleted.
+  ```json
+  {
+    "success": false,
+    "message": "Invalid book ID."
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Book must be soft deleted before permanent deletion."
+  }
+  ```
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+- **404 Not Found** — The requested book could not be found.
+  ```json
+  {
+    "success": false,
+    "message": "Book not found."
+  }
+  ```
+
 ---
 
 ## Current Development Progress
@@ -979,9 +1125,11 @@ Restore a previously soft-deleted book catalog entry.
 - Book Management APIs (Create Book, Get All Books, Get Book by ID, and Update Book APIs) (Phase 8)
 - Soft Delete Book API (validation, service, controller, route, and public read integrations) (Phase 8.5)
 - Restore Book API (validation, service, controller, route, and visibility integrations) (Phase 8.6)
+- Permanent Delete Book API (service, controller, route, and E2E testing) (Phase 8.7)
+- Book Management Testing & Documentation (comprehensive E2E verification and module documentation) (Phase 8.8)
 
 ### In Progress
-- Inventory Management (Physical copy tracking) (Phase 8)
+- Book Module Production Refinement (Phase 8.9)
 - Loan Management (CRUD operations for borrowing loans) (Phase 9)
 
 ### Planned
@@ -1028,9 +1176,11 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 8.4 – Book Update API
 * ✅ Phase 8.5 – Soft Delete Book API
 * ✅ Phase 8.6 – Restore Book API
+* ✅ Phase 8.7 – Permanent Delete Book API
+* ✅ Phase 8.8 – Book Management Testing & Documentation
 
 #### Current Focus
-* 🚧 Phase 8 – Inventory Management
+* 🚧 Phase 8.9 – Book Module Production Refinement
 
 #### Planned
 * Loan Management
@@ -1045,7 +1195,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management, Soft Delete, & Restore APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore) | Inventory management | Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete) | Book Module Production Refinement | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
