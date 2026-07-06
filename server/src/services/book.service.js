@@ -24,6 +24,23 @@ const BOOK_PUBLIC_INCLUDE = {
   }
 };
 
+/**
+ * Helper to retrieve a book and verify its existence.
+ *
+ * @param {Object} tx - Prisma transaction context
+ * @param {string} id - Book ID
+ * @returns {Promise<Object>} The book record
+ * @throws {ApiError} 404 if book not found
+ */
+const getBookOrThrow = async (tx, id) => {
+  const book = await tx.book.findUnique({
+    where: { id }
+  });
+  if (!book) {
+    throw new ApiError(404, 'Book not found.');
+  }
+  return book;
+};
 
 /**
  * Service to register a new catalog book.
@@ -87,28 +104,7 @@ export const createBook = async (bookData) => {
           create: categoryIds.map(categoryId => ({ categoryId }))
         }
       },
-      include: {
-        authors: {
-          select: {
-            author: {
-              select: {
-                id: true,
-                fullName: true
-              }
-            }
-          }
-        },
-        categories: {
-          select: {
-            category: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+      include: BOOK_PUBLIC_INCLUDE
     });
 
     return book;
@@ -251,12 +247,7 @@ export const getBookById = async (id) => {
 export const updateBook = async (id, bookData) => {
   return await prisma.$transaction(async (tx) => {
     // 1. Find Existing Book
-    const existingBook = await tx.book.findUnique({
-      where: { id }
-    });
-    if (!existingBook) {
-      throw new ApiError(404, 'Book not found.');
-    }
+    const existingBook = await getBookOrThrow(tx, id);
 
     // 2. ISBN Conflict Check
     const isbn = typeof bookData.isbn === 'string' ? bookData.isbn.trim() : bookData.isbn;
@@ -327,28 +318,7 @@ export const updateBook = async (id, bookData) => {
     const updatedBook = await tx.book.update({
       where: { id },
       data: updateData,
-      include: {
-        authors: {
-          select: {
-            author: {
-              select: {
-                id: true,
-                fullName: true
-              }
-            }
-          }
-        },
-        categories: {
-          select: {
-            category: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+      include: BOOK_PUBLIC_INCLUDE
     });
 
     return updatedBook;
@@ -364,22 +334,15 @@ export const updateBook = async (id, bookData) => {
  */
 export const softDeleteBook = async (bookId) => {
   return await prisma.$transaction(async (tx) => {
-    // 1. Retrieve the book by its ID within the transaction
-    const book = await tx.book.findUnique({
-      where: { id: bookId }
-    });
+    // 1. Retrieve the book and verify existence
+    const book = await getBookOrThrow(tx, bookId);
 
-    // 2. If the book does not exist, throw 404 Not Found error
-    if (!book) {
-      throw new ApiError(404, 'Book not found.');
-    }
-
-    // 3. If the book is already soft deleted, throw 400 Bad Request error
+    // 2. If the book is already soft deleted, throw 400 Bad Request error
     if (book.isDeleted) {
       throw new ApiError(400, 'Book has already been deleted.');
     }
 
-    // 4. Update the record inside the transaction
+    // 3. Update the record inside the transaction
     const updatedBook = await tx.book.update({
       where: { id: bookId },
       data: {
@@ -389,7 +352,7 @@ export const softDeleteBook = async (bookId) => {
       include: BOOK_PUBLIC_INCLUDE
     });
 
-    // 5. Return the updated book using the selection helper
+    // 4. Return the updated book using the selection helper
     return updatedBook;
   });
 };
@@ -402,28 +365,21 @@ export const softDeleteBook = async (bookId) => {
  */
 export const permanentDeleteBook = async (bookId) => {
   return await prisma.$transaction(async (tx) => {
-    // 1. Retrieve the book by its ID within the transaction
-    const book = await tx.book.findUnique({
-      where: { id: bookId }
-    });
+    // 1. Retrieve the book and verify existence
+    const book = await getBookOrThrow(tx, bookId);
 
-    // 2. If the book does not exist, throw standard 404 error
-    if (!book) {
-      throw new ApiError(404, 'Book not found.');
-    }
-
-    // 3. If the book is not soft-deleted, throw standard 400 error
+    // 2. If the book is not soft-deleted, throw standard 400 error
     if (!book.isDeleted) {
       throw new ApiError(400, 'Book must be soft deleted before permanent deletion.');
     }
 
-    // 4. Permanently remove the book using Prisma's delete() method
+    // 3. Permanently remove the book using Prisma's delete() method
     const deletedBook = await tx.book.delete({
       where: { id: bookId },
       include: BOOK_PUBLIC_INCLUDE
     });
 
-    // 5. Return the deleted book object
+    // 4. Return the deleted book object
     return deletedBook;
   });
 };
@@ -437,22 +393,15 @@ export const permanentDeleteBook = async (bookId) => {
  */
 export const restoreBook = async (bookId) => {
   return await prisma.$transaction(async (tx) => {
-    // 1. Retrieve the book by its ID within the transaction
-    const book = await tx.book.findUnique({
-      where: { id: bookId }
-    });
+    // 1. Retrieve the book and verify existence
+    const book = await getBookOrThrow(tx, bookId);
 
-    // 2. If the book does not exist, throw standard 404 error
-    if (!book) {
-      throw new ApiError(404, 'Book not found.');
-    }
-
-    // 3. If the book is not deleted (isDeleted === false), throw standard 400 error
+    // 2. If the book is not deleted (isDeleted === false), throw standard 400 error
     if (!book.isDeleted) {
       throw new ApiError(400, 'Book is not deleted.');
     }
 
-    // 4. Perform the restore update
+    // 3. Perform the restore update
     const restoredBook = await tx.book.update({
       where: { id: bookId },
       data: {
@@ -462,7 +411,7 @@ export const restoreBook = async (bookId) => {
       include: BOOK_PUBLIC_INCLUDE
     });
 
-    // 5. Return the restored book
+    // 4. Return the restored book
     return restoredBook;
   });
 };

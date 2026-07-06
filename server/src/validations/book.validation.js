@@ -10,6 +10,32 @@
 import { sendError } from '../utils/index.js';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER } from '../constants/book.constants.js';
 
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+const validatePublicationYear = (publicationYear, errors) => {
+  if (publicationYear !== undefined && publicationYear !== null) {
+    if (!Number.isInteger(publicationYear)) {
+      errors.push({ field: 'publicationYear', message: 'Publication year must be an integer.' });
+    }
+  }
+};
+
+const validateSellingPrice = (sellingPrice, errors) => {
+  if (sellingPrice !== undefined && sellingPrice !== null) {
+    if (typeof sellingPrice !== 'number' || sellingPrice < 0) {
+      errors.push({ field: 'sellingPrice', message: 'Selling price must be a non-negative number.' });
+    }
+  }
+};
+
+const validateStockQuantity = (stockQuantity, errors) => {
+  if (stockQuantity !== undefined && stockQuantity !== null) {
+    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+      errors.push({ field: 'stockQuantity', message: 'Stock quantity must be a non-negative integer.' });
+    }
+  }
+};
+
 /**
  * Validator middleware for creating a book.
  *
@@ -80,23 +106,9 @@ export const createBookValidator = (req, res, next) => {
   }
 
   // Optional fields validation
-  if (publicationYear !== undefined && publicationYear !== null) {
-    if (!Number.isInteger(publicationYear)) {
-      errors.push({ field: 'publicationYear', message: 'Publication year must be an integer.' });
-    }
-  }
-
-  if (sellingPrice !== undefined && sellingPrice !== null) {
-    if (typeof sellingPrice !== 'number' || sellingPrice < 0) {
-      errors.push({ field: 'sellingPrice', message: 'Selling price must be a non-negative number.' });
-    }
-  }
-
-  if (stockQuantity !== undefined && stockQuantity !== null) {
-    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
-      errors.push({ field: 'stockQuantity', message: 'Stock quantity must be a non-negative integer.' });
-    }
-  }
+  validatePublicationYear(publicationYear, errors);
+  validateSellingPrice(sellingPrice, errors);
+  validateStockQuantity(stockQuantity, errors);
 
   if (isBorrowable !== undefined && isBorrowable !== null) {
     if (typeof isBorrowable !== 'boolean') {
@@ -126,9 +138,8 @@ export const createBookValidator = (req, res, next) => {
  */
 export const updateBookValidator = (req, res, next) => {
   const { id } = req.params;
-  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-  if (!id || typeof id !== 'string' || !uuidRegex.test(id)) {
+  if (!id || typeof id !== 'string' || !UUID_REGEX.test(id)) {
     return res.status(400).json({
       success: false,
       message: 'Invalid book ID.'
@@ -213,25 +224,13 @@ export const updateBookValidator = (req, res, next) => {
   }
 
   // Publication Year validation (if provided)
-  if (publicationYear !== undefined && publicationYear !== null) {
-    if (!Number.isInteger(publicationYear)) {
-      errors.push({ field: 'publicationYear', message: 'Publication year must be an integer.' });
-    }
-  }
+  validatePublicationYear(publicationYear, errors);
 
   // Selling Price validation (if provided)
-  if (sellingPrice !== undefined && sellingPrice !== null) {
-    if (typeof sellingPrice !== 'number' || sellingPrice < 0) {
-      errors.push({ field: 'sellingPrice', message: 'Selling price must be a non-negative number.' });
-    }
-  }
+  validateSellingPrice(sellingPrice, errors);
 
   // Stock Quantity validation (if provided)
-  if (stockQuantity !== undefined && stockQuantity !== null) {
-    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
-      errors.push({ field: 'stockQuantity', message: 'Stock quantity must be a non-negative integer.' });
-    }
-  }
+  validateStockQuantity(stockQuantity, errors);
 
   // Helper for boolean fields
   const validateBoolean = (val, fieldName) => {
@@ -399,9 +398,8 @@ export const queryBookValidator = (req, res, next) => {
  */
 export const bookIdParamValidator = (req, res, next) => {
   const { id } = req.params;
-  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-  if (!id || typeof id !== 'string' || !uuidRegex.test(id.trim())) {
+  if (!id || typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
     return res.status(400).json({
       success: false,
       message: 'Invalid book ID.'
