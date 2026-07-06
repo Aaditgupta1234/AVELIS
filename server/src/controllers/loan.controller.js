@@ -122,6 +122,24 @@ export const returnLoan = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle synchronizing overdue loan statuses for Phase 9.8.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const syncOverdueLoans = async (req, res, next) => {
+  try {
+    const result = await loanService.syncOverdueLoans();
+
+    return sendSuccess(res, 200, result, 'Overdue loans synchronized successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 
 

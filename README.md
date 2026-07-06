@@ -94,20 +94,20 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 9.8 – Overdue Loan Detection & Status Management**
+* 🚧 **Phase 9.9 – Loan History Consistency & Production Refinement**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 9.7 — Return Book / Complete Loan**, implementing a secure administrative endpoint to process book returns.
+AVELIS has successfully completed **Phase 9.8 — Overdue Loan Detection & Status Management**, implementing a secure administrative batch endpoint to synchronize overdue loans.
 
 The completed milestone confirms:
-* **PATCH Route mapping**: Registered `PATCH /api/v1/loans/:id/return` restricted by `adminMiddleware` and using standard UUID validation checks.
-* **Transactional State Consistency**: Updates the `Loan` status to `RETURNED` and `returnDate` to current timestamp, while reverting `BookCopy` status to `AVAILABLE` atomically inside a transaction.
-* **Integrity Guard**: Rolled back completely during transactional updates if any database constraint violation or query failure is encountered.
+* **Overdue Status Transition**: Safely transitions active, past-due loans from `BORROWED` to `OVERDUE` status based on date constraints.
+* **Idempotency and Date Boundary Safety**: Ensures future-due, returned, and already-overdue loans are left unchanged. Repeated sync calls return `updatedCount: 0`.
+* **Execution Timestamp Metadata**: Returns `checkedAt` timestamp metadata to support scheduled jobs, application logging, and admin dashboard monitoring.
 
-> **Next Milestone:** Phase 9.8 — Overdue Loan Detection & Status Management
+> **Next Milestone:** Phase 9.9 — Loan History Consistency & Production Refinement
 
 ## Project Statistics
 
@@ -635,6 +635,7 @@ Below are the primary endpoints and their current status:
 | **POST** | `/api/v1/loans` | Create a new loan transaction for a member (performed by an administrator or through member self-checkout). | ✅ Completed |
 | **POST** | `/api/v1/loans/:id/return` | Complete an active loan by returning its borrowed book copy (Admin only). | ✅ Completed |
 | **PATCH** | `/api/v1/loans/:id/return` | Complete an active loan by returning its borrowed book copy (Admin only) (Phase 9.7). | ✅ Completed |
+| **POST** | `/api/v1/loans/overdue/sync` | Synchronize overdue loan statuses (Admin only) (Phase 9.8). | ✅ Completed |
 | **GET** | `/api/v1/loans/:id` | Retrieve details of a specific loan (Admin or Member with ownership). | ✅ Completed |
 | **GET** | `/api/v1/loans/me` | Retrieve a paginated list of the current authenticated user's loans. | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
@@ -1695,6 +1696,51 @@ Complete an active loan by returning its borrowed book copy (Admin only).
   }
   ```
 
+### Overdue Loan Detection & Status Management API Specification (Phase 9.8)
+
+**POST** `/api/v1/loans/overdue/sync`
+
+#### Purpose
+Detect active loans whose due date has passed and transition them from `BORROWED` to `OVERDUE` in bulk (Admin only).
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Body
+- None required.
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Overdue loans synchronized successfully.",
+  "data": {
+    "updatedCount": 2,
+    "checkedAt": "2026-07-06T13:50:30.123Z"
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **401 Unauthorized** — Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden** — Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+
 ---
 
 
@@ -1777,11 +1823,13 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 9.2 – Borrow Book Service
 * ✅ Phase 9.3 – Return Book Service
 * ✅ Phase 9.4 – Get Loan by ID
+* ✅ Phase 9.5 – Get All Loans
 * ✅ Phase 9.6 – Get Current User Loans
 * ✅ Phase 9.7 – Return Book / Complete Loan
+* ✅ Phase 9.8 – Overdue Loan Detection & Status Management
 
 #### Current Focus
-* 🚧 Phase 9.8 – Overdue Loan Detection & Status Management
+* 🚧 Phase 9.9 – Loan History Consistency & Production Refinement
 
 #### Planned
 * Loan Management
@@ -1796,7 +1844,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service, Get All Loans Service, Get Current User Loans Service, Return Book / Complete Loan Service | Return Book / Complete Loan Service | Inventory management, Checkout/checkin transactions, Loan Management |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service, Get All Loans Service, Get Current User Loans Service, Return Book / Complete Loan Service, Overdue Loan Detection & Status Sync Service | Return Book / Complete Loan Service | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---

@@ -40,6 +40,14 @@ router.post(
   loanController.borrowBook
 );
 
+// POST /overdue/sync — Synchronize overdue loan statuses (Admin only) for Phase 9.8
+router.post(
+  '/overdue/sync',
+  authMiddleware,
+  adminMiddleware,
+  loanController.syncOverdueLoans
+);
+
 // POST /:id/return — Complete an active loan (Admin only)
 router.post(
   '/:id/return',

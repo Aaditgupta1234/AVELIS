@@ -325,3 +325,31 @@ export const getLoans = async ({ page, limit, sortBy, sortOrder, status, userId,
  */
 export const returnLoan = returnBook;
 
+/**
+ * Service to synchronize overdue loan statuses for Phase 9.8.
+ * Detects active loans whose due date has passed and transitions them to OVERDUE.
+ *
+ * @returns {Promise<{updatedCount: number, checkedAt: Date}>} Summary of updates
+ */
+export const syncOverdueLoans = async () => {
+  const now = new Date();
+
+  const result = await prisma.loan.updateMany({
+    where: {
+      status: LoanStatus.BORROWED,
+      dueDate: {
+        lt: now
+      }
+    },
+    data: {
+      status: LoanStatus.OVERDUE
+    }
+  });
+
+  return {
+    updatedCount: result.count,
+    checkedAt: now
+  };
+};
+
+
