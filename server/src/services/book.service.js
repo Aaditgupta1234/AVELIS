@@ -207,12 +207,116 @@ export const getBookById = async (_id) => {
 /**
  * Service to update properties of a book entry.
  *
- * @param {string} _id - Book ID
- * @param {Object} _bookData - Modified properties
- * @returns {Promise<null>} Intentionally returns null during foundation phase
+ * @param {string} id - Book ID
+ * @param {Object} bookData - Modified properties
+ * @returns {Promise<Object>} The updated book record
+ * @throws {ApiError} 404 if book not found, 409 if ISBN exists, 400 if invalid author/category IDs
  */
-export const updateBook = async (_id, _bookData) => {
-  return null;
+export const updateBook = async (id, bookData) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Find Existing Book
+    const existingBook = await tx.book.findUnique({
+      where: { id }
+    });
+    if (!existingBook) {
+      throw new ApiError(404, 'Book not found.');
+    }
+
+    // 2. ISBN Conflict Check
+    const isbn = typeof bookData.isbn === 'string' ? bookData.isbn.trim() : bookData.isbn;
+    if (isbn !== undefined && isbn !== null) {
+      // Compare with the existing book's ISBN.
+      // If changed, search for another book using that ISBN.
+      if (isbn !== existingBook.isbn) {
+        const duplicateBook = await tx.book.findUnique({
+          where: { isbn }
+        });
+        if (duplicateBook) {
+          throw new ApiError(409, 'ISBN already exists.');
+        }
+      }
+    }
+
+    // 3. Verify Author IDs if provided
+    if (bookData.authorIds !== undefined && bookData.authorIds !== null) {
+      const authors = await tx.author.findMany({
+        where: { id: { in: bookData.authorIds } },
+        select: { id: true }
+      });
+      if (authors.length !== bookData.authorIds.length) {
+        throw new ApiError(400, 'One or more author IDs are invalid.');
+      }
+    }
+
+    // 4. Verify Category IDs if provided
+    if (bookData.categoryIds !== undefined && bookData.categoryIds !== null) {
+      const categories = await tx.category.findMany({
+        where: { id: { in: bookData.categoryIds } },
+        select: { id: true }
+      });
+      if (categories.length !== bookData.categoryIds.length) {
+        throw new ApiError(400, 'One or more category IDs are invalid.');
+      }
+    }
+
+    // 5. Build Partial Update Object
+    const updateData = {};
+    if (bookData.title !== undefined) updateData.title = typeof bookData.title === 'string' ? bookData.title.trim() : bookData.title;
+    if (bookData.isbn !== undefined) updateData.isbn = isbn;
+    if (bookData.publisher !== undefined) updateData.publisher = typeof bookData.publisher === 'string' ? bookData.publisher.trim() : bookData.publisher;
+    if (bookData.publicationYear !== undefined) updateData.publicationYear = bookData.publicationYear;
+    if (bookData.language !== undefined) updateData.language = typeof bookData.language === 'string' ? bookData.language.trim() : bookData.language;
+    if (bookData.description !== undefined) updateData.description = typeof bookData.description === 'string' ? bookData.description.trim() : bookData.description;
+    if (bookData.coverImage !== undefined) updateData.coverImage = typeof bookData.coverImage === 'string' ? bookData.coverImage.trim() : bookData.coverImage;
+    if (bookData.sellingPrice !== undefined) updateData.sellingPrice = bookData.sellingPrice;
+    if (bookData.stockQuantity !== undefined) updateData.stockQuantity = bookData.stockQuantity;
+    if (bookData.isBorrowable !== undefined) updateData.isBorrowable = bookData.isBorrowable;
+    if (bookData.isForSale !== undefined) updateData.isForSale = bookData.isForSale;
+
+    if (bookData.authorIds !== undefined && bookData.authorIds !== null) {
+      updateData.authors = {
+        deleteMany: {},
+        create: bookData.authorIds.map(authorId => ({ authorId }))
+      };
+    }
+
+    if (bookData.categoryIds !== undefined && bookData.categoryIds !== null) {
+      updateData.categories = {
+        deleteMany: {},
+        create: bookData.categoryIds.map(categoryId => ({ categoryId }))
+      };
+    }
+
+    // 6. Update Database and return consistent response
+    const updatedBook = await tx.book.update({
+      where: { id },
+      data: updateData,
+      include: {
+        authors: {
+          select: {
+            author: {
+              select: {
+                id: true,
+                fullName: true
+              }
+            }
+          }
+        },
+        categories: {
+          select: {
+            category: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return updatedBook;
+  });
 };
 
 /**
