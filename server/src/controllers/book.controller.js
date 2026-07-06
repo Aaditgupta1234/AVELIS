@@ -2,7 +2,7 @@
  * @fileoverview Book module controllers.
  *
  * Coordinates request flows for book registration, retrieval, updating,
- * and soft-deletion restoration.
+ * soft-deletion, restoration, and permanent deletion.
  *
  * @module controllers/book
  */
@@ -81,19 +81,18 @@ export const updateBook = async (req, res, next) => {
 };
 
 /**
- * Handle deleting a book.
+ * Handle permanent deletion of a soft-deleted book.
  *
  * @param {import('express').Request} req - Express request
  * @param {import('express').Response} res - Express response
  * @param {import('express').NextFunction} next - Express next function
  */
-export const deleteBook = async (req, res, next) => {
+export const permanentDeleteBookController = async (req, res, next) => {
   try {
     const { id } = req.params;
-    // Delegate to service, ignoring placeholder return
-    await bookService.deleteBook(id);
+    const deletedBook = await bookService.permanentDeleteBook(id);
 
-    return sendSuccess(res, 200, null, 'Book module placeholder endpoint.');
+    return sendSuccess(res, 200, deletedBook, 'Book permanently deleted successfully.');
   } catch (error) {
     next(error);
   }
@@ -112,25 +111,6 @@ export const softDeleteBook = async (req, res, next) => {
     const deletedBook = await bookService.softDeleteBook(id);
 
     return sendSuccess(res, 200, deletedBook, 'Book deleted successfully.');
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Handle restoring a deleted book.
- *
- * @param {import('express').Request} req - Express request
- * @param {import('express').Response} res - Express response
- * @param {import('express').NextFunction} next - Express next function
- */
-export const restoreBook = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    // Delegate to service, ignoring placeholder return
-    await bookService.restoreBook(id);
-
-    return sendSuccess(res, 200, null, 'Book module placeholder endpoint.');
   } catch (error) {
     next(error);
   }
