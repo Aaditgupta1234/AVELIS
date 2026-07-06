@@ -31,6 +31,12 @@ router.patch('/:id', authMiddleware, adminMiddleware, updateBookValidator, bookC
 router.delete('/:id', authMiddleware, adminMiddleware, bookIdParamValidator, bookController.softDeleteBook);
 
 // PATCH  /:id/restore — Restore a deleted book
-router.patch('/:id/restore', bookController.restoreBook);
+router.patch(
+  '/:id/restore',
+  authMiddleware,
+  adminMiddleware,
+  bookIdParamValidator,
+  bookController.restoreBookController
+);
 
 export default router;
