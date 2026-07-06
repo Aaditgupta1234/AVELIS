@@ -389,3 +389,26 @@ export const queryBookValidator = (req, res, next) => {
 
   next();
 };
+
+/**
+ * Validator middleware for validating Book UUID parameter.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const bookIdParamValidator = (req, res, next) => {
+  const { id } = req.params;
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+  if (!id || typeof id !== 'string' || !uuidRegex.test(id.trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid book ID.'
+    });
+  }
+
+  req.params.id = id.trim();
+  next();
+};
+
