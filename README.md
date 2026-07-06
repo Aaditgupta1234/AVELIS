@@ -56,7 +56,7 @@ The application provides readers with a modern, high-fidelity experience for bro
 | Backend Authentication | ✅ Complete |
 | Database | ✅ Complete |
 | User Management | ✅ Complete |
-| Books Module | ⏳ Planned |
+| Books Module | 🚧 In Progress |
 | Deployment | ⏳ Planned |
 
 ## Motivation / Purpose
@@ -100,19 +100,15 @@ AVELIS is in active development. The backend authentication, user management, pr
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 7 — User Management & Profiles**, establishing secure user profile administration and management.
+AVELIS has successfully completed **Phase 8.4 — Book Update API**, establishing a secure and transactional endpoint to partially update book details and junction table relations.
 
 The following components were implemented and verified during this milestone:
-* **Phase 7.1 — Current User Profile API**: Secure endpoint (`GET /api/users/me`) retrieving public details of the logged-in user.
-* **Phase 7.2 — Update Current User Profile**: Secure endpoint (`PATCH /api/users/me`) to update the user's username, with trim validations and uniqueness checks.
-* **Phase 7.3 — Change Password**: Secure endpoint (`PATCH /api/users/me/password`) allowing password changes by verifying current password and hashing the new one using bcrypt.
-* **Phase 7.4.1 — Admin Authorization Middleware**: Role-Based Access Control (`adminMiddleware`) restricting paths to users with the `ADMIN` role.
-* **Phase 7.4.2 — Admin Dashboard Statistics API**: Aggregate statistics retrieval (`GET /api/admin/dashboard`) executing concurrent counts with Prisma enums.
-* **Phase 7.4.3 — Get All Users & Get User by ID APIs**: Secure endpoints (`GET /api/admin/users` and `GET /api/admin/users/:id`) with type-normalized paginations, filters, search, and deterministic sorting.
-* **Phase 7.4.4 — Update User Role API**: Secure endpoint (`PATCH /api/admin/users/:id/role`) enabling user role modifications, preventing duplicate status requests.
-* **Phase 7.4.5 — Activate / Deactivate User API**: Secure endpoint (`PATCH /api/admin/users/:id/status`) for user status management, preventing self-deactivation.
+* **Phase 8.4.1 — Book Update Validation**: Request schema validator checking UUID path parameters, string lengths, valid URLs, numeric ranges, and duplicate IDs within input arrays.
+* **Phase 8.4.2 — Book Update Service**: Domain service executing updates inside an atomic database transaction (`prisma.$transaction`), verifying entity existence, performing conditional ISBN uniqueness conflict lookups, and updating explicit junction mappings (`BookAuthor`, `BookCategory`).
+* **Phase 8.4.3 — Book Update Controller**: Decoupled, thin Express controller routing validated payloads to the service layer and wrapping outputs with standardized API JSON responses.
+* **Phase 8.4.4 — Book Update Route Integration**: Router binding mounting `PATCH /api/v1/books/:id` behind authentication (`authMiddleware`) and administrator checks (`adminMiddleware`).
 
-> **Next Milestone:** Phase 8 – Books Module
+> **Next Milestone:** Phase 9 — Inventory & Loan Management
 
 ## Project Statistics
 
@@ -629,9 +625,10 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/users/me` | Retrieve active profile details for the authorized session. | ✅ Completed |
 | **PATCH** | `/api/v1/users/me` | Update current user profile username. | ✅ Completed |
 | **PATCH** | `/api/v1/users/me/password` | Securely update password. | ✅ Completed |
-| **GET** | `/api/v1/books` | Retrieve a catalog listing of all books. | In Progress |
-| **POST** | `/api/v1/books` | Create a new catalog book entry (Admin only). | Planned |
-| **PUT** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | Planned |
+| **GET** | `/api/v1/books` | Retrieve a catalog listing of all books. | ✅ Completed |
+| **GET** | `/api/v1/books/:id` | Retrieve details of a specific book. | ✅ Completed |
+| **POST** | `/api/v1/books` | Create a new catalog book entry (Admin only). | ✅ Completed |
+| **PATCH** | `/api/v1/books/:id` | Update metadata details of a catalog book (Admin only). | ✅ Completed |
 | **DELETE** | `/api/v1/books/:id` | Remove a book entry from the catalog database (Admin only). | Planned |
 | **GET** | `/api/v1/loans` | Retrieve borrowing loan histories. | In Progress |
 | **POST** | `/api/v1/loans` | Create a new borrowing transaction for a physical copy. | Planned |
@@ -648,6 +645,122 @@ The following administrative endpoints are protected by `authMiddleware` and `ad
 | **GET** | `/api/v1/admin/users/:id` | Retrieve details of a specific user. |
 | **PATCH** | `/api/v1/admin/users/:id/role` | Update a user's role. |
 | **PATCH** | `/api/v1/admin/users/:id/status` | Activate or deactivate a user (with self-deactivation protection). |
+
+### Book Update API Specification
+
+**PATCH** `/api/v1/books/:id`
+
+#### Purpose
+Update details of a catalog book entry.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrator role (`ADMIN`) required.
+
+#### Request Parameters
+- `id` (UUID, path parameter) - Unique identifier of the book.
+
+#### Request Body
+The request body is a JSON object. All fields are optional. Only the fields supplied are updated; omitted fields remain unchanged.
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `title` | String | Title of the book (non-empty, trimmed). |
+| `isbn` | String | Unique ISBN (non-empty, trimmed). |
+| `publisher` | String | Publisher name (non-empty, trimmed). |
+| `publicationYear` | Integer | Year of publication (optional, can be null). |
+| `language` | String | Language of text (non-empty, trimmed, default: 'English'). |
+| `description` | String | Synopsis or review of the book (optional, can be null). |
+| `coverImage` | String | Valid URL pointing to cover image (optional, can be null). |
+| `sellingPrice` | Number | Purchase price (must be >= 0). |
+| `stockQuantity` | Integer | Units in stock (must be >= 0). |
+| `isBorrowable` | Boolean | Whether the book is rentable. |
+| `isForSale` | Boolean | Whether the book is purchasable. |
+| `authorIds` | Array[UUID] | Non-empty array of valid Author UUIDs. |
+| `categoryIds` | Array[UUID] | Non-empty array of valid Category UUIDs. |
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Book updated successfully.",
+  "data": {
+    "id": "bdc3ffb9-e3d5-4f06-9b7e-6a0f901abeef",
+    "title": "Title Updated Via Integrated Route",
+    "isbn": "TEST-ROUTE-ISBN-1783321677593",
+    "publisher": "Test Publisher",
+    "publicationYear": 2026,
+    "language": "English",
+    "description": null,
+    "coverImage": null,
+    "sellingPrice": "19.99",
+    "stockQuantity": 10,
+    "isBorrowable": true,
+    "isForSale": true,
+    "createdAt": "2026-07-06T07:07:57.595Z",
+    "updatedAt": "2026-07-06T07:07:57.618Z",
+    "authors": [
+      {
+        "author": {
+          "id": "21a0b8db-117b-494c-8f68-5ea6a406d03a",
+          "fullName": "Route Test Author"
+        }
+      }
+    ],
+    "categories": [
+      {
+        "category": {
+          "id": "669a6837-4753-48e5-b5da-179b0d288af2",
+          "name": "Route Test Category 1783321677590"
+        }
+      }
+    ]
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request**: Validation failed (e.g. invalid UUID path parameter, negative price/stock, invalid author/category IDs, or duplicate IDs in arrays).
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      { "field": "sellingPrice", "message": "Selling price must be a non-negative number." }
+    ]
+  }
+  ```
+- **401 Unauthorized**: Authentication header missing or token is invalid.
+  ```json
+  {
+    "success": false,
+    "message": "Authorization header is missing"
+  }
+  ```
+- **403 Forbidden**: Authenticated user lacks `ADMIN` privileges.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Administrator privileges required."
+  }
+  ```
+- **404 Not Found**: Book record with given `id` does not exist.
+  ```json
+  {
+    "success": false,
+    "message": "Book not found."
+  }
+  ```
+- **409 Conflict**: A different book is already registered with the new `isbn`.
+  ```json
+  {
+    "success": false,
+    "message": "ISBN already exists."
+  }
+  ```
 
 ---
 
@@ -668,14 +781,15 @@ The following administrative endpoints are protected by `authMiddleware` and `ad
 - Secure JWT-based backend authentication system (Phase 6)
 - Password hashing using bcrypt and custom request payload validation
 - Request interception middleware and current authenticated user retrieval endpoint
+- User Profile & Password Actions (Profile retrieval, username updates, and password updates) (Phase 7)
+- Admin User & Status Management (Retrieve users list, view user details, update user roles, and activate/deactivate status) (Phase 7)
+- Book Management APIs (Create Book, Get All Books, Get Book by ID, and Update Book APIs) (Phase 8)
 
 ### In Progress
-- Phase 7 – User Management & Profiles (CRUD endpoints, profile updates)
-- Books Module (CRUD operations for catalog books)
-- Loan Management (CRUD operations for borrowing loans)
+- Inventory Management (Physical copy tracking) (Phase 8)
+- Loan Management (CRUD operations for borrowing loans) (Phase 9)
 
 ### Planned
-- Role-based user/admin authorization guards
 - Order invoicing and bookstore purchase pipeline
 - Production build configurations and server deployment
 
@@ -716,13 +830,12 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ User Login
 * ✅ Protected Routes
 * ✅ Phase 7 – User Management & Profiles
+* ✅ Phase 8.4 – Book Update API
 
 #### Current Focus
-* 🚧 Phase 8 – Books Module
+* 🚧 Phase 8 – Inventory Management
 
 #### Planned
-* Books Module
-* Inventory Management
 * Loan Management
 * Orders
 * Reviews
@@ -735,7 +848,7 @@ The following features are planned for future releases to expand the capabilitie
 | Module | Completed Features | In Progress Features | Planned Features |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
-| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs (including admin utilities) | CRUD books logic, inventory management | checkout/checkin transactions |
+| **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update) | Inventory management | Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
 
 ---
