@@ -5,8 +5,58 @@
  * Each validator validates incoming request data before it reaches
  * the controller layer.
  *
- * Validation middleware will be introduced in later phases as
- * Review endpoints are implemented.
- *
  * @module modules/review/review.validation
  */
+
+import { sendError } from '../../utils/index.js';
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * Validator middleware for creating a review.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const createReviewValidator = (req, res, next) => {
+  const errors = [];
+  const { bookId, rating, comment } = req.body;
+
+  // 1. bookId Validation
+  if (bookId === undefined || bookId === null || typeof bookId !== 'string' || !UUID_REGEX.test(bookId.trim())) {
+    errors.push({ field: 'bookId', message: 'bookId is required and must be a valid UUID.' });
+  } else {
+    req.body.bookId = bookId.trim();
+  }
+
+  // 2. rating Validation
+  if (rating === undefined || rating === null) {
+    errors.push({ field: 'rating', message: 'rating is required.' });
+  } else {
+    const ratingVal = Number(rating);
+    if (!Number.isInteger(rating) || ratingVal < 1 || ratingVal > 5) {
+      errors.push({ field: 'rating', message: 'rating must be an integer between 1 and 5.' });
+    } else {
+      req.body.rating = ratingVal;
+    }
+  }
+
+  // 3. comment Validation
+  if (comment === undefined || comment === null || typeof comment !== 'string') {
+    errors.push({ field: 'comment', message: 'comment is required and must be a string.' });
+  } else {
+    const trimmedComment = comment.trim();
+    if (trimmedComment.length < 10 || trimmedComment.length > 1000) {
+      errors.push({ field: 'comment', message: 'comment must be between 10 and 1000 characters.' });
+    } else {
+      req.body.comment = trimmedComment;
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  next();
+};

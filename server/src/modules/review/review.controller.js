@@ -9,8 +9,32 @@
  * beyond request parsing, and database interactions are handled
  * exclusively by the service layer.
  *
- * Controller methods will be introduced in later phases as Review
- * endpoints are implemented.
- *
  * @module modules/review/review.controller
  */
+
+import * as reviewService from './review.service.js';
+import { sendSuccess } from '../../utils/index.js';
+
+/**
+ * Handle creating a book review.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const createReview = async (req, res, next) => {
+  try {
+    const { bookId, rating, comment } = req.body;
+
+    const review = await reviewService.createReview({
+      bookId,
+      rating,
+      comment,
+      userId: req.user.id
+    });
+
+    return sendSuccess(res, 201, review, 'Review created successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
