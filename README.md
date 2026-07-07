@@ -92,10 +92,10 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Role-Based Access Control (RBAC)** – Authorization layer (`adminMiddleware`) guarding administrative actions for `ADMIN` role users.
 * **Admin User & Status Management** – Administrative endpoints to retrieve paginated/filtered user lists, view user details, update user roles, and activate/deactivate user status.
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
-* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), and retrieve a review by its ID (`GET /reviews/:reviewId`).
+* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), and retrieve all reviews for a specific book (`GET /reviews/book/:bookId`).
 
 ### Current Focus
-* 🚧 **Phase 11.4 – Get Book Reviews**
+* 🚧 **Phase 11.5 – Get Current User Reviews**
 
 ---
 
@@ -645,6 +645,7 @@ Below are the primary endpoints and their current status:
 | **PATCH** | `/api/v1/reservations/:id/cancel` | Cancel an active reservation (Admin or Member with ownership) (Phase 10.6). | ✅ Completed |
 | **POST** | `/api/v1/reviews` | Create a new book review (Member only) (Phase 11.2). | ✅ Completed |
 | **GET** | `/api/v1/reviews/:reviewId` | Retrieve details of a specific review (Member only) (Phase 11.3). | ✅ Completed |
+| **GET** | `/api/v1/reviews/book/:bookId` | Retrieve all reviews for a specific book (Member only) (Phase 11.4). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -2338,9 +2339,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 11.1 – Review Module Foundation
 * ✅ Phase 11.2 – Create Review API
 * ✅ Phase 11.3 – Get Review by ID
+* ✅ Phase 11.4 – Get Book Reviews
 
 #### Current Focus
-* 🚧 Phase 11.4 – Get Book Reviews
+* 🚧 Phase 11.5 – Get Current User Reviews
 
 #### Planned
 * Loan Management

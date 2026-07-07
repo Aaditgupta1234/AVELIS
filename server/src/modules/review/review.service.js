@@ -118,3 +118,29 @@ export const getReviewById = async (reviewId) => {
   return review;
 };
 
+/**
+ * Service to retrieve all reviews for a specific book.
+ *
+ * @param {string} bookId - The UUID of the book
+ * @returns {Promise<Array>} List of reviews for the book
+ * @throws {ApiError} 404 if book not found or is soft-deleted
+ */
+export const getBookReviews = async (bookId) => {
+  const book = await prisma.book.findUnique({
+    where: { id: bookId }
+  });
+
+  if (!book || book.isDeleted) {
+    throw new ApiError(404, 'Book not found.');
+  }
+
+  const reviews = await prisma.review.findMany({
+    where: { bookId },
+    select: REVIEW_SELECT,
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return reviews;
+};
+
+

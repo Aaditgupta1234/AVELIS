@@ -58,3 +58,23 @@ export const getReviewById = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle retrieving all reviews for a specific book.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getBookReviews = async (req, res, next) => {
+  try {
+    const { bookId } = req.params;
+
+    const reviews = await reviewService.getBookReviews(bookId);
+
+    return sendSuccess(res, 200, reviews, 'Book reviews retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
