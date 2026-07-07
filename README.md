@@ -92,10 +92,10 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Role-Based Access Control (RBAC)** – Authorization layer (`adminMiddleware`) guarding administrative actions for `ADMIN` role users.
 * **Admin User & Status Management** – Administrative endpoints to retrieve paginated/filtered user lists, view user details, update user roles, and activate/deactivate user status.
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
-* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), retrieve all reviews for a specific book (`GET /reviews/book/:bookId`), retrieve the current user's reviews (`GET /reviews/me`), and update an existing review (`PATCH /reviews/:reviewId`).
+* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), retrieve all reviews for a specific book (`GET /reviews/book/:bookId`), retrieve the current user's reviews (`GET /reviews/me`), update an existing review (`PATCH /reviews/:reviewId`), and delete an existing review (`DELETE /reviews/:reviewId`).
 
 ### Current Focus
-* 🚧 **Phase 11.7 – Delete Review**
+* 🚧 **Phase 11.8 – Review Moderation**
 
 ---
 
@@ -648,6 +648,7 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/reviews/book/:bookId` | Retrieve all reviews for a specific book (Member only) (Phase 11.4). | ✅ Completed |
 | **GET** | `/api/v1/reviews/me` | Retrieve a list of the current authenticated user's reviews (Member only) (Phase 11.5). | ✅ Completed |
 | **PATCH** | `/api/v1/reviews/:reviewId` | Update details of a review (Member only) (Phase 11.6). | ✅ Completed |
+| **DELETE** | `/api/v1/reviews/:reviewId` | Delete a review (Member only) (Phase 11.7). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -2194,6 +2195,56 @@ Cancel an active reservation (`PENDING` or `READY_FOR_PICKUP`). Reverts any allo
   {
     "success": false,
     "message": "Reservation not found."
+### Delete Review API Specification (Phase 11.7)
+
+**DELETE** `/api/v1/reviews/:reviewId`
+
+#### Purpose
+Permanently delete an existing review. Only the authenticated owner of the review may delete it. Other members and administrators receive **403 Forbidden** during Phase 11.7.
+
+#### Authentication
+Bearer Token (Member only)
+
+#### Request Parameters
+- `reviewId` (path parameter) — UUID of the review to delete.
+
+#### Success Response
+- **200 OK**
+  ```json
+  {
+    "success": true,
+    "message": "Review deleted successfully.",
+    "data": null
+  }
+  ```
+
+#### Error Responses
+- **400 Bad Request** — Validation failed due to invalid UUID format.
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      {
+        "field": "reviewId",
+        "message": "reviewId is required and must be a valid UUID."
+      }
+    ]
+  }
+  ```
+- **401 Unauthorized** — Authentication header is missing or token is invalid.
+- **403 Forbidden** — An authenticated Member or Admin attempts to delete a review belonging to another user.
+  ```json
+  {
+    "success": false,
+    "message": "You can only delete your own reviews."
+  }
+  ```
+- **404 Not Found** — No review exists with the provided ID.
+  ```json
+  {
+    "success": false,
+    "message": "Review not found."
   }
   ```
 
@@ -2344,9 +2395,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 11.4 – Get Book Reviews
 * ✅ Phase 11.5 – Get Current User Reviews
 * ✅ Phase 11.6 – Update Review
+* ✅ Phase 11.7 – Delete Review
 
 #### Current Focus
-* 🚧 Phase 11.7 – Delete Review
+* 🚧 Phase 11.8 – Review Moderation
 
 #### Planned
 * Loan Management

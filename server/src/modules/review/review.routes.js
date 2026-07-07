@@ -10,7 +10,7 @@
 
 import { Router } from 'express';
 import * as reviewController from './review.controller.js';
-import { createReviewValidator, getReviewByIdValidator, getBookReviewsValidator, updateReviewValidator } from './review.validation.js';
+import { createReviewValidator, getReviewByIdValidator, getBookReviewsValidator, updateReviewValidator, deleteReviewValidator } from './review.validation.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
 import { ApiError } from '../../utils/index.js';
@@ -78,6 +78,14 @@ router.patch(
   authMiddleware,
   memberMiddleware,
   reviewController.updateReview
+);
+
+// DELETE /:reviewId — Delete a review by its ID (Member only)
+router.delete(
+  '/:reviewId',
+  authMiddleware,
+  deleteReviewValidator,
+  reviewController.deleteReview
 );
 
 

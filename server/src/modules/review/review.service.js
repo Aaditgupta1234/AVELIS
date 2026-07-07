@@ -192,6 +192,38 @@ export const updateReview = async ({ reviewId, rating, comment, userId }) => {
   return updatedReview;
 };
 
+/**
+ * Service to permanently delete an existing review.
+ *
+ * @param {string} reviewId - The UUID of the review to delete
+ * @param {string} userId - The UUID of the authenticated user attempting the deletion
+ * @returns {Promise<void>} Returns void upon successful deletion
+ * @throws {ApiError} 404 if review not found
+ * @throws {ApiError} 403 if user is not the owner of the review
+ */
+export const deleteReview = async (reviewId, userId) => {
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: {
+      id: true,
+      userId: true
+    }
+  });
+
+  if (!review) {
+    throw new ApiError(404, 'Review not found.');
+  }
+
+  if (review.userId !== userId) {
+    throw new ApiError(403, 'You can only delete your own reviews.');
+  }
+
+  await prisma.review.delete({
+    where: { id: reviewId }
+  });
+};
+
+
 
 
 
