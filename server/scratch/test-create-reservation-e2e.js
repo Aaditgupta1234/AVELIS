@@ -226,7 +226,7 @@ async function runTests() {
       const ok = resultRes.statusCode === 201 && 
                   resultRes.body.success === true && 
                   resultRes.body.data.status === 'READY_FOR_PICKUP' &&
-                  resultRes.body.data.copyId === testCopy1.id &&
+                  resultRes.body.data.bookCopy.id === testCopy1.id &&
                   copy.status === 'RESERVED';
       record('Test 1: Successful READY_FOR_PICKUP reservation', ok);
     }
@@ -250,7 +250,7 @@ async function runTests() {
       const ok = resultRes.statusCode === 201 && 
                   resultRes.body.success === true && 
                   resultRes.body.data.status === 'PENDING' &&
-                  resultRes.body.data.copyId === null;
+                  resultRes.body.data.bookCopy === null;
       record('Test 2: Successful PENDING reservation', ok);
     }
 
@@ -466,7 +466,7 @@ async function runTests() {
 
       const ok = resultRes2.statusCode === 201 && 
                   resultRes2.body.success === true && 
-                  resultRes2.body.data.userId === otherMemberUser.id;
+                  resultRes2.body.data.user.id === otherMemberUser.id;
       record('Test 11: Admin can reserve for another member', ok);
     }
 

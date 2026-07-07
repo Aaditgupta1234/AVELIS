@@ -6,6 +6,52 @@ export const MAX_ACTIVE_RESERVATIONS_LIMIT = 3;
 export const RESERVATION_PICKUP_WINDOW_HOURS = 48;
 
 /**
+ * Standardized Reservation API Response Selection Object.
+ * Exposes only properties allowed in the public API contract.
+ */
+export const RESERVATION_SELECT = {
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  fulfilledAt: true,
+  cancelledAt: true,
+  expiresAt: true,
+  user: {
+    select: {
+      id: true,
+      username: true,
+      email: true
+    }
+  },
+  book: {
+    select: {
+      id: true,
+      title: true,
+      isbn: true
+    }
+  },
+  bookCopy: {
+    select: {
+      id: true,
+      barcode: true,
+      shelfLocation: true,
+      condition: true,
+      status: true
+    }
+  }
+};
+
+/**
+ * Reusable internal query definition for ownership-protected operations.
+ * Appends the internal database userId field to RESERVATION_SELECT.
+ */
+const RESERVATION_SELECT_WITH_OWNER = {
+  ...RESERVATION_SELECT,
+  userId: true
+};
+
+/**
  * Service to create a book reservation.
  *
  * @param {Object} reservationData - Input data containing userId, bookId, and currentUser
@@ -121,31 +167,7 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
           fulfilledAt: now,
           expiresAt
         },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              email: true
-            }
-          },
-          book: {
-            select: {
-              id: true,
-              title: true,
-              isbn: true
-            }
-          },
-          bookCopy: {
-            select: {
-              id: true,
-              barcode: true,
-              shelfLocation: true,
-              condition: true,
-              status: true
-            }
-          }
-        }
+        select: RESERVATION_SELECT
       });
 
       // Update BookCopy status to RESERVED
@@ -164,34 +186,40 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
           copyId: null,
           status: ReservationStatus.PENDING
         },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              email: true
-            }
-          },
-          book: {
-            select: {
-              id: true,
-              title: true,
-              isbn: true
-            }
-          },
-          bookCopy: {
-            select: {
-              id: true,
-              barcode: true,
-              shelfLocation: true,
-              condition: true,
-              status: true
-            }
-          }
-        }
+        select: RESERVATION_SELECT
       });
 
       return reservation;
     }
   });
+};
+
+/**
+ * Service to retrieve a single reservation by ID.
+ *
+ * @param {Object} queryData - Input data containing reservationId and currentUser
+ * @returns {Promise<Object>} The reservation record
+ * @throws {ApiError} 404 if reservation not found
+ * @throws {ApiError} 403 if member attempts to retrieve another user's reservation
+ */
+export const getReservationById = async ({ reservationId, currentUser }) => {
+  // Step 1: Fetch minimal ownership metadata for authorization checks
+  const reservationData = await prisma.reservation.findUnique({
+    where: { id: reservationId },
+    select: RESERVATION_SELECT_WITH_OWNER
+  });
+
+  // Step 2: Validate existence
+  if (!reservationData) {
+    throw new ApiError(404, 'Reservation not found.');
+  }
+
+  // Step 3: Validate ownership/role authorization
+  if (currentUser.role === UserRole.MEMBER && reservationData.userId !== currentUser.id) {
+    throw new ApiError(403, 'Access denied. You can only retrieve your own reservations.');
+  }
+
+  // Step 4: Destructure to extract the public API payload
+  const { userId, ...reservation } = reservationData;
+  return reservation;
 };
