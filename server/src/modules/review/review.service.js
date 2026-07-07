@@ -159,5 +159,39 @@ export const getCurrentUserReviews = async (userId) => {
   return reviews;
 };
 
+/**
+ * Service to update an existing review.
+ *
+ * @param {Object} updateData - Data object containing reviewId, rating, comment, and userId
+ * @returns {Promise<Object>} The updated review record
+ * @throws {ApiError} 404 if review not found
+ * @throws {ApiError} 403 if user is not the owner of the review
+ */
+export const updateReview = async ({ reviewId, rating, comment, userId }) => {
+  const existingReview = await prisma.review.findUnique({
+    where: { id: reviewId }
+  });
+
+  if (!existingReview) {
+    throw new ApiError(404, 'Review not found.');
+  }
+
+  if (existingReview.userId !== userId) {
+    throw new ApiError(403, 'You can only update your own reviews.');
+  }
+
+  const updatedReview = await prisma.review.update({
+    where: { id: reviewId },
+    data: {
+      rating,
+      comment
+    },
+    select: REVIEW_SELECT
+  });
+
+  return updatedReview;
+};
+
+
 
 

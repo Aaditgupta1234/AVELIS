@@ -94,5 +94,31 @@ export const getCurrentUserReviews = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle updating an existing review.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const updateReview = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+    const { rating, comment } = req.body;
+
+    const updatedReview = await reviewService.updateReview({
+      reviewId,
+      rating,
+      comment,
+      userId: req.user.id
+    });
+
+    return sendSuccess(res, 200, updatedReview, 'Review updated successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 
