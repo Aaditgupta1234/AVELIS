@@ -173,15 +173,7 @@ async function runTests() {
       }
     });
 
-    // res2: member1, book1, PENDING, copy null
-    res2 = await prisma.reservation.create({
-      data: {
-        userId: member1.id,
-        bookId: testBook.id,
-        copyId: null,
-        status: 'PENDING'
-      }
-    });
+
 
     // resCompleted: member2, book1, COMPLETED, copy2
     resCompleted = await prisma.reservation.create({
@@ -215,6 +207,15 @@ async function runTests() {
 
     // ── Test 2: Member successfully cancels their own reservation (PENDING) ──
     {
+      res2 = await prisma.reservation.create({
+        data: {
+          userId: member1.id,
+          bookId: testBook.id,
+          copyId: null,
+          status: 'PENDING'
+        }
+      });
+
       const req = createMockReq({
         headers: { authorization: `Bearer ${memberToken1}` },
         params: { id: res2.id },

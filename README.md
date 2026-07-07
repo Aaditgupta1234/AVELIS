@@ -94,7 +94,7 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 10.7 – Reservation Queue & Fulfillment**
+* 🚧 **Phase 10.8 – Reservation Expiration & Status Management**
 
 ---
 
@@ -2193,6 +2193,24 @@ Cancel an active reservation (`PENDING` or `READY_FOR_PICKUP`). Reverts any allo
 
 ---
 
+### Reservation Queue & Fulfillment Logic (Phase 10.7)
+
+#### Purpose
+Orchestrates the automatic queue fulfillment workflow. When a physical copy of a book becomes `AVAILABLE` (initially triggered when a member cancels their `READY_FOR_PICKUP` reservation), the system automatically matches it to the oldest eligible pending hold in the FIFO queue.
+
+#### Workflow Architecture
+This is an internal service workflow integrated into the existing Reservation and Book Copy database operations.
+
+1. **Locate Available Copy**: Locates one `AVAILABLE` physical `BookCopy` for the target book, ordered deterministically by `id: 'asc'`.
+2. **Locate Next Pending Reservation**: Queries the oldest `PENDING` reservation for the book in FIFO order:
+   - Primary Sort: `createdAt ASC`
+   - Secondary Sort (Tie-breaker): `id ASC`
+3. **Transactional Fulfillment**: Executes all database updates inside a single atomic Prisma transaction:
+   - Sets BookCopy status to `RESERVED`.
+   - Sets Reservation status to `READY_FOR_PICKUP`, links it to the `copyId` of the allocated copy, and computes the `fulfilledAt` (current time) and `expiresAt` (pickup window expiry, default 48 hours) timestamps.
+
+---
+
 ## Current Development Progress
 
 ### Completed
@@ -2282,9 +2300,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 10.4 – Get All Reservations (Admin)
 * ✅ Phase 10.5 – Get Current User Reservations
 * ✅ Phase 10.6 – Cancel Reservation
+* ✅ Phase 10.7 – Reservation Queue & Fulfillment
 
 #### Current Focus
-* 🚧 Phase 10.7 – Reservation Queue & Fulfillment
+* 🚧 Phase 10.8 – Reservation Expiration & Status Management
 
 #### Planned
 * Loan Management
