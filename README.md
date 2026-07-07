@@ -94,7 +94,7 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 10.8 – Reservation Expiration & Status Management**
+* 🚧 **Phase 10.9 – Reservation Module Production Refinement**
 
 ---
 
@@ -2211,6 +2211,22 @@ This is an internal service workflow integrated into the existing Reservation an
 
 ---
 
+### Reservation Expiration & Status Management (Phase 10.8)
+
+#### Purpose
+Orchestrates the automated reservation expiration lifecycle. It detects hold reservations whose pickup window has expired, releases their allocated physical book copies, transitions holds to `EXPIRED`, and immediately reallocates the released inventory to the next waiting pending member in the queue.
+
+#### Workflow Architecture
+This is an internal service workflow executed under a single transactional client block to guarantee atomic consistency.
+
+1. **Locate Expired Reservations**: Queries database for reservations with status `READY_FOR_PICKUP` and `expiresAt <= current timestamp`, sorted by `expiresAt ASC` and `id ASC`.
+2. **Locate & Release Reserved Copy**: For each expired hold, if `copyId` exists, updates the associated `BookCopy.status` to `AVAILABLE`.
+3. **Transition Status**: Updates the expired reservation status to `EXPIRED`.
+4. **Trigger Queue Fulfillment**: Re-allocates the newly freed copy immediately to the oldest waiting pending reservation for the book (using the FIFO helper).
+5. **Return Summary**: Returns an operational summary object containing counts of processed reservations, released copies, and newly fulfilled reservations.
+
+---
+
 ## Current Development Progress
 
 ### Completed
@@ -2301,9 +2317,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 10.5 – Get Current User Reservations
 * ✅ Phase 10.6 – Cancel Reservation
 * ✅ Phase 10.7 – Reservation Queue & Fulfillment
+* ✅ Phase 10.8 – Reservation Expiration & Status Management
 
 #### Current Focus
-* 🚧 Phase 10.8 – Reservation Expiration & Status Management
+* 🚧 Phase 10.9 – Reservation Module Production Refinement
 
 #### Planned
 * Loan Management

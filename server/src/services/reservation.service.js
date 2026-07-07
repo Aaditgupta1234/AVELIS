@@ -473,3 +473,86 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
     return updatedReservation;
   });
 };
+
+/**
+ * Private helper to locate expired reservations and release their copies, triggering queue fulfillment.
+ * Uses a provided Prisma transaction client.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx - Prisma transaction client
+ * @returns {Promise<Object>} Operational summary counts
+ */
+const processExpiredReservations = async (tx) => {
+  const now = new Date();
+
+  // Stage 1 — Locate Expired Reservations
+  const expiredReservations = await tx.reservation.findMany({
+    where: {
+      status: ReservationStatus.READY_FOR_PICKUP,
+      expiresAt: {
+        lte: now
+      }
+    },
+    orderBy: [
+      { expiresAt: 'asc' },
+      { id: 'asc' }
+    ]
+  });
+
+  if (expiredReservations.length === 0) {
+    return {
+      processedReservations: 0,
+      releasedCopies: 0,
+      fulfilledReservations: 0
+    };
+  }
+
+  let processedReservations = 0;
+  let releasedCopies = 0;
+  let fulfilledReservations = 0;
+
+  // Stage 2 — Process Expired Reservations
+  for (const reservation of expiredReservations) {
+    if (!reservation.copyId) {
+      continue;
+    }
+
+    // Stage 3 — Transactional Expiration
+    // 1. Update Reservation status to EXPIRED
+    await tx.reservation.update({
+      where: { id: reservation.id },
+      data: { status: ReservationStatus.EXPIRED }
+    });
+    processedReservations++;
+
+    // 2. Update BookCopy status to AVAILABLE
+    await tx.bookCopy.update({
+      where: { id: reservation.copyId },
+      data: { status: CopyStatus.AVAILABLE }
+    });
+    releasedCopies++;
+
+    // 3. Trigger FIFO queue fulfillment
+    const fulfilled = await fulfillNextReservationForBook(reservation.bookId, tx);
+    if (fulfilled) {
+      fulfilledReservations++;
+    }
+  }
+
+  // Stage 4 — Return Summary
+  return {
+    processedReservations,
+    releasedCopies,
+    fulfilledReservations
+  };
+};
+
+/**
+ * Service to execute the reservation expiration workflow within a transaction.
+ *
+ * @returns {Promise<Object>} Operational summary counts
+ */
+export const handleExpiredReservations = async () => {
+  return await prisma.$transaction(async (tx) => {
+    return await processExpiredReservations(tx);
+  });
+};
