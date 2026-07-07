@@ -92,10 +92,10 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Role-Based Access Control (RBAC)** – Authorization layer (`adminMiddleware`) guarding administrative actions for `ADMIN` role users.
 * **Admin User & Status Management** – Administrative endpoints to retrieve paginated/filtered user lists, view user details, update user roles, and activate/deactivate user status.
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
-* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), retrieve all reviews for a specific book (`GET /reviews/book/:bookId`), retrieve the current user's reviews (`GET /reviews/me`), update an existing review (`PATCH /reviews/:reviewId`), and delete an existing review (`DELETE /reviews/:reviewId`).
+* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), retrieve all reviews for a specific book (`GET /reviews/book/:bookId`), retrieve the current user's reviews (`GET /reviews/me`), update an existing review (`PATCH /reviews/:reviewId`), delete an existing review (`DELETE /reviews/:reviewId`), and moderate/delete reviews as administrator (`DELETE /admin/reviews/:reviewId`).
 
 ### Current Focus
-* 🚧 **Phase 11.8 – Review Moderation**
+* 🚧 **Phase 11.9 – Rating Statistics**
 
 ---
 
@@ -663,6 +663,7 @@ The following administrative endpoints are protected by `authMiddleware` and `ad
 | **PATCH** | `/api/v1/admin/users/:id/role` | Update a user's role. |
 | **PATCH** | `/api/v1/admin/users/:id/status` | Activate or deactivate a user (with self-deactivation protection). |
 | **GET** | `/api/v1/reservations` | Retrieve all reservations in the system (paginated, sorted, and filtered) (Phase 10.4). |
+| **DELETE** | `/api/v1/admin/reviews/:reviewId` | Moderation: permanently delete any review (Admin only) (Phase 11.8). |
 
 ### Book Management Module Summary
 
@@ -2240,6 +2241,56 @@ Bearer Token (Member only)
     "message": "You can only delete your own reviews."
   }
   ```
+  }
+  ```
+
+---
+
+### Review Moderation API Specification (Phase 11.8)
+
+**DELETE** `/api/v1/admin/reviews/:reviewId`
+
+#### Purpose
+Permanently delete any review as part of moderator review moderation. Only authenticated administrators may access this endpoint.
+
+#### Authentication
+Bearer Token (Admin only)
+
+#### Request Parameters
+- `reviewId` (path parameter) — UUID of the review to delete.
+
+#### Success Response
+- **200 OK**
+  ```json
+  {
+    "success": true,
+    "message": "Review moderated successfully.",
+    "data": null
+  }
+  ```
+
+#### Error Responses
+- **400 Bad Request** — Validation failed due to invalid UUID format.
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      {
+        "field": "reviewId",
+        "message": "reviewId is required and must be a valid UUID."
+      }
+    ]
+  }
+  ```
+- **401 Unauthorized** — Authentication header is missing or token is invalid.
+- **403 Forbidden** — A Member user attempts to access this administrator endpoint.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Admin privileges required."
+  }
+  ```
 - **404 Not Found** — No review exists with the provided ID.
   ```json
   {
@@ -2396,9 +2447,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 11.5 – Get Current User Reviews
 * ✅ Phase 11.6 – Update Review
 * ✅ Phase 11.7 – Delete Review
+* ✅ Phase 11.8 – Review Moderation
 
 #### Current Focus
-* 🚧 Phase 11.8 – Review Moderation
+* 🚧 Phase 11.9 – Rating Statistics
 
 #### Planned
 * Loan Management

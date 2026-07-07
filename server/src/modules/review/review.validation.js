@@ -183,6 +183,31 @@ export const deleteReviewValidator = (req, res, next) => {
   next();
 };
 
+/**
+ * Validator middleware for admin review deletion.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const adminDeleteReviewValidator = (req, res, next) => {
+  const errors = [];
+  const { reviewId } = req.params;
+
+  if (reviewId === undefined || reviewId === null || typeof reviewId !== 'string' || !UUID_REGEX.test(reviewId.trim())) {
+    errors.push({ field: 'reviewId', message: 'reviewId is required and must be a valid UUID.' });
+  } else {
+    req.params.reviewId = reviewId.trim();
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  next();
+};
+
+
 
 
 

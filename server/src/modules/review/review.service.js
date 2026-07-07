@@ -223,6 +223,29 @@ export const deleteReview = async (reviewId, userId) => {
   });
 };
 
+/**
+ * Service for administrator to permanently delete any review.
+ *
+ * @param {string} reviewId - The UUID of the review to delete
+ * @returns {Promise<void>} Returns void upon successful deletion
+ * @throws {ApiError} 404 if review not found
+ */
+export const adminDeleteReview = async (reviewId) => {
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: { id: true }
+  });
+
+  if (!review) {
+    throw new ApiError(404, 'Review not found.');
+  }
+
+  await prisma.review.delete({
+    where: { id: reviewId }
+  });
+};
+
+
 
 
 

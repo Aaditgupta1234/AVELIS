@@ -3,6 +3,8 @@ import { getDashboardStats, getUsers, getUserById, updateUserRole, updateUserSta
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
 import { updateUserRoleValidator, updateUserStatusValidator } from '../validators/users/user.validator.js';
+import { adminDeleteReviewValidator } from '../modules/review/review.validation.js';
+import { adminDeleteReview } from '../modules/review/review.controller.js';
 
 const router = Router();
 
@@ -20,5 +22,8 @@ router.patch('/users/:id/role', authMiddleware, adminMiddleware, updateUserRoleV
 
 // PATCH /users/:id/status — Update user active status
 router.patch('/users/:id/status', authMiddleware, adminMiddleware, updateUserStatusValidator, updateUserStatus);
+
+// DELETE /reviews/:reviewId — Moderation: permanently delete any review (Admin only)
+router.delete('/reviews/:reviewId', authMiddleware, adminMiddleware, adminDeleteReviewValidator, adminDeleteReview);
 
 export default router;

@@ -138,6 +138,26 @@ export const deleteReview = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle admin deleting any review by its ID.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const adminDeleteReview = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+
+    await reviewService.adminDeleteReview(reviewId);
+
+    return sendSuccess(res, 200, null, 'Review moderated successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 
 
