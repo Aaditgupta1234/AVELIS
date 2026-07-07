@@ -336,3 +336,72 @@ export const getCurrentUserReservations = async ({ page, limit, sortBy, sortOrde
     }
   };
 };
+
+/**
+ * Service to cancel a reservation.
+ *
+ * @param {Object} data - Input containing reservationId and currentUser
+ * @returns {Promise<Object>} The cancelled reservation object
+ * @throws {ApiError} 404 if not found
+ * @throws {ApiError} 403 if unauthorized
+ * @throws {ApiError} 400 if validation or business rules fail
+ */
+export const cancelReservation = async ({ reservationId, currentUser }) => {
+  // Stage 1 — Retrieve Reservation
+  const reservationData = await prisma.reservation.findUnique({
+    where: { id: reservationId },
+    select: {
+      userId: true,
+      status: true,
+      copyId: true
+    }
+  });
+
+  if (!reservationData) {
+    throw new ApiError(404, 'Reservation not found.');
+  }
+
+  // Stage 2 — Authorization
+  if (currentUser.role === UserRole.MEMBER && reservationData.userId !== currentUser.id) {
+    throw new ApiError(403, 'Access denied. You can only cancel your own reservations.');
+  }
+
+  // Stage 3 — Business Rule Validation
+  const allowedStatuses = [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP];
+  if (!allowedStatuses.includes(reservationData.status)) {
+    throw new ApiError(400, 'Reservation cannot be cancelled in its current state.');
+  }
+
+  // Stage 4 — Execute Transaction
+  return await prisma.$transaction(async (tx) => {
+    // 1. Update Reservation status to CANCELLED and set cancelledAt
+    const updatedReservation = await tx.reservation.update({
+      where: { id: reservationId },
+      data: {
+        status: ReservationStatus.CANCELLED,
+        cancelledAt: new Date()
+      },
+      select: RESERVATION_SELECT
+    });
+
+    // 2. If reservation currently holds a physical copy, validate copy status and release it
+    if (reservationData.copyId) {
+      const copy = await tx.bookCopy.findUnique({
+        where: { id: reservationData.copyId }
+      });
+
+      if (!copy || copy.status !== CopyStatus.RESERVED) {
+        throw new ApiError(400, 'Cannot release copy. Book copy is not in RESERVED status.');
+      }
+
+      await tx.bookCopy.update({
+        where: { id: reservationData.copyId },
+        data: {
+          status: CopyStatus.AVAILABLE
+        }
+      });
+    }
+
+    return updatedReservation;
+  });
+};

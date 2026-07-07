@@ -119,3 +119,25 @@ export const getCurrentUserReservations = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle cancelling a reservation.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const cancelReservation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const reservation = await reservationService.cancelReservation({
+      reservationId: id,
+      currentUser: req.user
+    });
+
+    return sendSuccess(res, 200, reservation, 'Reservation cancelled successfully.');
+  } catch (error) {
+    next(error);
+  }
+};

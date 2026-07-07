@@ -94,7 +94,7 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 10.6 – Cancel Reservation**
+* 🚧 **Phase 10.7 – Reservation Queue & Fulfillment**
 
 ---
 
@@ -641,6 +641,7 @@ Below are the primary endpoints and their current status:
 | **POST** | `/api/v1/reservations` | Create a new reservation for a book copy (MEMBER/ADMIN) (Phase 10.2). | ✅ Completed |
 | **GET** | `/api/v1/reservations/:id` | Retrieve details of a specific reservation (Admin or Member with ownership) (Phase 10.3). | ✅ Completed |
 | **GET** | `/api/v1/reservations/me` | Retrieve a paginated list of current user's reservations (Member only) (Phase 10.5). | ✅ Completed |
+| **PATCH** | `/api/v1/reservations/:id/cancel` | Cancel an active reservation (Admin or Member with ownership) (Phase 10.6). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -2118,6 +2119,80 @@ Retrieve a paginated, sorted, and filtered list of the current authenticated use
 
 ---
 
+### Cancel Reservation API Specification (Phase 10.6)
+
+**PATCH** `/api/v1/reservations/:id/cancel`
+
+#### Purpose
+Cancel an active reservation (`PENDING` or `READY_FOR_PICKUP`). Reverts any allocated copy status to `AVAILABLE` atomically.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Administrators (`ADMIN` role) or Members (`MEMBER` role with ownership).
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Reservation cancelled successfully.",
+  "data": {
+    "id": "e4d3c2b1-a0f9-8e7d-6c5b-4a3f2e1d0c9b",
+    "status": "CANCELLED",
+    "createdAt": "2026-07-07T10:45:00.000Z",
+    "updatedAt": "2026-07-07T11:00:00.000Z",
+    "fulfilledAt": "2026-07-07T10:45:00.000Z",
+    "cancelledAt": "2026-07-07T11:00:00.000Z",
+    "expiresAt": "2026-07-09T10:45:00.000Z",
+    "user": {
+      "id": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c",
+      "username": "res_member",
+      "email": "res_member@avelis.com"
+    },
+    "book": {
+      "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "title": "Clean Code",
+      "isbn": "9780132350884"
+    },
+    "bookCopy": {
+      "id": "c5b4a3f2-e1d0-9c8b-7a6f-5e4d3c2b1a0f",
+      "barcode": "BC-12345",
+      "shelfLocation": "Aisle 3",
+      "condition": "NEW",
+      "status": "AVAILABLE"
+    }
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Validation failed due to invalid UUID format or reservation is not in a cancellable state (`PENDING` or `READY_FOR_PICKUP`), or the associated copy cannot be released because it is not currently `RESERVED`.
+  ```json
+  {
+    "success": false,
+    "message": "Reservation cannot be cancelled in its current state."
+  }
+  ```
+- **401 Unauthorized** — Authentication header is missing or token is invalid.
+- **403 Forbidden** — A Member attempts to cancel a reservation belonging to another user.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. You can only cancel your own reservations."
+  }
+  ```
+- **404 Not Found** — No reservation exists with the provided ID.
+  ```json
+  {
+    "success": false,
+    "message": "Reservation not found."
+  }
+  ```
+
+---
+
 ## Current Development Progress
 
 ### Completed
@@ -2206,9 +2281,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 10.3 – Get Reservation by ID
 * ✅ Phase 10.4 – Get All Reservations (Admin)
 * ✅ Phase 10.5 – Get Current User Reservations
+* ✅ Phase 10.6 – Cancel Reservation
 
 #### Current Focus
-* 🚧 Phase 10.6 – Cancel Reservation
+* 🚧 Phase 10.7 – Reservation Queue & Fulfillment
 
 #### Planned
 * Loan Management

@@ -58,4 +58,12 @@ router.get(
   reservationController.getReservationById
 );
 
+// PATCH /:id/cancel - Cancel an active reservation (Admin or Member with ownership)
+router.patch(
+  '/:id/cancel',
+  authMiddleware,
+  reservationIdParamValidator,
+  reservationController.cancelReservation
+);
+
 export default router;
