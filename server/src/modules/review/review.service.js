@@ -97,3 +97,24 @@ export const createReview = async ({ userId, bookId, rating, comment }) => {
 
   return review;
 };
+
+/**
+ * Service to retrieve a single review by its unique identifier.
+ *
+ * @param {string} reviewId - The UUID of the review to retrieve
+ * @returns {Promise<Object>} The retrieved review record
+ * @throws {ApiError} 404 if review not found
+ */
+export const getReviewById = async (reviewId) => {
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: REVIEW_SELECT
+  });
+
+  if (!review) {
+    throw new ApiError(404, 'Review not found.');
+  }
+
+  return review;
+};
+

@@ -10,7 +10,7 @@
 
 import { Router } from 'express';
 import * as reviewController from './review.controller.js';
-import { createReviewValidator } from './review.validation.js';
+import { createReviewValidator, getReviewByIdValidator } from './review.validation.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
 import { ApiError } from '../../utils/index.js';
@@ -44,5 +44,15 @@ router.post(
   memberMiddleware,
   reviewController.createReview
 );
+
+// GET /:reviewId — Get a review by its ID (Member only)
+router.get(
+  '/:reviewId',
+  getReviewByIdValidator,
+  authMiddleware,
+  memberMiddleware,
+  reviewController.getReviewById
+);
+
 
 export default router;

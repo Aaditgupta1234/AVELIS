@@ -38,3 +38,23 @@ export const createReview = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle retrieving a review by ID.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getReviewById = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+
+    const review = await reviewService.getReviewById(reviewId);
+
+    return sendSuccess(res, 200, review, 'Review retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+

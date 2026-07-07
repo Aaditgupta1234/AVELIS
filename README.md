@@ -92,9 +92,10 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Role-Based Access Control (RBAC)** – Authorization layer (`adminMiddleware`) guarding administrative actions for `ADMIN` role users.
 * **Admin User & Status Management** – Administrative endpoints to retrieve paginated/filtered user lists, view user details, update user roles, and activate/deactivate user status.
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
+* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), and retrieve a review by its ID (`GET /reviews/:reviewId`).
 
 ### Current Focus
-* 🚧 **Phase 11.2 – Create Review API**
+* 🚧 **Phase 11.4 – Get Book Reviews**
 
 ---
 
@@ -642,6 +643,8 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/reservations/:id` | Retrieve details of a specific reservation (Admin or Member with ownership) (Phase 10.3). | ✅ Completed |
 | **GET** | `/api/v1/reservations/me` | Retrieve a paginated list of current user's reservations (Member only) (Phase 10.5). | ✅ Completed |
 | **PATCH** | `/api/v1/reservations/:id/cancel` | Cancel an active reservation (Admin or Member with ownership) (Phase 10.6). | ✅ Completed |
+| **POST** | `/api/v1/reviews` | Create a new book review (Member only) (Phase 11.2). | ✅ Completed |
+| **GET** | `/api/v1/reviews/:reviewId` | Retrieve details of a specific review (Member only) (Phase 11.3). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -2333,9 +2336,11 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 10.8 – Reservation Expiration & Status Management
 * ✅ Phase 10.9 – Reservation Module Production Refinement
 * ✅ Phase 11.1 – Review Module Foundation
+* ✅ Phase 11.2 – Create Review API
+* ✅ Phase 11.3 – Get Review by ID
 
 #### Current Focus
-* 🚧 Phase 11.2 – Create Review API
+* 🚧 Phase 11.4 – Get Book Reviews
 
 #### Planned
 * Loan Management
