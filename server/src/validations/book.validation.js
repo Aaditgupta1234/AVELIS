@@ -410,3 +410,28 @@ export const bookIdParamValidator = (req, res, next) => {
   next();
 };
 
+/**
+ * Validator middleware for book rating statistics.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getBookRatingValidator = (req, res, next) => {
+  const errors = [];
+  const { bookId } = req.params;
+
+  if (bookId === undefined || bookId === null || typeof bookId !== 'string' || !UUID_REGEX.test(bookId.trim())) {
+    errors.push({ field: 'bookId', message: 'bookId is required and must be a valid UUID.' });
+  } else {
+    req.params.bookId = bookId.trim();
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  next();
+};
+
+

@@ -415,3 +415,64 @@ export const restoreBook = async (bookId) => {
     return restoredBook;
   });
 };
+
+/**
+ * Service to retrieve rating statistics for a specific book.
+ * Calculates average rating, total review count, and rating distribution dynamically.
+ *
+ * @param {string} bookId - The UUID of the book
+ * @returns {Promise<Object>} The rating statistics object
+ * @throws {ApiError} 404 if the book does not exist or is soft-deleted
+ */
+export const getBookRating = async (bookId) => {
+  // Step 1: Verify the book exists and is not soft-deleted
+  const book = await prisma.book.findUnique({
+    where: { id: bookId },
+    select: { id: true, isDeleted: true }
+  });
+
+  if (!book || book.isDeleted) {
+    throw new ApiError(404, 'Book not found.');
+  }
+
+  // Step 2: Query the rating statistics using Prisma aggregation
+  const aggregations = await prisma.review.aggregate({
+    where: { bookId },
+    _avg: { rating: true },
+    _count: { id: true }
+  });
+
+  const distributions = await prisma.review.groupBy({
+    by: ['rating'],
+    where: { bookId },
+    _count: { rating: true }
+  });
+
+  // Step 3: Construct the return object
+  const ratingDistribution = {
+    '1': 0,
+    '2': 0,
+    '3': 0,
+    '4': 0,
+    '5': 0
+  };
+
+  for (const group of distributions) {
+    const key = String(group.rating);
+    if (key in ratingDistribution) {
+      ratingDistribution[key] = group._count.rating;
+    }
+  }
+
+  let averageRating = null;
+  if (aggregations._count.id > 0 && aggregations._avg.rating !== null) {
+    averageRating = Math.round(aggregations._avg.rating * 10) / 10;
+  }
+
+  return {
+    averageRating,
+    totalReviews: aggregations._count.id,
+    ratingDistribution
+  };
+};
+

@@ -92,23 +92,23 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Role-Based Access Control (RBAC)** – Authorization layer (`adminMiddleware`) guarding administrative actions for `ADMIN` role users.
 * **Admin User & Status Management** – Administrative endpoints to retrieve paginated/filtered user lists, view user details, update user roles, and activate/deactivate user status.
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
-* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), retrieve all reviews for a specific book (`GET /reviews/book/:bookId`), retrieve the current user's reviews (`GET /reviews/me`), update an existing review (`PATCH /reviews/:reviewId`), delete an existing review (`DELETE /reviews/:reviewId`), and moderate/delete reviews as administrator (`DELETE /admin/reviews/:reviewId`).
+* **Review Creation & Retrieval** – Post ratings and comments for borrowed books (`POST /reviews`), retrieve a review by its ID (`GET /reviews/:reviewId`), retrieve all reviews for a specific book (`GET /reviews/book/:bookId`), retrieve the current user's reviews (`GET /reviews/me`), update an existing review (`PATCH /reviews/:reviewId`), delete an existing review (`DELETE /reviews/:reviewId`), moderate/delete reviews as administrator (`DELETE /admin/reviews/:reviewId`), and retrieve aggregated book ratings statistics (`GET /books/:bookId/rating`).
 
 ### Current Focus
-* 🚧 **Phase 11.9 – Rating Statistics**
+* 🚧 **Phase 12.1 – Loan Management**
 
 ---
 
 ## Latest Milestone
 
-AVELIS has successfully completed **Phase 9.9 — Loan Module Production Refinement**, finalizing code audits, validations consolidation, and regression testing for the complete Loan Management module.
+AVELIS has successfully completed **Phase 11.9 — Rating Statistics**, finalizing aggregation logic, distribution calculation, and API endpoints for book review metrics.
 
 The completed milestone confirms:
-* **Consolidated Parameter Validation**: Merged `returnValidator` and `loanIdParamValidator` to eliminate code duplication.
-* **Separation of Controller Handlers**: Kept `returnBook` and `returnLoan` distinct to support future extensibility as they map to separate service layer entry points.
-* **Comprehensive Regression Testing**: Verified all E2E integration test suites for Borrow, Return, Get, and Sync status transitions pass successfully.
+* **Aggregation Logic**: Implemented efficient Prisma aggregation queries to compute average ratings and counts.
+* **Rating Distribution**: Added categorized count groupings (1-5 star distributions) for deeper analytic insight.
+* **API Integration**: Exposed `/api/v1/books/:bookId/rating` for public catalog usage.
 
-> **Next Milestone:** Phase 10 — Order Invoicing & Bookstore Purchase Pipeline
+> **Next Milestone:** Phase 12 — Order Invoicing & Bookstore Purchase Pipeline
 
 ## Project Statistics
 
@@ -649,6 +649,7 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/reviews/me` | Retrieve a list of the current authenticated user's reviews (Member only) (Phase 11.5). | ✅ Completed |
 | **PATCH** | `/api/v1/reviews/:reviewId` | Update details of a review (Member only) (Phase 11.6). | ✅ Completed |
 | **DELETE** | `/api/v1/reviews/:reviewId` | Delete a review (Member only) (Phase 11.7). | ✅ Completed |
+| **GET** | `/api/v1/books/:bookId/rating` | Retrieve rating statistics for a specific book (Public) (Phase 11.9). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -667,7 +668,7 @@ The following administrative endpoints are protected by `authMiddleware` and `ad
 
 ### Book Management Module Summary
 
-The Book Management module provides a complete catalog lifecycle for the AVELIS Library Management System. It exposes **7 RESTful API endpoints** covering creation, retrieval, updating, and a full soft-delete lifecycle.
+The Book Management module provides a complete catalog lifecycle for the AVELIS Library Management System. It exposes **8 RESTful API endpoints** covering creation, retrieval, updating, rating statistics, and a full soft-delete lifecycle.
 
 #### Core Features
 
@@ -676,6 +677,7 @@ The Book Management module provides a complete catalog lifecycle for the AVELIS 
 | Create Book | `/api/v1/books` | POST | Admin only |
 | Get All Books | `/api/v1/books` | GET | Public |
 | Get Book By ID | `/api/v1/books/:id` | GET | Public |
+| Get Book Rating Statistics | `/api/v1/books/:bookId/rating` | GET | Public (Phase 11.9) |
 | Update Book | `/api/v1/books/:id` | PATCH | Admin only |
 | Soft Delete Book | `/api/v1/books/:id` | DELETE | Admin only |
 | Restore Book | `/api/v1/books/:id/restore` | PATCH | Admin only |
@@ -1116,6 +1118,83 @@ Permanently delete a previously soft-deleted book catalog entry. This operation 
     "message": "Book not found."
   }
   ```
+
+### Book Rating Statistics API Specification (Phase 11.9)
+
+**GET** `/api/v1/books/:bookId/rating`
+
+#### Purpose
+Retrieve aggregated rating statistics (average rating, total review count, and rating distribution from 1 to 5) for a specific book.
+
+#### Authentication
+None (Public endpoint)
+
+#### Request Parameters
+- `bookId` (path parameter) — UUID of the book.
+
+#### Success Response (With Reviews)
+- **200 OK**
+  ```json
+  {
+    "success": true,
+    "message": "Book rating statistics retrieved successfully.",
+    "data": {
+      "averageRating": 4.3,
+      "totalReviews": 25,
+      "ratingDistribution": {
+        "1": 0,
+        "2": 1,
+        "3": 3,
+        "4": 9,
+        "5": 12
+      }
+    }
+  }
+  ```
+
+#### Success Response (Empty State - No Reviews)
+- **200 OK**
+  ```json
+  {
+    "success": true,
+    "message": "Book rating statistics retrieved successfully.",
+    "data": {
+      "averageRating": null,
+      "totalReviews": 0,
+      "ratingDistribution": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    }
+  }
+  ```
+
+#### Error Responses
+- **400 Bad Request** — Validation failed due to invalid UUID format.
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      {
+        "field": "bookId",
+        "message": "bookId is required and must be a valid UUID."
+      }
+    ]
+  }
+  ```
+- **404 Not Found** — The requested book does not exist or is soft-deleted.
+  ```json
+  {
+    "success": false,
+    "message": "Book not found."
+  }
+  ```
+
+---
 
 ### Borrow Book API Specification
 
@@ -2448,14 +2527,14 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 11.6 – Update Review
 * ✅ Phase 11.7 – Delete Review
 * ✅ Phase 11.8 – Review Moderation
+* ✅ Phase 11.9 – Rating Statistics
 
 #### Current Focus
-* 🚧 Phase 11.9 – Rating Statistics
+* 🚧 Phase 12.1 – Loan Management
 
 #### Planned
 * Loan Management
 * Orders
-* Reviews
 * Production Security
 * Testing
 * Deployment
@@ -2472,20 +2551,17 @@ The following features are planned for future releases to expand the capabilitie
 
 ### Review Module
 
-The Review module will allow members to submit ratings and written feedback for books they have borrowed.
+The Review module is fully implemented and production-ready. Members can submit ratings, edit comments, delete reviews, view rating statistics, and administrators can moderate reviews.
 
-Planned capabilities:
-
-* Create Review
-* Get Review by ID
-* Get Book Reviews
-* Get Current User Reviews
-* Update Review
-* Delete Review
-* Review Moderation (Admin)
-* Rating Statistics
-
-These features will be implemented in upcoming phases.
+✅ Completed features:
+* Create Review (Phase 11.2)
+* Get Review by ID (Phase 11.3)
+* Get Book Reviews (Phase 11.4)
+* Get Current User Reviews (Phase 11.5)
+* Update Review (Phase 11.6)
+* Delete Review (Phase 11.7)
+* Review Moderation (Admin) (Phase 11.8)
+* Rating Statistics (Phase 11.9)
 
 ---
 

@@ -133,3 +133,23 @@ export const restoreBookController = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle retrieving book rating statistics.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getBookRating = async (req, res, next) => {
+  try {
+    const { bookId } = req.params;
+
+    const stats = await bookService.getBookRating(bookId);
+
+    return sendSuccess(res, 200, stats, 'Book rating statistics retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
