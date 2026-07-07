@@ -15,6 +15,7 @@ import bookRoutes from './book.routes.js';
 import userRoutes from './user.routes.js';
 import adminRoutes from './admin.routes.js';
 import loanRoutes from './loan.routes.js';
+import reservationRoutes from './reservation.routes.js';
 
 const router = Router();
 
@@ -23,16 +24,18 @@ const router = Router();
  *
  * Base path: /api/v1 (set in app.js)
  *
- * /api/v1/auth   → Auth routes
- * /api/v1/books  → Book routes
- * /api/v1/users  → User routes
- * /api/v1/admin  → Admin routes
- * /api/v1/loans  → Loan routes
+ * /api/v1/auth         → Auth routes
+ * /api/v1/books        → Book routes
+ * /api/v1/users        → User routes
+ * /api/v1/admin        → Admin routes
+ * /api/v1/loans        → Loan routes
+ * /api/v1/reservations → Reservation routes
  */
 router.use('/auth', authRoutes);
 router.use('/books', bookRoutes);
 router.use('/users', userRoutes);
 router.use('/admin', adminRoutes);
 router.use('/loans', loanRoutes);
+router.use('/reservations', reservationRoutes);
 
 export default router;

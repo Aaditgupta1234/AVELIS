@@ -20,6 +20,15 @@ enum CopyStatus {
   BORROWED
   LOST
   MAINTENANCE
+  RESERVED
+}
+
+enum ReservationStatus {
+  PENDING
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+  EXPIRED
 }
 
 enum CopyCondition {
@@ -64,6 +73,7 @@ model User {
   loans        Loan[]
   orders       Order[]
   reviews      Review[]
+  reservations Reservation[]
 }
 
 model Author {
@@ -107,6 +117,7 @@ model Book {
   copies          BookCopy[]
   orderItems      OrderItem[]
   reviews         Review[]
+  reservations    Reservation[]
 }
 
 model BookAuthor {
@@ -145,6 +156,7 @@ model BookCopy {
   updatedAt     DateTime      @updatedAt
   book          Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
   loans         Loan[]
+  reservations  Reservation[]
 
   @@index([bookId])
   @@index([barcode])
@@ -213,4 +225,27 @@ model Review {
   @@unique([userId, bookId])
   @@index([userId])
   @@index([bookId])
+}
+
+model Reservation {
+  id          String            @id @default(uuid())
+  userId      String
+  bookId      String
+  copyId      String?
+  status      ReservationStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  fulfilledAt DateTime?
+  cancelledAt DateTime?
+  expiresAt   DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  bookCopy BookCopy? @relation(fields: [copyId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([copyId])
+  @@index([status])
+  @@index([bookId, status, createdAt])
 }

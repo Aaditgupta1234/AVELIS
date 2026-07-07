@@ -94,7 +94,7 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 10 – Order Invoicing & Bookstore Purchase Pipeline**
+* 🚧 **Phase 10.3 – Get Reservation by ID**
 
 ---
 
@@ -638,6 +638,7 @@ Below are the primary endpoints and their current status:
 | **POST** | `/api/v1/loans/overdue/sync` | Synchronize overdue loan statuses (Admin only) (Phase 9.8). | ✅ Completed |
 | **GET** | `/api/v1/loans/:id` | Retrieve details of a specific loan (Admin or Member with ownership). | ✅ Completed |
 | **GET** | `/api/v1/loans/me` | Retrieve a paginated list of the current authenticated user's loans. | ✅ Completed |
+| **POST** | `/api/v1/reservations` | Create a new reservation for a book copy (MEMBER/ADMIN) (Phase 10.2). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -1743,6 +1744,115 @@ Detect active loans whose due date has passed and transition them from `BORROWED
 
 ---
 
+### Create Reservation API Specification (Phase 10.2)
+
+**POST** `/api/v1/reservations`
+
+#### Purpose
+Create a book reservation for a member. If a physical copy of the book is `AVAILABLE`, it will be immediately allocated and reserved for pickup. Otherwise, it will enter the `PENDING` queue.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Members (`MEMBER` role) may reserve books for themselves only.
+- Administrators (`ADMIN` role) may reserve books for any member.
+
+#### Request Body
+```json
+{
+  "bookId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "userId": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c"
+}
+```
+*Note: `userId` is optional for Administrators and ignored for Members (who are only allowed to reserve for themselves).*
+
+#### Success Response (READY_FOR_PICKUP)
+- **Status Code**: `201 Created`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Reservation created successfully.",
+  "data": {
+    "id": "e4d3c2b1-a0f9-8e7d-6c5b-4a3f2e1d0c9b",
+    "userId": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c",
+    "bookId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "copyId": "c5b4a3f2-e1d0-9c8b-7a6f-5e4d3c2b1a0f",
+    "status": "READY_FOR_PICKUP",
+    "createdAt": "2026-07-07T10:45:00.000Z",
+    "updatedAt": "2026-07-07T10:45:00.000Z",
+    "fulfilledAt": "2026-07-07T10:45:00.000Z",
+    "cancelledAt": null,
+    "expiresAt": "2026-07-09T10:45:00.000Z",
+    "user": {
+      "id": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c",
+      "username": "res_member",
+      "email": "res_member@avelis.com"
+    },
+    "book": {
+      "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "title": "Clean Code",
+      "isbn": "9780132350884"
+    },
+    "bookCopy": {
+      "id": "c5b4a3f2-e1d0-9c8b-7a6f-5e4d3c2b1a0f",
+      "barcode": "BC-12345",
+      "shelfLocation": "Aisle 3",
+      "condition": "NEW",
+      "status": "RESERVED"
+    }
+  },
+  "meta": {}
+}
+```
+
+#### Success Response (PENDING)
+- **Status Code**: `201 Created`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Reservation created successfully.",
+  "data": {
+    "id": "e4d3c2b1-a0f9-8e7d-6c5b-4a3f2e1d0c9b",
+    "userId": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c",
+    "bookId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "copyId": null,
+    "status": "PENDING",
+    "createdAt": "2026-07-07T10:45:00.000Z",
+    "updatedAt": "2026-07-07T10:45:00.000Z",
+    "fulfilledAt": null,
+    "cancelledAt": null,
+    "expiresAt": null,
+    "user": {
+      "id": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c",
+      "username": "res_member",
+      "email": "res_member@avelis.com"
+    },
+    "book": {
+      "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "title": "Clean Code",
+      "isbn": "9780132350884"
+    },
+    "bookCopy": null
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Validation failed, active limit reached, active overdue loans present, duplicate active reservation, or no physical copies exist.
+  ```json
+  {
+    "success": false,
+    "message": "Cannot create reservation. User has active overdue loans.",
+    "errors": []
+  }
+  ```
+- **401 Unauthorized** — Authentication header is missing or token is invalid.
+- **403 Forbidden** — Member attempts to create a reservation for another user.
+- **404 Not Found** — Book or targeted user not found.
+
+---
 
 ## Current Development Progress
 
@@ -1828,9 +1938,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 9.7 – Return Book / Complete Loan
 * ✅ Phase 9.8 – Overdue Loan Detection & Status Management
 * ✅ Phase 9.9 – Loan History Consistency & Production Refinement
+* ✅ Phase 10.2 – Create Reservation API
 
 #### Current Focus
-* 🚧 Phase 10 – Order Invoicing & Bookstore Purchase Pipeline
+* 🚧 Phase 10.3 – Get Reservation by ID
 
 #### Planned
 * Loan Management
