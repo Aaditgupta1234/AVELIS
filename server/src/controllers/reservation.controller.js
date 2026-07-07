@@ -49,3 +49,38 @@ export const getReservationById = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle retrieving a paginated, sorted, and filtered list of all reservations.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getReservations = async (req, res, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder, status, userId, bookId } = req.query;
+
+    const result = await reservationService.getReservations({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      status,
+      userId,
+      bookId
+    });
+
+    return sendSuccess(
+      res,
+      200,
+      {
+        reservations: result.reservations,
+        pagination: result.pagination
+      },
+      'Reservations retrieved successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};

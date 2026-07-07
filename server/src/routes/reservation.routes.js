@@ -1,9 +1,23 @@
 import { Router } from 'express';
 import * as reservationController from '../controllers/reservation.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
-import { createReservationValidator, reservationIdParamValidator } from '../validations/reservation.validation.js';
+import { adminMiddleware } from '../middleware/admin.middleware.js';
+import {
+  createReservationValidator,
+  reservationIdParamValidator,
+  reservationQueryValidator
+} from '../validations/reservation.validation.js';
 
 const router = Router();
+
+// GET / - Retrieve a paginated list of all reservations (Admin only)
+router.get(
+  '/',
+  authMiddleware,
+  adminMiddleware,
+  reservationQueryValidator,
+  reservationController.getReservations
+);
 
 // POST / - Create a new reservation
 router.post(

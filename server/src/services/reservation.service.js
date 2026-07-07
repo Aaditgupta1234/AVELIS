@@ -223,3 +223,59 @@ export const getReservationById = async ({ reservationId, currentUser }) => {
   const { userId, ...reservation } = reservationData;
   return reservation;
 };
+
+/**
+ * Service to retrieve a paginated, sorted, and filtered list of all reservations.
+ *
+ * @param {Object} queryParams - Validated query parameters
+ * @returns {Promise<Object>} Object containing reservations array and pagination metadata
+ */
+export const getReservations = async ({ page, limit, sortBy, sortOrder, status, userId, bookId }) => {
+  // Stage 1: Build Prisma where clause
+  const where = {};
+  if (status) {
+    where.status = status;
+  }
+  if (userId) {
+    where.userId = userId;
+  }
+  if (bookId) {
+    where.bookId = bookId;
+  }
+
+  // Stage 2: Build Prisma orderBy clause
+  const orderBy = [{ [sortBy]: sortOrder }];
+  if (sortBy !== 'id') {
+    orderBy.push({ id: 'asc' });
+  }
+
+  // Stage 3: Build pagination values
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  // Stage 4: Execute Prisma queries concurrently
+  const [reservations, total] = await Promise.all([
+    prisma.reservation.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: RESERVATION_SELECT
+    }),
+    prisma.reservation.count({ where })
+  ]);
+
+  // Stage 5: Calculate pagination metadata
+  const totalPages = Math.ceil(total / limit) || 0;
+
+  // Stage 6: Return standardized response object
+  return {
+    reservations,
+    pagination: {
+      page,
+      limit,
+      totalResults: total,
+      totalPages
+    }
+  };
+};
