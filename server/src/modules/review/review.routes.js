@@ -45,6 +45,14 @@ router.post(
   reviewController.createReview
 );
 
+// GET /me — Retrieve a list of the current authenticated user's reviews (Member only)
+router.get(
+  '/me',
+  authMiddleware,
+  memberMiddleware,
+  reviewController.getCurrentUserReviews
+);
+
 // GET /book/:bookId — Retrieve all reviews for a specific book (Member only)
 router.get(
   '/book/:bookId',

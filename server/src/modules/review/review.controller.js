@@ -77,4 +77,22 @@ export const getBookReviews = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle retrieving all reviews submitted by the currently authenticated user.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getCurrentUserReviews = async (req, res, next) => {
+  try {
+    const reviews = await reviewService.getCurrentUserReviews(req.user.id);
+
+    return sendSuccess(res, 200, reviews, 'User reviews retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 

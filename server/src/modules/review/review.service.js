@@ -143,4 +143,21 @@ export const getBookReviews = async (bookId) => {
   return reviews;
 };
 
+/**
+ * Service to retrieve all reviews written by the currently authenticated user.
+ *
+ * @param {string} userId - The UUID of the authenticated user
+ * @returns {Promise<Array>} List of reviews written by the user
+ */
+export const getCurrentUserReviews = async (userId) => {
+  const reviews = await prisma.review.findMany({
+    where: { userId },
+    select: REVIEW_SELECT,
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return reviews;
+};
+
+
 
