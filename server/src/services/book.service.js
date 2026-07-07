@@ -1,28 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/index.js';
-
-const BOOK_PUBLIC_INCLUDE = {
-  authors: {
-    select: {
-      author: {
-        select: {
-          id: true,
-          fullName: true
-        }
-      }
-    }
-  },
-  categories: {
-    select: {
-      category: {
-        select: {
-          id: true,
-          name: true
-        }
-      }
-    }
-  }
-};
+import { BOOK_SELECT, BOOK_PUBLIC_INCLUDE } from '../shared/selects/book.select.js';
 
 /**
  * Helper to retrieve a book and verify its existence.

@@ -6,8 +6,10 @@
  * @module constants/book
  */
 
-export const DEFAULT_PAGE_SIZE = 10;
-export const MAX_PAGE_SIZE = 100;
+import { config } from '../config/env.js';
+
+export const DEFAULT_PAGE_SIZE = config.defaultPageSize;
+export const MAX_PAGE_SIZE = config.maxPageSize;
 export const DEFAULT_SORT_FIELD = 'createdAt';
 export const DEFAULT_SORT_ORDER = 'desc';
 

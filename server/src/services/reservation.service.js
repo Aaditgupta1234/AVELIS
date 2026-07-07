@@ -1,55 +1,14 @@
 import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/index.js';
 import { UserRole, CopyStatus, ReservationStatus, LoanStatus, CopyCondition } from '@prisma/client';
+import { getUserOrThrow, getBookOrThrow } from '../helpers/resource.helper.js';
 
-export const MAX_ACTIVE_RESERVATIONS_LIMIT = 3;
-export const RESERVATION_PICKUP_WINDOW_HOURS = 48;
+import { config } from '../config/env.js';
 
-/**
- * Standardized Reservation API Response Selection Object.
- * Exposes only properties allowed in the public API contract.
- */
-export const RESERVATION_SELECT = {
-  id: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-  fulfilledAt: true,
-  cancelledAt: true,
-  expiresAt: true,
-  user: {
-    select: {
-      id: true,
-      username: true,
-      email: true
-    }
-  },
-  book: {
-    select: {
-      id: true,
-      title: true,
-      isbn: true
-    }
-  },
-  bookCopy: {
-    select: {
-      id: true,
-      barcode: true,
-      shelfLocation: true,
-      condition: true,
-      status: true
-    }
-  }
-};
+export const MAX_ACTIVE_RESERVATIONS_LIMIT = config.maxActiveReservations;
+export const RESERVATION_PICKUP_WINDOW_HOURS = config.reservationPickupWindowHours;
 
-/**
- * Reusable internal query definition for ownership-protected operations.
- * Appends the internal database userId field to RESERVATION_SELECT.
- */
-const RESERVATION_SELECT_WITH_OWNER = {
-  ...RESERVATION_SELECT,
-  userId: true
-};
+import { RESERVATION_SELECT, RESERVATION_SELECT_WITH_OWNER } from '../shared/selects/reservation.select.js';
 
 /**
  * Service to create a book reservation.
@@ -62,12 +21,7 @@ const RESERVATION_SELECT_WITH_OWNER = {
  */
 export const createReservation = async ({ userId, bookId, currentUser }) => {
   // 1. Verify target user exists
-  const user = await prisma.user.findUnique({
-    where: { id: userId }
-  });
-  if (!user) {
-    throw new ApiError(404, 'User not found.');
-  }
+  const user = await getUserOrThrow(userId);
 
   // 2. Only admins can reserve for other users; members only for themselves
   if (currentUser.role !== UserRole.ADMIN && userId !== currentUser.id) {
@@ -80,12 +34,7 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
   }
 
   // 4. Verify book exists and is eligible for reservations
-  const book = await prisma.book.findUnique({
-    where: { id: bookId }
-  });
-  if (!book) {
-    throw new ApiError(404, 'Book not found.');
-  }
+  const book = await getBookOrThrow(bookId);
   if (book.isDeleted) {
     throw new ApiError(400, 'Book is soft deleted and cannot be reserved.');
   }
@@ -153,44 +102,45 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
     });
 
     if (availableCopy) {
-      // Allocate copy immediately
       const now = new Date();
       const expiresAt = new Date(now.getTime() + RESERVATION_PICKUP_WINDOW_HOURS * 60 * 60 * 1000);
 
-      // Create Reservation
-      const reservation = await tx.reservation.create({
-        data: {
-          userId,
-          bookId,
-          copyId: availableCopy.id,
-          status: ReservationStatus.READY_FOR_PICKUP,
-          fulfilledAt: now,
-          expiresAt
-        },
-        select: RESERVATION_SELECT
-      });
-
-      // Update BookCopy status to RESERVED
-      await tx.bookCopy.update({
-        where: { id: availableCopy.id },
+      // Update BookCopy status to RESERVED only if it is still AVAILABLE (OCC check)
+      const updateResult = await tx.bookCopy.updateMany({
+        where: { id: availableCopy.id, status: CopyStatus.AVAILABLE },
         data: { status: CopyStatus.RESERVED }
       });
 
-      return reservation;
-    } else {
-      // No available copies, put in PENDING queue
-      const reservation = await tx.reservation.create({
-        data: {
-          userId,
-          bookId,
-          copyId: null,
-          status: ReservationStatus.PENDING
-        },
-        select: RESERVATION_SELECT
-      });
+      if (updateResult.count > 0) {
+        // Create Reservation
+        const reservation = await tx.reservation.create({
+          data: {
+            userId,
+            bookId,
+            copyId: availableCopy.id,
+            status: ReservationStatus.READY_FOR_PICKUP,
+            fulfilledAt: now,
+            expiresAt
+          },
+          select: RESERVATION_SELECT
+        });
 
-      return reservation;
+        return reservation;
+      }
     }
+
+    // No available copies (or concurrently reserved), put in PENDING queue
+    const reservation = await tx.reservation.create({
+      data: {
+        userId,
+        bookId,
+        copyId: null,
+        status: ReservationStatus.PENDING
+      },
+      select: RESERVATION_SELECT
+    });
+
+    return reservation;
   });
 };
 
@@ -375,15 +325,21 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
 
   // Stage 4 — Execute Transaction
   return await prisma.$transaction(async (tx) => {
-    // 1. Update Reservation status to CANCELLED and set cancelledAt
-    const updatedReservation = await tx.reservation.update({
-      where: { id: reservationId },
+    // 1. Update Reservation status to CANCELLED and set cancelledAt only if in allowed statuses (OCC check)
+    const updateResult = await tx.reservation.updateMany({
+      where: {
+        id: reservationId,
+        status: { in: allowedStatuses }
+      },
       data: {
         status: ReservationStatus.CANCELLED,
         cancelledAt: new Date()
-      },
-      select: RESERVATION_SELECT
+      }
     });
+
+    if (updateResult.count === 0) {
+      throw new ApiError(400, 'Reservation cannot be cancelled in its current state.');
+    }
 
     // 2. If reservation currently holds a physical copy, validate copy status and release it
     if (reservationData.copyId) {
@@ -405,6 +361,11 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
       // 3. Try to fulfill the next pending reservation for this book
       await fulfillNextReservationForBook(reservationData.bookId, tx);
     }
+
+    const updatedReservation = await tx.reservation.findUnique({
+      where: { id: reservationId },
+      select: RESERVATION_SELECT
+    });
 
     return updatedReservation;
   });
@@ -468,21 +429,33 @@ const fulfillNextReservationForBook = async (bookId, tx) => {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + RESERVATION_PICKUP_WINDOW_HOURS * 60 * 60 * 1000);
 
-  // Update BookCopy status to RESERVED
-  await tx.bookCopy.update({
-    where: { id: availableCopy.id },
+  // Update BookCopy status to RESERVED only if it remains AVAILABLE (OCC check)
+  const copyUpdateResult = await tx.bookCopy.updateMany({
+    where: { id: availableCopy.id, status: CopyStatus.AVAILABLE },
     data: { status: CopyStatus.RESERVED }
   });
 
-  // Update Reservation status to READY_FOR_PICKUP, set copyId, fulfilledAt, expiresAt
-  const fulfilledReservation = await tx.reservation.update({
-    where: { id: nextReservation.id },
+  if (copyUpdateResult.count === 0) {
+    return null; // Copy concurrently allocated
+  }
+
+  // Update Reservation status to READY_FOR_PICKUP only if it remains PENDING (OCC check)
+  const reservationUpdateResult = await tx.reservation.updateMany({
+    where: { id: nextReservation.id, status: ReservationStatus.PENDING },
     data: {
       status: ReservationStatus.READY_FOR_PICKUP,
       copyId: availableCopy.id,
       fulfilledAt: now,
       expiresAt
-    },
+    }
+  });
+
+  if (reservationUpdateResult.count === 0) {
+    throw new Error('Reservation was concurrently modified.'); // Rollback
+  }
+
+  const fulfilledReservation = await tx.reservation.findUnique({
+    where: { id: nextReservation.id },
     select: RESERVATION_SELECT
   });
 
@@ -532,19 +505,24 @@ const processExpiredReservations = async (tx) => {
     }
 
     // Stage 3 — Transactional Expiration
-    // 1. Update Reservation status to EXPIRED
-    await tx.reservation.update({
-      where: { id: reservation.id },
+    // 1. Update Reservation status to EXPIRED only if it remains READY_FOR_PICKUP (OCC check)
+    const updateResult = await tx.reservation.updateMany({
+      where: { id: reservation.id, status: ReservationStatus.READY_FOR_PICKUP },
       data: { status: ReservationStatus.EXPIRED }
     });
+    if (updateResult.count === 0) {
+      continue; // Concurrently modified, skip
+    }
     processedReservations++;
 
-    // 2. Update BookCopy status to AVAILABLE
-    await tx.bookCopy.update({
-      where: { id: reservation.copyId },
+    // 2. Update BookCopy status to AVAILABLE only if it remains RESERVED (OCC check)
+    const copyUpdateResult = await tx.bookCopy.updateMany({
+      where: { id: reservation.copyId, status: CopyStatus.RESERVED },
       data: { status: CopyStatus.AVAILABLE }
     });
-    releasedCopies++;
+    if (copyUpdateResult.count > 0) {
+      releasedCopies++;
+    }
 
     // 3. Trigger FIFO queue fulfillment
     const fulfilled = await fulfillNextReservationForBook(reservation.bookId, tx);

@@ -1,50 +1,52 @@
 /**
  * @fileoverview Rate limiting middleware.
  *
- * Placeholder configuration for express-rate-limit.
- * Limits the number of requests a client can make
- * within a given time window.
+ * Configures express-rate-limit for general API protection and
+ * stricter auth endpoint protection. Uses in-memory store by default,
+ * which is compatible with future distributed stores (e.g., Redis).
  *
  * @module middleware/security/rateLimiter
  *
  * @example
- * // Future usage:
- * // import { apiLimiter, authLimiter } from '../middleware/security/rateLimiter.js';
- * // app.use('/api', apiLimiter);
- * // app.use('/api/v1/auth', authLimiter);
+ * import { apiLimiter, authLimiter } from '../middleware/security/rateLimiter.js';
+ * app.use('/api', apiLimiter);
+ * app.use('/api/v1/auth', authLimiter);
  */
 
-// TODO: Uncomment and configure when rate limiting is needed
-// import rateLimit from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 
 /**
  * General API rate limiter.
  *
- * @placeholder Not yet configured.
+ * Limits each IP to 150 requests per 15-minute window.
+ * Applies to all API routes.
  */
-export const apiLimiter = (_req, _res, next) => {
-  // TODO: Replace with express-rate-limit configuration
-  // export const apiLimiter = rateLimit({
-  //   windowMs: 15 * 60 * 1000,  // 15 minutes
-  //   max: 100,                   // 100 requests per window
-  //   message: { success: false, message: 'Too many requests' },
-  //   standardHeaders: true,
-  //   legacyHeaders: false,
-  // });
-  next();
-};
+export const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 150,
+  standardHeaders: true,  // Return rate limit info in RateLimit-* headers
+  legacyHeaders: false,   // Disable X-RateLimit-* headers
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes.'
+  },
+  skipSuccessfulRequests: false,
+});
 
 /**
- * Stricter rate limiter for auth endpoints.
+ * Stricter rate limiter for authentication endpoints.
  *
- * @placeholder Not yet configured.
+ * Limits each IP to 20 requests per 15-minute window.
+ * Applies to login, register, and token refresh routes.
  */
-export const authLimiter = (_req, _res, next) => {
-  // TODO: Replace with express-rate-limit configuration
-  // export const authLimiter = rateLimit({
-  //   windowMs: 15 * 60 * 1000,  // 15 minutes
-  //   max: 20,                    // 20 requests per window
-  //   message: { success: false, message: 'Too many auth attempts' },
-  // });
-  next();
-};
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
+  },
+  skipSuccessfulRequests: false,
+});

@@ -9,6 +9,7 @@
 
 import { sendSuccess } from '../utils/response.js';
 import { registerUser, loginUser, getCurrentUser } from '../services/auth.service.js';
+import { logger } from '../config/logger.js';
 
 /**
  * Handle user registration request.
@@ -22,6 +23,8 @@ export const register = async (req, res, next) => {
     const { name, email, password } = req.body;
     const user = await registerUser({ name, email, password });
 
+    logger.info(`[AUTH] User registered: userId=${user.id}`);
+
     return sendSuccess(
       res,
       201,
@@ -29,6 +32,7 @@ export const register = async (req, res, next) => {
       'User registered successfully.'
     );
   } catch (error) {
+    logger.warn(`[AUTH] Registration failed: ${error.message}`);
     next(error);
   }
 };
@@ -45,6 +49,8 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
     const authData = await loginUser({ email, password });
 
+    logger.info(`[AUTH] User logged in: userId=${authData.user?.id}`);
+
     return sendSuccess(
       res,
       200,
@@ -52,6 +58,7 @@ export const login = async (req, res, next) => {
       'Login successful.'
     );
   } catch (error) {
+    logger.warn(`[AUTH] Login failed: ${error.message}`);
     next(error);
   }
 };

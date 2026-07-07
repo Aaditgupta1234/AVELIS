@@ -1,5 +1,6 @@
 import * as reservationService from '../services/reservation.service.js';
 import { sendSuccess } from '../utils/index.js';
+import { logger } from '../config/logger.js';
 
 /**
  * Handle creating a reservation.
@@ -22,8 +23,11 @@ export const createReservation = async (req, res, next) => {
       currentUser: req.user
     });
 
+    logger.info(`[RESERVATION] Created: reservationId=${reservation.id} userId=${targetUserId} bookId=${bookId} status=${reservation.status}`);
+
     return sendSuccess(res, 201, reservation, 'Reservation created successfully.');
   } catch (error) {
+    logger.warn(`[RESERVATION] Create failed: bookId=${req.body?.bookId} userId=${req.user?.id} reason=${error.message}`);
     next(error);
   }
 };
@@ -136,8 +140,11 @@ export const cancelReservation = async (req, res, next) => {
       currentUser: req.user
     });
 
+    logger.info(`[RESERVATION] Cancelled: reservationId=${id} userId=${req.user?.id}`);
+
     return sendSuccess(res, 200, reservation, 'Reservation cancelled successfully.');
   } catch (error) {
+    logger.warn(`[RESERVATION] Cancel failed: reservationId=${req.params?.id} userId=${req.user?.id} reason=${error.message}`);
     next(error);
   }
 };

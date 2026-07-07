@@ -1,8 +1,12 @@
 import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/index.js';
 import { UserRole, CopyStatus, LoanStatus } from '@prisma/client';
+import { LOAN_SELECT } from '../shared/selects/loan.select.js';
+import { getUserOrThrow } from '../helpers/resource.helper.js';
 
-const DEFAULT_BORROW_DAYS = 14;
+import { config } from '../config/env.js';
+
+const DEFAULT_BORROW_DAYS = config.loanDurationDays;
 
 /**
  * Service to borrow a book copy.
@@ -16,12 +20,7 @@ const DEFAULT_BORROW_DAYS = 14;
 export const borrowBook = async ({ userId, copyId }) => {
   return await prisma.$transaction(async (tx) => {
     // 1. Verify user exists and role is MEMBER
-    const user = await tx.user.findUnique({
-      where: { id: userId }
-    });
-    if (!user) {
-      throw new ApiError(404, 'User not found.');
-    }
+    const user = await getUserOrThrow(userId, tx);
     if (user.role !== UserRole.MEMBER) {
       throw new ApiError(400, 'Only members can borrow books.');
     }
@@ -51,7 +50,19 @@ export const borrowBook = async ({ userId, copyId }) => {
     const dueDate = new Date();
     dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
 
-    // 5. Create Loan
+    // 5. Update BookCopy status to BORROWED only if it is AVAILABLE (OCC check)
+    const updateResult = await tx.bookCopy.updateMany({
+      where: { id: copyId, status: CopyStatus.AVAILABLE },
+      data: {
+        status: CopyStatus.BORROWED
+      }
+    });
+
+    if (updateResult.count === 0) {
+      throw new ApiError(409, 'Book copy is unavailable.');
+    }
+
+    // 6. Create Loan
     const loan = await tx.loan.create({
       data: {
         userId,
@@ -60,34 +71,7 @@ export const borrowBook = async ({ userId, copyId }) => {
         dueDate,
         status: LoanStatus.BORROWED
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true
-          }
-        },
-        bookCopy: {
-          include: {
-            book: {
-              select: {
-                id: true,
-                title: true,
-                isbn: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    // 6. Update BookCopy status to BORROWED
-    await tx.bookCopy.update({
-      where: { id: copyId },
-      data: {
-        status: CopyStatus.BORROWED
-      }
+      select: LOAN_SELECT
     });
 
     return loan;
@@ -127,34 +111,21 @@ export const returnBook = async ({ loanId }) => {
 
     const returnDate = new Date();
 
-    // 4. Update Loan
-    const updatedLoan = await tx.loan.update({
-      where: { id: loanId },
+    // 4. Update Loan status to RETURNED only if it is not already RETURNED (OCC check)
+    const updateResult = await tx.loan.updateMany({
+      where: {
+        id: loanId,
+        status: { not: LoanStatus.RETURNED }
+      },
       data: {
         status: LoanStatus.RETURNED,
         returnDate
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true
-          }
-        },
-        bookCopy: {
-          include: {
-            book: {
-              select: {
-                id: true,
-                title: true,
-                isbn: true
-              }
-            }
-          }
-        }
       }
     });
+
+    if (updateResult.count === 0) {
+      throw new ApiError(400, 'Loan already returned.');
+    }
 
     // 5. Update BookCopy status back to AVAILABLE
     await tx.bookCopy.update({
@@ -162,6 +133,12 @@ export const returnBook = async ({ loanId }) => {
       data: {
         status: CopyStatus.AVAILABLE
       }
+    });
+
+    // 6. Fetch the updated loan using LOAN_SELECT
+    const updatedLoan = await tx.loan.findUnique({
+      where: { id: loanId },
+      select: LOAN_SELECT
     });
 
     return updatedLoan;
@@ -179,45 +156,7 @@ export const returnBook = async ({ loanId }) => {
 export const getLoanById = async ({ loanId, currentUser }) => {
   const loan = await prisma.loan.findUnique({
     where: { id: loanId },
-    select: {
-      id: true,
-      userId: true,
-      copyId: true,
-      issueDate: true,
-      dueDate: true,
-      returnDate: true,
-      fineAmount: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      user: {
-        select: {
-          id: true,
-          username: true,
-          email: true
-        }
-      },
-      bookCopy: {
-        select: {
-          id: true,
-          bookId: true,
-          barcode: true,
-          shelfLocation: true,
-          condition: true,
-          status: true,
-          purchaseDate: true,
-          createdAt: true,
-          updatedAt: true,
-          book: {
-            select: {
-              id: true,
-              title: true,
-              isbn: true
-            }
-          }
-        }
-      }
-    }
+    select: LOAN_SELECT
   });
 
   if (!loan) {
@@ -261,45 +200,7 @@ export const getLoans = async ({ page, limit, sortBy, sortOrder, status, userId,
       orderBy: {
         [sortBy]: sortOrder
       },
-      select: {
-        id: true,
-        userId: true,
-        copyId: true,
-        issueDate: true,
-        dueDate: true,
-        returnDate: true,
-        fineAmount: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true
-          }
-        },
-        bookCopy: {
-          select: {
-            id: true,
-            bookId: true,
-            barcode: true,
-            shelfLocation: true,
-            condition: true,
-            status: true,
-            purchaseDate: true,
-            createdAt: true,
-            updatedAt: true,
-            book: {
-              select: {
-                id: true,
-                title: true,
-                isbn: true
-              }
-            }
-          }
-        }
-      }
+      select: LOAN_SELECT
     }),
     prisma.loan.count({ where })
   ]);

@@ -46,10 +46,7 @@ export const reservationIdParamValidator = (req, res, next) => {
   const { id } = req.params;
 
   if (!id || typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid reservation ID.'
-    });
+    return sendError(res, 400, 'Invalid reservation ID.');
   }
 
   req.params.id = id.trim();

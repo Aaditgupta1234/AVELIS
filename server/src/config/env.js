@@ -70,4 +70,20 @@ export const config = Object.freeze({
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   clientUrl: process.env.CLIENT_URL,
   corsOrigin: process.env.CLIENT_URL || process.env.CORS_ORIGIN || '*',
+  
+  // Logging settings
+  loggingLevel: process.env.LOGGING_LEVEL || 'info',
+
+  // Password hashing settings
+  bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10,
+
+  // Business logic rules settings
+  maxActiveReservations: parseInt(process.env.MAX_ACTIVE_RESERVATIONS, 10) || 3,
+  reservationPickupWindowHours: parseInt(process.env.RESERVATION_PICKUP_WINDOW_HOURS, 10) || 48,
+  loanDurationDays: parseInt(process.env.LOAN_DURATION_DAYS, 10) || 14,
+  renewalLimit: parseInt(process.env.RENEWAL_LIMIT, 10) || 2,
+
+  // Pagination settings
+  defaultPageSize: parseInt(process.env.DEFAULT_PAGE_SIZE, 10) || 10,
+  maxPageSize: parseInt(process.env.MAX_PAGE_SIZE, 10) || 100,
 });

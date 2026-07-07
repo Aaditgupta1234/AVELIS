@@ -8,6 +8,7 @@
  */
 
 import bcrypt from 'bcrypt';
+import { config } from '../config/env.js';
 
 /**
  * Hash a plain text password.
@@ -16,8 +17,7 @@ import bcrypt from 'bcrypt';
  * @returns {Promise<string>} The hashed password
  */
 export const hashPassword = async (password) => {
-  const saltRounds = 10;
-  return bcrypt.hash(password, saltRounds);
+  return bcrypt.hash(password, config.bcryptSaltRounds);
 };
 
 /**

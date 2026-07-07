@@ -140,10 +140,7 @@ export const updateBookValidator = (req, res, next) => {
   const { id } = req.params;
 
   if (!id || typeof id !== 'string' || !UUID_REGEX.test(id)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid book ID.'
-    });
+    return sendError(res, 400, 'Invalid book ID.');
   }
 
   const errors = [];
@@ -258,7 +255,7 @@ export const updateBookValidator = (req, res, next) => {
           errors.push({ field: fieldName, message: `${fieldName} cannot contain duplicate IDs.` });
         }
         ids.forEach((id, index) => {
-          if (typeof id !== 'string' || id.trim() === '' || !uuidRegex.test(id.trim())) {
+          if (typeof id !== 'string' || id.trim() === '' || !UUID_REGEX.test(id.trim())) {
             errors.push({ field: `${fieldName}[${index}]`, message: `${fieldName.slice(0, -3)} ID must be a valid UUID string.` });
           } else {
             ids[index] = id.trim();
@@ -400,10 +397,7 @@ export const bookIdParamValidator = (req, res, next) => {
   const { id } = req.params;
 
   if (!id || typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid book ID.'
-    });
+    return sendError(res, 400, 'Invalid book ID.');
   }
 
   req.params.id = id.trim();

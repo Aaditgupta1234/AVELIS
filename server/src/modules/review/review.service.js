@@ -10,32 +10,7 @@
 
 import { prisma } from '../../lib/prisma.js';
 import { ApiError } from '../../utils/index.js';
-
-/**
- * Standardized Review API Response Selection Object.
- * Exposes only properties allowed in the public API contract.
- */
-const REVIEW_SELECT = {
-  id: true,
-  rating: true,
-  comment: true,
-  createdAt: true,
-  updatedAt: true,
-  user: {
-    select: {
-      id: true,
-      username: true,
-      email: true
-    }
-  },
-  book: {
-    select: {
-      id: true,
-      title: true,
-      isbn: true
-    }
-  }
-};
+import { REVIEW_SELECT } from '../../shared/selects/review.select.js';
 
 /**
  * Service to create a book review.

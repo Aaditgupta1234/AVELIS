@@ -44,10 +44,7 @@ export const loanIdParamValidator = (req, res, next) => {
   const { id } = req.params;
 
   if (!id || typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid loan ID.'
-    });
+    return sendError(res, 400, 'Invalid loan ID.');
   }
 
   req.params.id = id.trim();

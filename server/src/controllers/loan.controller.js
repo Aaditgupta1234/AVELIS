@@ -1,5 +1,6 @@
 import * as loanService from '../services/loan.service.js';
 import { sendSuccess } from '../utils/index.js';
+import { logger } from '../config/logger.js';
 
 /**
  * Handle borrowing a book copy.
@@ -13,8 +14,11 @@ export const borrowBook = async (req, res, next) => {
     const { userId, copyId } = req.body;
     const loan = await loanService.borrowBook({ userId, copyId });
 
+    logger.info(`[LOAN] Book borrowed: loanId=${loan.id} userId=${userId} copyId=${copyId}`);
+
     return sendSuccess(res, 201, loan, 'Book borrowed successfully.');
   } catch (error) {
+    logger.warn(`[LOAN] Borrow failed: copyId=${req.body?.copyId} userId=${req.body?.userId} reason=${error.message}`);
     next(error);
   }
 };
@@ -31,8 +35,11 @@ export const returnBook = async (req, res, next) => {
     const { id } = req.params;
     const loan = await loanService.returnBook({ loanId: id });
 
+    logger.info(`[LOAN] Book returned: loanId=${id}`);
+
     return sendSuccess(res, 200, loan, 'Book returned successfully.');
   } catch (error) {
+    logger.warn(`[LOAN] Return failed: loanId=${req.params?.id} reason=${error.message}`);
     next(error);
   }
 };
