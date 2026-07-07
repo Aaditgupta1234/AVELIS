@@ -279,3 +279,60 @@ export const getReservations = async ({ page, limit, sortBy, sortOrder, status, 
     }
   };
 };
+
+/**
+ * Service to retrieve a paginated, sorted, and filtered list of the current authenticated user's reservations.
+ *
+ * @param {Object} queryParams - Validated query parameters plus currentUser
+ * @returns {Promise<Object>} Object containing reservations array and pagination metadata
+ */
+export const getCurrentUserReservations = async ({ page, limit, sortBy, sortOrder, status, bookId, currentUser }) => {
+  // Stage 1: Build mandatory member scope
+  const where = {
+    userId: currentUser.id
+  };
+
+  // Stage 2: Append optional filters
+  if (status) {
+    where.status = status;
+  }
+  if (bookId) {
+    where.bookId = bookId;
+  }
+
+  // Stage 3: Build orderBy
+  const orderBy = [{ [sortBy]: sortOrder }];
+  if (sortBy !== 'id') {
+    orderBy.push({ id: 'asc' });
+  }
+
+  // Stage 4: Build pagination
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  // Stage 5: Execute Prisma queries
+  const [reservations, total] = await Promise.all([
+    prisma.reservation.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: RESERVATION_SELECT
+    }),
+    prisma.reservation.count({ where })
+  ]);
+
+  // Stage 6: Calculate pagination metadata
+  const totalPages = Math.ceil(total / limit) || 0;
+
+  // Stage 7: Return standardized response
+  return {
+    reservations,
+    pagination: {
+      page,
+      limit,
+      totalResults: total,
+      totalPages
+    }
+  };
+};

@@ -94,7 +94,7 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 10.5 – Get Current User Reservations**
+* 🚧 **Phase 10.6 – Cancel Reservation**
 
 ---
 
@@ -640,6 +640,7 @@ Below are the primary endpoints and their current status:
 | **GET** | `/api/v1/loans/me` | Retrieve a paginated list of the current authenticated user's loans. | ✅ Completed |
 | **POST** | `/api/v1/reservations` | Create a new reservation for a book copy (MEMBER/ADMIN) (Phase 10.2). | ✅ Completed |
 | **GET** | `/api/v1/reservations/:id` | Retrieve details of a specific reservation (Admin or Member with ownership) (Phase 10.3). | ✅ Completed |
+| **GET** | `/api/v1/reservations/me` | Retrieve a paginated list of current user's reservations (Member only) (Phase 10.5). | ✅ Completed |
 | **GET** | `/api/v1/orders` | Fetch user purchase order invoices. | Planned |
 
 ### Administrative API Overview
@@ -2026,6 +2027,97 @@ Retrieve a paginated, sorted, and filtered list of all reservations in the syste
 
 ---
 
+### Get Current User Reservations API Specification (Phase 10.5)
+
+**GET** `/api/v1/reservations/me`
+
+#### Purpose
+Retrieve a paginated, sorted, and filtered list of the current authenticated user's reservations.
+
+#### Authentication
+- Authentication required (JWT Bearer Token in `Authorization` header).
+- Members (`MEMBER` role) only.
+
+#### Query Parameters
+- `page` (number, optional) — Page number to retrieve (default: `1`).
+- `limit` (number, optional) — Number of records per page (default: `10`, max: `100`).
+- `status` (string, optional) — Filter by `ReservationStatus` (`PENDING`, `READY_FOR_PICKUP`, `COMPLETED`, `CANCELLED`, `EXPIRED`).
+- `bookId` (string, optional) — Filter by target Book UUID.
+- `sortBy` (string, optional) — Field to sort by: `createdAt`, `expiresAt`, `status` (default: `createdAt`).
+- `sortOrder` (string, optional) — Sort direction: `asc` or `desc` (default: `desc`).
+
+#### Success Response
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "success": true,
+  "message": "Reservations retrieved successfully.",
+  "data": {
+    "reservations": [
+      {
+        "id": "e4d3c2b1-a0f9-8e7d-6c5b-4a3f2e1d0c9b",
+        "status": "READY_FOR_PICKUP",
+        "createdAt": "2026-07-07T10:45:00.000Z",
+        "updatedAt": "2026-07-07T10:45:00.000Z",
+        "fulfilledAt": "2026-07-07T10:45:00.000Z",
+        "cancelledAt": null,
+        "expiresAt": "2026-07-09T10:45:00.000Z",
+        "user": {
+          "id": "f8e7d6c5-b4a3-2f1e-0d9c-8b7a6f5e4d3c",
+          "username": "res_member",
+          "email": "res_member@avelis.com"
+        },
+        "book": {
+          "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+          "title": "Clean Code",
+          "isbn": "9780132350884"
+        },
+        "bookCopy": {
+          "id": "c5b4a3f2-e1d0-9c8b-7a6f-5e4d3c2b1a0f",
+          "barcode": "BC-12345",
+          "shelfLocation": "Aisle 3",
+          "condition": "NEW",
+          "status": "RESERVED"
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalResults": 1,
+      "totalPages": 1
+    }
+  },
+  "meta": {}
+}
+```
+
+#### Error Responses
+- **400 Bad Request** — Validation failed due to malformed values (e.g. invalid UUID format, non-integer page, sorting violations).
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+      {
+        "field": "status",
+        "message": "status must be a valid ReservationStatus: PENDING, READY_FOR_PICKUP, COMPLETED, CANCELLED, EXPIRED."
+      }
+    ]
+  }
+  ```
+- **401 Unauthorized** — Authentication header is missing or token is invalid.
+- **403 Forbidden** — An Administrator role attempts to call this endpoint.
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Member privileges required."
+  }
+  ```
+
+---
+
 ## Current Development Progress
 
 ### Completed
@@ -2113,9 +2205,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 10.2 – Create Reservation API
 * ✅ Phase 10.3 – Get Reservation by ID
 * ✅ Phase 10.4 – Get All Reservations (Admin)
+* ✅ Phase 10.5 – Get Current User Reservations
 
 #### Current Focus
-* 🚧 Phase 10.5 – Get Current User Reservations
+* 🚧 Phase 10.6 – Cancel Reservation
 
 #### Planned
 * Loan Management

@@ -84,3 +84,38 @@ export const getReservations = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Handle retrieving a paginated, sorted, and filtered list of the current authenticated user's reservations.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getCurrentUserReservations = async (req, res, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder, status, bookId } = req.query;
+
+    const result = await reservationService.getCurrentUserReservations({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      status,
+      bookId,
+      currentUser: req.user
+    });
+
+    return sendSuccess(
+      res,
+      200,
+      {
+        reservations: result.reservations,
+        pagination: result.pagination
+      },
+      'Reservations retrieved successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
