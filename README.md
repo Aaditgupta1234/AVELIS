@@ -94,7 +94,7 @@ AVELIS is in active development. The backend authentication, user management, pr
 * **Admin Dashboard Statistics** – Concurrent aggregate counts using Prisma client enums (`GET /admin/dashboard`).
 
 ### Current Focus
-* 🚧 **Phase 11.1 – Review Module Foundation**
+* 🚧 **Phase 11.2 – Create Review API**
 
 ---
 
@@ -2332,9 +2332,10 @@ The following features are planned for future releases to expand the capabilitie
 * ✅ Phase 10.7 – Reservation Queue & Fulfillment
 * ✅ Phase 10.8 – Reservation Expiration & Status Management
 * ✅ Phase 10.9 – Reservation Module Production Refinement
+* ✅ Phase 11.1 – Review Module Foundation
 
 #### Current Focus
-* 🚧 Phase 11.1 – Review Module Foundation
+* 🚧 Phase 11.2 – Create Review API
 
 #### Planned
 * Loan Management
@@ -2351,6 +2352,25 @@ The following features are planned for future releases to expand the capabilitie
 | **Frontend** | Landing Page, Navigation, Hero Panel, Collections, Library page, Reading Journal logs, Dashboard UI | Connecting Login View inputs to authentication APIs | User profile edit dialogs, interactive catalog searches, custom themes |
 | **Backend** | Server structure, Express framework configuration, Prisma configuration, JWT Authentication, Registration & Login APIs, Protected Routes, User Management & Profile APIs, Book Management APIs (Create, Get All, Get by ID, Update, Soft Delete, Restore, Permanent Delete), Borrow Book Service, Return Book Service, Get Loan by ID Service, Get All Loans Service, Get Current User Loans Service, Return Book / Complete Loan Service, Overdue Loan Detection & Status Sync Service, Production Audited Code | ✅ Complete & Production-Ready | Inventory management, Checkout/checkin transactions, Loan Management |
 | **DevOps** | Project scaffolding, Oxlint linter integration, workspace dependencies | Setup environment template | API deployment pipelines, production server environment setups |
+
+---
+
+### Review Module
+
+The Review module will allow members to submit ratings and written feedback for books they have borrowed.
+
+Planned capabilities:
+
+* Create Review
+* Get Review by ID
+* Get Book Reviews
+* Get Current User Reviews
+* Update Review
+* Delete Review
+* Review Moderation (Admin)
+* Rating Statistics
+
+These features will be implemented in upcoming phases.
 
 ---
 
