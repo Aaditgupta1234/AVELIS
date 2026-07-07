@@ -338,70 +338,6 @@ export const getCurrentUserReservations = async ({ page, limit, sortBy, sortOrde
 };
 
 /**
- * Private helper to fulfill the next pending reservation for a book using an existing transaction client.
- *
- * @param {string} bookId - Book ID
- * @param {import('@prisma/client').Prisma.TransactionClient} tx - Prisma transaction client
- * @returns {Promise<Object|null>} The fulfilled reservation, or null if no fulfillment occurred
- */
-const fulfillNextReservationForBook = async (bookId, tx) => {
-  // Stage 1 — Locate Available Copy
-  const availableCopy = await tx.bookCopy.findFirst({
-    where: {
-      bookId,
-      status: CopyStatus.AVAILABLE
-    },
-    orderBy: {
-      id: 'asc'
-    }
-  });
-
-  if (!availableCopy) {
-    return null;
-  }
-
-  // Stage 2 — Locate Next Reservation
-  const nextReservation = await tx.reservation.findFirst({
-    where: {
-      bookId,
-      status: ReservationStatus.PENDING
-    },
-    orderBy: [
-      { createdAt: 'asc' },
-      { id: 'asc' }
-    ]
-  });
-
-  if (!nextReservation) {
-    return null;
-  }
-
-  // Stage 3 — Transactional Fulfillment
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + RESERVATION_PICKUP_WINDOW_HOURS * 60 * 60 * 1000);
-
-  // Update BookCopy status to RESERVED
-  await tx.bookCopy.update({
-    where: { id: availableCopy.id },
-    data: { status: CopyStatus.RESERVED }
-  });
-
-  // Update Reservation status to READY_FOR_PICKUP, set copyId, fulfilledAt, expiresAt
-  const fulfilledReservation = await tx.reservation.update({
-    where: { id: nextReservation.id },
-    data: {
-      status: ReservationStatus.READY_FOR_PICKUP,
-      copyId: availableCopy.id,
-      fulfilledAt: now,
-      expiresAt
-    },
-    select: RESERVATION_SELECT
-  });
-
-  return fulfilledReservation;
-};
-
-/**
  * Service to cancel a reservation.
  *
  * @param {Object} data - Input containing reservationId and currentUser
@@ -475,6 +411,85 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
 };
 
 /**
+ * Service to execute the reservation expiration workflow within a transaction.
+ *
+ * @returns {Promise<Object>} Operational summary counts
+ */
+export const handleExpiredReservations = async () => {
+  return await prisma.$transaction(async (tx) => {
+    return await processExpiredReservations(tx);
+  });
+};
+
+// ============================================================================
+// INTERNAL PRIVATE HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Private helper to fulfill the next pending reservation for a book using an existing transaction client.
+ *
+ * @param {string} bookId - Book ID
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx - Prisma transaction client
+ * @returns {Promise<Object|null>} The fulfilled reservation, or null if no fulfillment occurred
+ */
+const fulfillNextReservationForBook = async (bookId, tx) => {
+  // Stage 1 — Locate Available Copy
+  const availableCopy = await tx.bookCopy.findFirst({
+    where: {
+      bookId,
+      status: CopyStatus.AVAILABLE
+    },
+    orderBy: {
+      id: 'asc'
+    }
+  });
+
+  if (!availableCopy) {
+    return null;
+  }
+
+  // Stage 2 — Locate Next Reservation
+  const nextReservation = await tx.reservation.findFirst({
+    where: {
+      bookId,
+      status: ReservationStatus.PENDING
+    },
+    orderBy: [
+      { createdAt: 'asc' },
+      { id: 'asc' }
+    ]
+  });
+
+  if (!nextReservation) {
+    return null;
+  }
+
+  // Stage 3 — Transactional Fulfillment
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + RESERVATION_PICKUP_WINDOW_HOURS * 60 * 60 * 1000);
+
+  // Update BookCopy status to RESERVED
+  await tx.bookCopy.update({
+    where: { id: availableCopy.id },
+    data: { status: CopyStatus.RESERVED }
+  });
+
+  // Update Reservation status to READY_FOR_PICKUP, set copyId, fulfilledAt, expiresAt
+  const fulfilledReservation = await tx.reservation.update({
+    where: { id: nextReservation.id },
+    data: {
+      status: ReservationStatus.READY_FOR_PICKUP,
+      copyId: availableCopy.id,
+      fulfilledAt: now,
+      expiresAt
+    },
+    select: RESERVATION_SELECT
+  });
+
+  return fulfilledReservation;
+};
+
+/**
  * Private helper to locate expired reservations and release their copies, triggering queue fulfillment.
  * Uses a provided Prisma transaction client.
  *
@@ -544,15 +559,4 @@ const processExpiredReservations = async (tx) => {
     releasedCopies,
     fulfilledReservations
   };
-};
-
-/**
- * Service to execute the reservation expiration workflow within a transaction.
- *
- * @returns {Promise<Object>} Operational summary counts
- */
-export const handleExpiredReservations = async () => {
-  return await prisma.$transaction(async (tx) => {
-    return await processExpiredReservations(tx);
-  });
 };
