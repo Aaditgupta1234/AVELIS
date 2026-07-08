@@ -5,8 +5,8 @@ import { adminMiddleware } from '../middleware/admin.middleware.js';
 import { updateUserRoleValidator, updateUserStatusValidator } from '../validators/users/user.validator.js';
 import { adminDeleteReviewValidator } from '../modules/review/review.validation.js';
 import { adminDeleteReview } from '../modules/review/review.controller.js';
-import { queryLoansValidator } from '../validations/loan.validation.js';
-import { getLoans as adminGetLoans } from '../controllers/loan.controller.js';
+import { queryLoansValidator, borrowValidator } from '../validations/loan.validation.js';
+import { getLoans as adminGetLoans, borrowBook } from '../controllers/loan.controller.js';
 
 const router = Router();
 
@@ -32,5 +32,9 @@ router.delete('/reviews/:reviewId', authMiddleware, adminMiddleware, adminDelete
 // GET /loans — Retrieve paginated loans list (Admin only)
 router.get('/loans', authMiddleware, adminMiddleware, queryLoansValidator, adminGetLoans);
 
+// POST /loans — Create a new loan transaction (Admin only)
+router.post('/loans', authMiddleware, adminMiddleware, borrowValidator, borrowBook);
+
 export default router;
+
 

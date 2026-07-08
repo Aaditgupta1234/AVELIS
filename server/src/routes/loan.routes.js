@@ -15,12 +15,12 @@ import { adminMiddleware } from '../middleware/admin.middleware.js';
 import { UserRole } from '@prisma/client';
 import { ApiError } from '../utils/index.js';
 import {
-  borrowValidator,
   returnValidator,
   loanIdParamValidator,
   queryLoansValidator,
   renewLoanValidator,
-  getLoanHistoryValidator
+  getLoanHistoryValidator,
+  borrowBookValidator
 } from '../validations/loan.validation.js';
 
 const router = Router();
@@ -87,14 +87,14 @@ router.get(
   loanController.getLoanById
 );
 
-// POST / — Create a new loan transaction (Admin only)
+// POST / — Member Borrow: create a new loan for the authenticated member
 router.post(
   '/',
   authMiddleware,
-  adminMiddleware,
-  borrowValidator,
-  loanController.borrowBook
+  borrowBookValidator,
+  loanController.memberBorrowBook
 );
+
 
 // POST /:id/return — Complete an active loan (Admin only)
 router.post(

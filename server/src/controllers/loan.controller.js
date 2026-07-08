@@ -200,6 +200,30 @@ export const renewLoan = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle a member borrowing a book copy.
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This placeholder establishes the API contract for the future Member Borrow feature
+ * and will be fully implemented during Phase 12.2.3 of the AVELIS roadmap.
+ *
+ * The existing borrowBook controller is preserved unchanged for the Admin Borrow workflow,
+ * which has been migrated to POST /api/v1/admin/loans.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const memberBorrowBook = async (req, res, next) => {
+  try {
+    // Phase 12.2.3: implement member borrow logic using req.body.bookCopyId and req.user.id
+    throw new ApiError(501, 'Not implemented.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 
 
