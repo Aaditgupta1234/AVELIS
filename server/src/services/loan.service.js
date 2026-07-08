@@ -297,26 +297,97 @@ export const renewLoan = async ({ loanId, userId }) => {
 };
 
 /**
- * Service placeholder to borrow a book copy for a member.
+ * Service orchestrator to borrow a book copy for a member.
  *
  * ARCHITECTURAL CONTEXT:
- * This placeholder establishes the API contract for the future borrow feature
- * and will be fully implemented during Phase 12.2.4 – Borrow Service.
- *
- * This placeholder does NOT:
- * - access Prisma or query the database
- * - implement borrowing rules
- * - check availability or eligibility
- * - calculate due dates
- * - create loans or update book copies
+ * This method acts as the service-level orchestrator, sequencing the validation,
+ * eligibility check, availability check, and database transaction steps.
  *
  * @param {Object} borrowData - Object containing userId and bookCopyId
  * @returns {Promise<Object>} The created loan record
- * @throws {ApiError} 501 Member borrow service has not yet been implemented
  */
 export const memberBorrowBook = async ({ userId, bookCopyId }) => {
-  throw new ApiError(501, 'Member borrow service has not yet been implemented.');
+  // 1. Basic defensive parameter validation
+  await validateBorrowRequest({ userId, bookCopyId });
+
+  // 2. Check user eligibility for borrowing (Phase 12.2.5)
+  await checkBorrowEligibility({ userId });
+
+  // 3. Check copy availability (Phase 12.2.6)
+  await checkBookCopyAvailability({ bookCopyId });
+
+  // 4. Create the loan transaction (Phase 12.2.7)
+  const loan = await createLoan({ userId, bookCopyId });
+
+  return loan;
 };
+
+/**
+ * Basic defensive parameter validation helper.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} data - Object containing userId and bookCopyId
+ * @throws {ApiError} 400 If required parameters are missing
+ */
+const validateBorrowRequest = async ({ userId, bookCopyId }) => {
+  if (!userId) {
+    throw new ApiError(400, 'userId is required.');
+  }
+  if (!bookCopyId) {
+    throw new ApiError(400, 'bookCopyId is required.');
+  }
+};
+
+/**
+ * Check if the member is eligible to borrow books.
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This placeholder establishes the contract for checking member eligibility (limits, fines, active loans)
+ * and will be fully implemented during Phase 12.2.5 – Eligibility Checks.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} eligibilityData - Object containing userId
+ * @throws {ApiError} 501 Eligibility check not implemented
+ */
+const checkBorrowEligibility = async ({ userId }) => {
+  throw new ApiError(501, 'Borrow eligibility checks have not yet been implemented.');
+};
+
+/**
+ * Check if the target book copy is currently borrowable and available.
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This placeholder establishes the contract for checking copy availability
+ * and will be fully implemented during Phase 12.2.6 – Book Copy Availability Checks.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} availabilityData - Object containing bookCopyId
+ * @throws {ApiError} 501 Copy availability check not implemented
+ */
+const checkBookCopyAvailability = async ({ bookCopyId }) => {
+  throw new ApiError(501, 'Book copy availability checks have not yet been implemented.');
+};
+
+/**
+ * Create the loan record and update the copy status within a database transaction.
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This placeholder establishes the contract for creating a loan in PostgreSQL via Prisma transaction
+ * and will be fully implemented during Phase 12.2.7 – Prisma Transaction.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} loanData - Object containing userId and bookCopyId
+ * @returns {Promise<Object>} The created loan record
+ * @throws {ApiError} 501 Transaction not implemented
+ */
+const createLoan = async ({ userId, bookCopyId }) => {
+  throw new ApiError(501, 'Prisma database transaction for loan creation has not yet been implemented.');
+};
+
 
 
 
