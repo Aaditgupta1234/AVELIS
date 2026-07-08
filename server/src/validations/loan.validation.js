@@ -177,6 +177,77 @@ export const getLoanHistoryValidator = (req, res, next) => {
   next();
 };
 
+/**
+ * Request validator middleware for the Member Borrow Book workflow.
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This validator is introduced during Phase 12.2.1 of the AVELIS roadmap to validate the 
+ * request payload accepted by the future Member Borrow endpoint.
+ *
+ * COEXISTENCE POLICY:
+ * - borrowValidator: Retained unchanged to support the existing Admin Borrow workflow.
+ * - borrowBookValidator: Dedicated exclusively to the new Member Borrow workflow.
+ * Both validators co-exist to ensure backward compatibility.
+ *
+ * ROUTING POLICY:
+ * This validator will not be attached to any Express routes in Phase 12.2.1. It will be 
+ * wired to the Member Borrow route during Phase 12.2.2. This separation follows the 
+ * roadmap's step-by-step sequencing constraints.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const borrowBookValidator = (req, res, next) => {
+  const errors = [];
+  const allowedKeys = ['bookCopyId'];
+
+  // Defensively ensure req.body is a writable plain object before validation or assignment
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    req.body = {};
+  }
+  const requestBody = req.body;
+
+  // 1. Reject unknown request fields
+  const bodyKeys = Object.keys(requestBody);
+  const unknownKeys = bodyKeys.filter(key => !allowedKeys.includes(key));
+  if (unknownKeys.length > 0) {
+    errors.push({
+      field: unknownKeys.join(', '),
+      message: `Unknown request fields are not allowed: ${unknownKeys.join(', ')}`
+    });
+  }
+
+  // 2. Validate bookCopyId
+  const { bookCopyId } = requestBody;
+  let validatedBookCopyId = null;
+
+  if (bookCopyId === undefined || bookCopyId === null) {
+    errors.push({ field: 'bookCopyId', message: 'bookCopyId is required.' });
+  } else if (typeof bookCopyId !== 'string') {
+    errors.push({ field: 'bookCopyId', message: 'bookCopyId must be a string.' });
+  } else {
+    const trimmed = bookCopyId.trim();
+    if (trimmed === '') {
+      errors.push({ field: 'bookCopyId', message: 'bookCopyId cannot be empty.' });
+    } else if (!UUID_REGEX.test(trimmed)) {
+      errors.push({ field: 'bookCopyId', message: 'bookCopyId must be a valid UUID.' });
+    } else {
+      validatedBookCopyId = trimmed;
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // 3. Assign normalized/trimmed value after validation successfully completes
+  req.body.bookCopyId = validatedBookCopyId;
+
+  next();
+};
+
+
 
 
 
