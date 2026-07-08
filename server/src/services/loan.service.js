@@ -1,4 +1,14 @@
+/**
+ * @fileoverview Loan module service.
+ *
+ * Implements business logic for book loans, including borrowing, returning, renewing,
+ * and checking active or past loans.
+ *
+ * @module services/loan
+ */
+
 import { prisma } from '../lib/prisma.js';
+
 import { ApiError } from '../utils/index.js';
 import { UserRole, CopyStatus, LoanStatus } from '@prisma/client';
 import { LOAN_SELECT } from '../shared/selects/loan.select.js';
@@ -252,5 +262,39 @@ export const syncOverdueLoans = async () => {
     checkedAt: now
   };
 };
+
+/**
+ * Service placeholder to retrieve active loans for a specific user.
+ *
+ * @param {string} userId - The UUID of the authenticated user
+ * @returns {Promise<Array>} List of active loans
+ * @throws {ApiError} 501 Not implemented
+ */
+export const getMyActiveLoans = async (userId) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
+/**
+ * Service placeholder to retrieve loan history for a specific user.
+ *
+ * @param {string} userId - The UUID of the authenticated user
+ * @returns {Promise<Array>} List of past loans
+ * @throws {ApiError} 501 Not implemented
+ */
+export const getLoanHistory = async (userId) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
+/**
+ * Service placeholder to renew a borrowed book copy.
+ *
+ * @param {Object} renewData - Object containing loanId and userId
+ * @returns {Promise<Object>} The renewed loan record
+ * @throws {ApiError} 501 Not implemented
+ */
+export const renewLoan = async ({ loanId, userId }) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
 
 

@@ -204,7 +204,26 @@ Audit events are logged at controller level for the following operations:
 
 ---
 
+### Loan Module (Phase 12.1 Initialization)
+
+The Loan module is implemented using the flat architecture pattern (controllers, services, validations, routes). Phase 12.1 initialized the module for subsequent development by introducing 3 new placeholder endpoints and correcting middleware ordering.
+
+#### API Endpoints (Phase 12.1 Target)
+
+| Method | Endpoint | Authorization | Description | Status (Phase 12.1) |
+|---|---|---|---|---|
+| `POST` | `/api/v1/loans` | Admin | Create a new loan transaction (Borrow) | Exists (unchanged) |
+| `GET` | `/api/v1/loans/:id` | Member (Owner) / Admin | Retrieve details of a specific loan | Exists (unchanged) |
+| `GET` | `/api/v1/loans/me` | Member | Retrieve the current user's active loans | Placeholder (501) |
+| `GET` | `/api/v1/loans/history` | Member | Retrieve the current user's loan history | Placeholder (501) |
+| `PATCH` | `/api/v1/loans/:id/return` | Admin | Complete an active loan (Return copy) | Exists (unchanged) |
+| `PATCH` | `/api/v1/loans/:id/renew` | Member | Renew an active loan | Placeholder (501) |
+| `GET` | `/api/v1/admin/loans` | Admin | Retrieve paginated loans catalog | Exists (alias) |
+
+---
+
 ## Deployment Checklist
+
 
 Before deploying to production:
 

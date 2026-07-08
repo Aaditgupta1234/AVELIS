@@ -5,8 +5,11 @@ import { adminMiddleware } from '../middleware/admin.middleware.js';
 import { updateUserRoleValidator, updateUserStatusValidator } from '../validators/users/user.validator.js';
 import { adminDeleteReviewValidator } from '../modules/review/review.validation.js';
 import { adminDeleteReview } from '../modules/review/review.controller.js';
+import { queryLoansValidator } from '../validations/loan.validation.js';
+import { getLoans as adminGetLoans } from '../controllers/loan.controller.js';
 
 const router = Router();
+
 
 // GET /dashboard — Retrieve admin dashboard statistics
 router.get('/dashboard', authMiddleware, adminMiddleware, getDashboardStats);
@@ -26,4 +29,8 @@ router.patch('/users/:id/status', authMiddleware, adminMiddleware, updateUserSta
 // DELETE /reviews/:reviewId — Moderation: permanently delete any review (Admin only)
 router.delete('/reviews/:reviewId', authMiddleware, adminMiddleware, adminDeleteReviewValidator, adminDeleteReview);
 
+// GET /loans — Retrieve paginated loans list (Admin only)
+router.get('/loans', authMiddleware, adminMiddleware, queryLoansValidator, adminGetLoans);
+
 export default router;
+

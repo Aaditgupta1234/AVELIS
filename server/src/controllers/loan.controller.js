@@ -1,5 +1,14 @@
+/**
+ * @fileoverview Loan module controller.
+ *
+ * Handles HTTP requests related to borrowing, returning, renewing, and querying book loans.
+ * Delegates business logic to the loan service and returns standardized API responses.
+ *
+ * @module controllers/loan
+ */
+
 import * as loanService from '../services/loan.service.js';
-import { sendSuccess } from '../utils/index.js';
+import { sendSuccess, ApiError } from '../utils/index.js';
 import { logger } from '../config/logger.js';
 
 /**
@@ -141,6 +150,51 @@ export const syncOverdueLoans = async (req, res, next) => {
     const result = await loanService.syncOverdueLoans();
 
     return sendSuccess(res, 200, result, 'Overdue loans synchronized successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Handle retrieving active loans for the current authenticated user.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getMyActiveLoans = async (req, res, next) => {
+  try {
+    throw new ApiError(501, 'Not implemented.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Handle retrieving loan history for the current authenticated user.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getLoanHistory = async (req, res, next) => {
+  try {
+    throw new ApiError(501, 'Not implemented.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Handle renewing an active loan.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const renewLoan = async (req, res, next) => {
+  try {
+    throw new ApiError(501, 'Not implemented.');
   } catch (error) {
     next(error);
   }

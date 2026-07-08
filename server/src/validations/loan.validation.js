@@ -1,4 +1,14 @@
+/**
+ * @fileoverview Loan module validations.
+ *
+ * Provides Express middleware for validating request bodies, parameters, and queries
+ * related to loan operations.
+ *
+ * @module validations/loan
+ */
+
 import { sendError } from '../utils/index.js';
+
 import { LoanStatus } from '@prisma/client';
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -142,6 +152,31 @@ export const queryLoansValidator = (req, res, next) => {
 
   next();
 };
+
+/**
+ * Validator middleware placeholder for renewing a loan.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const renewLoanValidator = (req, res, next) => {
+  // TODO Phase 12.x: implement loanId param and renewal validation
+  next();
+};
+
+/**
+ * Validator middleware placeholder for loan history.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getLoanHistoryValidator = (req, res, next) => {
+  // TODO Phase 12.x: implement pagination and filter validation
+  next();
+};
+
 
 
 
