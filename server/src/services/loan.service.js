@@ -314,10 +314,10 @@ export const memberBorrowBook = async ({ userId, bookCopyId }) => {
   await checkBorrowEligibility({ userId });
 
   // 3. Check copy availability (Phase 12.2.6)
-  await checkBookCopyAvailability({ bookCopyId });
+  const { bookCopyId: validatedCopyId } = await checkBookCopyAvailability({ bookCopyId });
 
   // 4. Create the loan transaction (Phase 12.2.7)
-  const loan = await createLoan({ userId, bookCopyId });
+  const loan = await createLoan({ userId, bookCopyId: validatedCopyId });
 
   return loan;
 };
@@ -404,17 +404,63 @@ const checkBorrowEligibility = async ({ userId }) => {
  * Check if the target book copy is currently borrowable and available.
  *
  * ARCHITECTURAL CONTEXT:
- * This placeholder establishes the contract for checking copy availability
- * and will be fully implemented during Phase 12.2.6 – Book Copy Availability Checks.
+ * This helper implements the book copy availability checks introduced in Phase 12.2.6 of the AVELIS roadmap.
+ * Reservation handling, loan creation, and transaction management are intentionally deferred 
+ * to later roadmap phases.
  *
  * NOTE: Private/encapsulated helper function.
  *
  * @param {Object} availabilityData - Object containing bookCopyId
- * @throws {ApiError} 501 Copy availability check not implemented
+ * @param {string} availabilityData.bookCopyId - The UUID of the requested book copy
+ * @returns {Promise<Object>} Object containing the validated bookCopyId
+ * @throws {ApiError} 404 If book copy or book does not exist, or is soft deleted
+ * @throws {ApiError} 400 If book is not borrowable
+ * @throws {ApiError} 409 If requested copy is not available
  */
 const checkBookCopyAvailability = async ({ bookCopyId }) => {
-  throw new ApiError(501, 'Book copy availability checks have not yet been implemented.');
+  // 1. Fetch copy status and parent bookId
+  const copy = await prisma.bookCopy.findUnique({
+    where: { id: bookCopyId },
+    select: {
+      id: true,
+      bookId: true,
+      status: true
+    }
+  });
+
+  if (!copy) {
+    throw new ApiError(404, 'Book copy not found.');
+  }
+
+  // 2. Fetch parent book details
+  const book = await prisma.book.findUnique({
+    where: { id: copy.bookId },
+    select: {
+      id: true,
+      isDeleted: true,
+      isBorrowable: true
+    }
+  });
+
+  if (!book || book.isDeleted) {
+    throw new ApiError(404, 'Book not found.');
+  }
+
+  // 3. Verify book is borrowable
+  if (!book.isBorrowable) {
+    throw new ApiError(400, 'Book is not borrowable.');
+  }
+
+  // 4. Verify specific copy is AVAILABLE
+  if (copy.status !== CopyStatus.AVAILABLE) {
+    throw new ApiError(409, 'Requested book copy is not available.');
+  }
+
+  return {
+    bookCopyId: copy.id
+  };
 };
+
 
 /**
  * Create the loan record and update the copy status within a database transaction.
