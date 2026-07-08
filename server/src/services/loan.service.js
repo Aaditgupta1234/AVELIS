@@ -343,17 +343,62 @@ const validateBorrowRequest = async ({ userId, bookCopyId }) => {
  * Check if the member is eligible to borrow books.
  *
  * ARCHITECTURAL CONTEXT:
- * This placeholder establishes the contract for checking member eligibility (limits, fines, active loans)
- * and will be fully implemented during Phase 12.2.5 – Eligibility Checks.
+ * This helper implements the member eligibility checks introduced in Phase 12.2.5 of the AVELIS roadmap.
+ * Book copy availability, loan creation, and transaction management are intentionally implemented 
+ * in their dedicated roadmap phases.
  *
  * NOTE: Private/encapsulated helper function.
  *
  * @param {Object} eligibilityData - Object containing userId
- * @throws {ApiError} 501 Eligibility check not implemented
+ * @param {string} eligibilityData.userId - The UUID of the member
+ * @returns {Promise<void>} Resolves successfully if the member is eligible
+ * @throws {ApiError} 404 If user does not exist ("User not found.")
+ * @throws {ApiError} 403 If user is not a MEMBER ("Access denied. Member privileges required.")
+ * @throws {ApiError} 403 If member account is inactive ("Member account is inactive.")
+ * @throws {ApiError} 403 If borrowing limit is reached ("Borrowing limit reached. Maximum allowed active loans is 5.")
  */
 const checkBorrowEligibility = async ({ userId }) => {
-  throw new ApiError(501, 'Borrow eligibility checks have not yet been implemented.');
+  const MAX_ACTIVE_LOANS = 5;
+
+  // 1. Fetch user status and role with a minimal select query
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+      isActive: true
+    }
+  });
+
+  if (!user) {
+    throw new ApiError(404, 'User not found.');
+  }
+
+  // 2. Verify user has the MEMBER role
+  if (user.role !== UserRole.MEMBER) {
+    throw new ApiError(403, 'Access denied. Member privileges required.');
+  }
+
+  // 3. Verify user account is active
+  if (!user.isActive) {
+    throw new ApiError(403, 'Member account is inactive.');
+  }
+
+  // 4. Enforce active loans limit (max 5 active loans)
+  const activeLoansCount = await prisma.loan.count({
+    where: {
+      userId,
+      status: {
+        in: [LoanStatus.BORROWED, LoanStatus.OVERDUE]
+      }
+    }
+  });
+
+  if (activeLoansCount >= MAX_ACTIVE_LOANS) {
+    throw new ApiError(403, `Borrowing limit reached. Maximum allowed active loans is ${MAX_ACTIVE_LOANS}.`);
+  }
 };
+
 
 /**
  * Check if the target book copy is currently borrowable and available.
