@@ -296,5 +296,28 @@ export const renewLoan = async ({ loanId, userId }) => {
   throw new ApiError(501, 'Not implemented.');
 };
 
+/**
+ * Service placeholder to borrow a book copy for a member.
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This placeholder establishes the API contract for the future borrow feature
+ * and will be fully implemented during Phase 12.2.4 – Borrow Service.
+ *
+ * This placeholder does NOT:
+ * - access Prisma or query the database
+ * - implement borrowing rules
+ * - check availability or eligibility
+ * - calculate due dates
+ * - create loans or update book copies
+ *
+ * @param {Object} borrowData - Object containing userId and bookCopyId
+ * @returns {Promise<Object>} The created loan record
+ * @throws {ApiError} 501 Member borrow service has not yet been implemented
+ */
+export const memberBorrowBook = async ({ userId, bookCopyId }) => {
+  throw new ApiError(501, 'Member borrow service has not yet been implemented.');
+};
+
+
 
 
