@@ -300,12 +300,14 @@ export const renewLoan = async ({ loanId, userId }) => {
 /**
  * Service orchestrator to borrow a book copy for a member.
  *
- * ARCHITECTURAL CONTEXT:
- * This method acts as the service-level orchestrator, sequencing the validation,
- * eligibility check, availability check, and database transaction steps.
+ * Sequentially coordinates request validation, member eligibility checks, book copy availability
+ * checks, and transaction-wrapped loan creation.
  *
  * @param {Object} borrowData - Object containing userId and bookCopyId
- * @returns {Promise<Object>} The created loan record
+ * @param {string} borrowData.userId - The UUID of the member
+ * @param {string} borrowData.bookCopyId - The UUID of the physical book copy
+ * @returns {Promise<Object>} The created loan record with selected fields
+ * @throws {ApiError} Thrown if request parameters are missing (Bad Request), user/copy/book is not found (Not Found), privileges are missing or limit is reached (Forbidden), or copy is already borrowed (Conflict).
  */
 export const memberBorrowBook = async ({ userId, bookCopyId }) => {
   try {
@@ -378,20 +380,12 @@ const validateBorrowRequest = async ({ userId, bookCopyId }) => {
 /**
  * Check if the member is eligible to borrow books.
  *
- * ARCHITECTURAL CONTEXT:
- * This helper implements the member eligibility checks introduced in Phase 12.2.5 of the AVELIS roadmap.
- * Book copy availability, loan creation, and transaction management are intentionally implemented 
- * in their dedicated roadmap phases.
- *
- * NOTE: Private/encapsulated helper function.
+ * NOTE: Private helper function.
  *
  * @param {Object} eligibilityData - Object containing userId
  * @param {string} eligibilityData.userId - The UUID of the member
- * @returns {Promise<void>} Resolves successfully if the member is eligible
- * @throws {ApiError} 404 If user does not exist ("User not found.")
- * @throws {ApiError} 403 If user is not a MEMBER ("Access denied. Member privileges required.")
- * @throws {ApiError} 403 If member account is inactive ("Member account is inactive.")
- * @throws {ApiError} 403 If borrowing limit is reached ("Borrowing limit reached. Maximum allowed active loans is 5.")
+ * @returns {Promise<void>} Resolves if eligible, otherwise throws ApiError
+ * @throws {ApiError} Thrown if user is not found, user is not a member, user account is inactive, or borrowing limit is reached.
  */
 const checkBorrowEligibility = async ({ userId }) => {
   const MAX_ACTIVE_LOANS = 5;
@@ -439,19 +433,12 @@ const checkBorrowEligibility = async ({ userId }) => {
 /**
  * Check if the target book copy is currently borrowable and available.
  *
- * ARCHITECTURAL CONTEXT:
- * This helper implements the book copy availability checks introduced in Phase 12.2.6 of the AVELIS roadmap.
- * Reservation handling, loan creation, and transaction management are intentionally deferred 
- * to later roadmap phases.
- *
- * NOTE: Private/encapsulated helper function.
+ * NOTE: Private helper function.
  *
  * @param {Object} availabilityData - Object containing bookCopyId
  * @param {string} availabilityData.bookCopyId - The UUID of the requested book copy
  * @returns {Promise<Object>} Object containing the validated bookCopyId
- * @throws {ApiError} 404 If book copy or book does not exist, or is soft deleted
- * @throws {ApiError} 400 If book is not borrowable
- * @throws {ApiError} 409 If requested copy is not available
+ * @throws {ApiError} Thrown if book copy or book is not found/soft-deleted, book is not borrowable, or copy is not available.
  */
 const checkBookCopyAvailability = async ({ bookCopyId }) => {
   // 1. Fetch copy status and parent bookId
@@ -501,12 +488,7 @@ const checkBookCopyAvailability = async ({ bookCopyId }) => {
 /**
  * Create the loan record and update the copy status within a database transaction.
  *
- * ARCHITECTURAL CONTEXT:
- * This helper implements the atomic loan creation transaction introduced in Phase 12.2.7 of the AVELIS roadmap.
- * Logging, response formatting, reservation workflows, and multi-instance concurrency refinements 
- * are intentionally deferred to their dedicated roadmap phases.
- *
- * NOTE: Private/encapsulated helper function.
+ * NOTE: Private helper function.
  *
  * @param {Object} loanData - Object containing userId and bookCopyId
  * @param {string} loanData.userId - The UUID of the member

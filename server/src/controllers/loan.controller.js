@@ -203,16 +203,9 @@ export const renewLoan = async (req, res, next) => {
 /**
  * Handle a member borrowing a book copy.
  *
- * ARCHITECTURAL CONTEXT:
- * This controller orchestrates the Member Borrow workflow by receiving the validated
- * request, extracting the parameters, delegating the operation to the service layer,
- * and returning the standardized success response. It contains no business logic.
- *
- * Eligibility, availability, transactions, and loan creation are handled in later roadmap phases.
- *
- * @param {import('express').Request} req - Express request
- * @param {import('express').Response} res - Express response
- * @param {import('express').NextFunction} next - Express next function
+ * @param {import('express').Request} req - Express request with validated bookCopyId in body and authenticated user in req.user
+ * @param {import('express').Response} res - Express response returning the created loan
+ * @param {import('express').NextFunction} next - Express next function for error handling
  */
 export const memberBorrowBook = async (req, res, next) => {
   try {
