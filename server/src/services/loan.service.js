@@ -15,6 +15,7 @@ import { LOAN_SELECT } from '../shared/selects/loan.select.js';
 import { getUserOrThrow } from '../helpers/resource.helper.js';
 
 import { config } from '../config/env.js';
+import { logger } from '../config/logger.js';
 
 const DEFAULT_BORROW_DAYS = config.loanDurationDays;
 
@@ -307,19 +308,54 @@ export const renewLoan = async ({ loanId, userId }) => {
  * @returns {Promise<Object>} The created loan record
  */
 export const memberBorrowBook = async ({ userId, bookCopyId }) => {
-  // 1. Basic defensive parameter validation
-  await validateBorrowRequest({ userId, bookCopyId });
+  try {
+    // 1. Basic defensive parameter validation
+    await validateBorrowRequest({ userId, bookCopyId });
 
-  // 2. Check user eligibility for borrowing (Phase 12.2.5)
-  await checkBorrowEligibility({ userId });
+    // 2. Check user eligibility for borrowing (Phase 12.2.5)
+    await checkBorrowEligibility({ userId });
 
-  // 3. Check copy availability (Phase 12.2.6)
-  const { bookCopyId: validatedCopyId } = await checkBookCopyAvailability({ bookCopyId });
+    // 3. Check copy availability (Phase 12.2.6)
+    const { bookCopyId: validatedCopyId } = await checkBookCopyAvailability({ bookCopyId });
 
-  // 4. Create the loan transaction (Phase 12.2.7)
-  const loan = await createLoan({ userId, bookCopyId: validatedCopyId });
+    // 4. Create the loan transaction (Phase 12.2.7)
+    const loan = await createLoan({ userId, bookCopyId: validatedCopyId });
 
-  return loan;
+    // Structured success logging (passing metadata as an object)
+    const borrowedAt = loan.issueDate instanceof Date ? loan.issueDate.toISOString() : new Date(loan.issueDate).toISOString();
+    const dueDate = loan.dueDate instanceof Date ? loan.dueDate.toISOString() : new Date(loan.dueDate).toISOString();
+    logger.info('[LOAN] Member borrow successful', {
+      action: 'borrow_book',
+      memberId: userId,
+      bookCopyId: validatedCopyId,
+      loanId: loan.id,
+      borrowedAt,
+      dueDate
+    });
+
+    return loan;
+  } catch (error) {
+    // Structured failure logging
+    const reason = error.message || 'Unknown error';
+    const metadata = {
+      action: 'borrow_book',
+      memberId: userId,
+      bookCopyId,
+      reason
+    };
+    
+    if (error.statusCode && error.statusCode < 500) {
+      logger.warn(`[LOAN] Member borrow failed: ${reason}`, metadata);
+    } else {
+      logger.error(
+        `[LOAN] Member borrow failed: ${reason}`,
+        metadata,
+        error.stack
+      );
+    }
+
+    throw error;
+  }
 };
 
 /**
