@@ -466,18 +466,48 @@ const checkBookCopyAvailability = async ({ bookCopyId }) => {
  * Create the loan record and update the copy status within a database transaction.
  *
  * ARCHITECTURAL CONTEXT:
- * This placeholder establishes the contract for creating a loan in PostgreSQL via Prisma transaction
- * and will be fully implemented during Phase 12.2.7 – Prisma Transaction.
+ * This helper implements the atomic loan creation transaction introduced in Phase 12.2.7 of the AVELIS roadmap.
+ * Logging, response formatting, reservation workflows, and multi-instance concurrency refinements 
+ * are intentionally deferred to their dedicated roadmap phases.
  *
  * NOTE: Private/encapsulated helper function.
  *
  * @param {Object} loanData - Object containing userId and bookCopyId
- * @returns {Promise<Object>} The created loan record
- * @throws {ApiError} 501 Transaction not implemented
+ * @param {string} loanData.userId - The UUID of the member
+ * @param {string} loanData.bookCopyId - The UUID of the book copy
+ * @returns {Promise<Object>} The created loan record with selected fields
+ * @throws {Error} If database write fails, triggering automatic rollback
  */
 const createLoan = async ({ userId, bookCopyId }) => {
-  throw new ApiError(501, 'Prisma database transaction for loan creation has not yet been implemented.');
+  return await prisma.$transaction(async (tx) => {
+    const issueDate = new Date();
+    const dueDate = new Date();
+    dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
+
+    // 1. Create the Loan record (maps parameter bookCopyId to copyId in schema)
+    const loan = await tx.loan.create({
+      data: {
+        userId,
+        copyId: bookCopyId,
+        issueDate,
+        dueDate,
+        status: LoanStatus.BORROWED
+      },
+      select: LOAN_SELECT
+    });
+
+    // 2. Update the BookCopy status to BORROWED
+    await tx.bookCopy.update({
+      where: { id: bookCopyId },
+      data: {
+        status: CopyStatus.BORROWED
+      }
+    });
+
+    return loan;
+  });
 };
+
 
 
 
