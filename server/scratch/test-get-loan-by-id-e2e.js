@@ -75,7 +75,7 @@ const record = (name, passed) => {
 
 async function runTests() {
   const getRoute = loanRouter.stack.find(
-    layer => layer.route && layer.route.path === '/:id' && layer.route.methods.get
+    layer => layer.route && layer.route.path === '/:loanId' && layer.route.methods.get
   );
 
   if (!getRoute) {
@@ -164,11 +164,12 @@ async function runTests() {
     // ── Test 1: Validation failure - invalid UUID format ──
     {
       const req = createMockReq({
-        params: { id: 'not-a-uuid' }
+        headers: { authorization: `Bearer ${adminToken}` },
+        params: { loanId: 'not-a-uuid' }
       });
       const res = createMockRes();
       const resultRes = await executeRouteStack(req, res, getStack);
-      const ok = resultRes.statusCode === 400 && resultRes.body.success === false && resultRes.body.message === 'Invalid loan ID.';
+      const ok = resultRes.statusCode === 400 && resultRes.body.success === false && resultRes.body.message === 'Validation failed.';
       record('Test 1: Invalid UUID parameter validator error', ok);
     }
 
@@ -177,7 +178,7 @@ async function runTests() {
       const fakeLoanId = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
       const req = createMockReq({
         headers: { authorization: `Bearer ${adminToken}` },
-        params: { id: fakeLoanId }
+        params: { loanId: fakeLoanId }
       });
       const res = createMockRes();
       try {
@@ -193,7 +194,7 @@ async function runTests() {
     {
       const req = createMockReq({
         headers: { authorization: `Bearer ${adminToken}` },
-        params: { id: loanUser1.id }
+        params: { loanId: loanUser1.id }
       });
       const res = createMockRes();
       const resultRes = await executeRouteStack(req, res, getStack);
@@ -215,7 +216,7 @@ async function runTests() {
     {
       const req = createMockReq({
         headers: { authorization: `Bearer ${memberToken1}` },
-        params: { id: loanUser1.id }
+        params: { loanId: loanUser1.id }
       });
       const res = createMockRes();
       const resultRes = await executeRouteStack(req, res, getStack);
@@ -233,7 +234,7 @@ async function runTests() {
     {
       const req = createMockReq({
         headers: { authorization: `Bearer ${memberToken2}` },
-        params: { id: loanUser1.id }
+        params: { loanId: loanUser1.id }
       });
       const res = createMockRes();
       try {
