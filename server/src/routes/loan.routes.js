@@ -20,7 +20,8 @@ import {
   renewLoanValidator,
   getLoanHistoryValidator,
   borrowBookValidator,
-  validateReturnLoan
+  validateReturnLoan,
+  getLoanById
 } from '../validations/loan.validation.js';
 
 const router = Router();
@@ -114,7 +115,7 @@ router.post(
  * Retrieve details of a specific loan (Admin or Owner Member).
  *
  * Parameters:
- * - id: Valid UUID of the loan
+ * - loanId: Valid UUID of the loan
  *
  * Response shapes:
  * - 200 Success: { success: true, message: string, data: Loan }
@@ -124,9 +125,9 @@ router.post(
  * - 404 Not Found: Loan not found
  */
 router.get(
-  '/:id',
+  '/:loanId',
   authMiddleware,
-  loanIdParamValidator,
+  getLoanById,
   loanController.getLoanById
 );
 
