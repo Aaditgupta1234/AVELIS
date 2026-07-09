@@ -550,7 +550,32 @@ const createLoan = async ({ userId, bookCopyId }) => {
  * @throws {ApiError} 501 Not implemented
  */
 const validateReturnEligibility = async ({ userId, loanId }) => {
-  throw new ApiError(501, 'Not implemented.');
+  // 1. Retrieve the Loan using established query shape
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    select: LOAN_SELECT
+  });
+
+  // 2. Validate Loan Exists
+  if (!loan) {
+    throw new ApiError(404, 'Loan not found.');
+  }
+
+  // 3. Validate Ownership
+  if (loan.userId !== userId) {
+    throw new ApiError(403, 'Access denied. You can only return your own loans.');
+  }
+
+  // 4. Positive Loan Status Validation
+  if (loan.status !== LoanStatus.BORROWED && loan.status !== LoanStatus.OVERDUE) {
+    if (loan.status === LoanStatus.RETURNED) {
+      throw new ApiError(400, 'Loan already returned.');
+    }
+    throw new ApiError(400, 'Loan is not in a returnable state.');
+  }
+
+  // 5. Return the Validated Loan
+  return { loan };
 };
 
 /**
