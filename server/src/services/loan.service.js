@@ -581,16 +581,38 @@ const validateReturnEligibility = async ({ userId, loanId }) => {
 /**
  * Perform database updates to complete a loan return inside a transaction.
  *
- * NOTE: Private helper function.
+ * NOTE: Private helper function. Assumes authorization, ownership, and return
+ * eligibility validation have already completed.
+ * Updates the Loan status to RETURNED, sets the returnDate timestamp,
+ * marks the associated BookCopy as AVAILABLE, and commits both
+ * changes atomically within a Prisma transaction.
  *
- * @param {Object} returnData - Object containing loanId and validated loan
- * @param {string} returnData.loanId - The UUID of the loan
+ * @param {Object} returnData - Object containing the validated loan
  * @param {Object} returnData.loan - The validated loan record
  * @returns {Promise<Object>} The updated loan record
- * @throws {ApiError} 501 Not implemented
  */
-const completeLoanReturn = async ({ loanId, loan }) => {
-  throw new ApiError(501, 'Not implemented.');
+const completeLoanReturn = async ({ loan }) => {
+  return prisma.$transaction(async (tx) => {
+    // 1. Update the Loan record to RETURNED and set returnDate
+    const updatedLoan = await tx.loan.update({
+      where: { id: loan.id },
+      data: {
+        status: LoanStatus.RETURNED,
+        returnDate: new Date()
+      },
+      select: LOAN_SELECT
+    });
+
+    // 2. Update the associated BookCopy to AVAILABLE
+    await tx.bookCopy.update({
+      where: { id: loan.copyId },
+      data: {
+        status: CopyStatus.AVAILABLE
+      }
+    });
+
+    return updatedLoan;
+  });
 };
 
 /**
@@ -608,7 +630,7 @@ export const memberReturnBook = async ({ userId, loanId }) => {
   const { loan: validatedLoan } = await validateReturnEligibility({ userId, loanId });
 
   // 2. Perform the database update transaction (Phase 12.3.6)
-  const updatedLoan = await completeLoanReturn({ loanId, loan: validatedLoan });
+  const updatedLoan = await completeLoanReturn({ loan: validatedLoan });
 
   return updatedLoan;
 };
