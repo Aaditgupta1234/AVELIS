@@ -626,13 +626,48 @@ const completeLoanReturn = async ({ loan }) => {
  * @returns {Promise<Object>} The updated loan record
  */
 export const memberReturnBook = async ({ userId, loanId }) => {
-  // 1. Validate return eligibility (Phase 12.3.5)
-  const { loan: validatedLoan } = await validateReturnEligibility({ userId, loanId });
+  try {
+    // 1. Validate return eligibility (Phase 12.3.5)
+    const { loan: validatedLoan } = await validateReturnEligibility({ userId, loanId });
 
-  // 2. Perform the database update transaction (Phase 12.3.6)
-  const updatedLoan = await completeLoanReturn({ loan: validatedLoan });
+    // 2. Perform the database update transaction (Phase 12.3.6)
+    const updatedLoan = await completeLoanReturn({ loan: validatedLoan });
 
-  return updatedLoan;
+    // Structured success logging
+    logger.info('Book returned successfully', {
+      action: 'loan_return',
+      memberId: userId,
+      loanId: updatedLoan.id,
+      bookCopyId: validatedLoan.copyId,
+      borrowedAt: updatedLoan.issueDate,
+      dueDate: updatedLoan.dueDate
+    });
+
+    return updatedLoan;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      // Structured client validation/authorization warning logging
+      logger.warn('Return eligibility check failed', {
+        action: 'loan_return_failed',
+        memberId: userId,
+        loanId,
+        reason: error.message,
+        statusCode: error.statusCode
+      });
+    } else {
+      // Structured unexpected system failure logging
+      logger.error(
+        'Unexpected error during return workflow',
+        {
+          action: 'loan_return_error',
+          memberId: userId,
+          loanId
+        },
+        error.stack
+      );
+    }
+    throw error;
+  }
 };
 
 
