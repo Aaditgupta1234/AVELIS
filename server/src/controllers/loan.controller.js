@@ -220,6 +220,24 @@ export const memberBorrowBook = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle a member returning a borrowed book copy.
+ *
+ * Note: Placeholder for Phase 12.3.2 route wiring. The implementation
+ * will be completed during Phase 12.3.3.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const memberReturnBook = async (req, res, next) => {
+  try {
+    throw new ApiError(501, 'Not implemented.');
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 
 

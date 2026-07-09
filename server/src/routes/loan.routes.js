@@ -19,7 +19,8 @@ import {
   queryLoansValidator,
   renewLoanValidator,
   getLoanHistoryValidator,
-  borrowBookValidator
+  borrowBookValidator,
+  validateReturnLoan
 } from '../validations/loan.validation.js';
 
 const router = Router();
@@ -148,6 +149,47 @@ router.post(
   authMiddleware,
   borrowBookValidator,
   loanController.memberBorrowBook
+);
+
+/**
+ * Route bypass middleware that delegates Admin return requests to the Admin Return route
+ * registered below.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+const delegateAdminReturnRoute = (req, res, next) => {
+  if (req.user?.role === UserRole.ADMIN) {
+    return next('route');
+  }
+  next();
+};
+
+/**
+ * Complete a loan for the authenticated member (Member Return).
+ *
+ * IMPORTANT:
+ * This route must remain above the Admin Return route.
+ * Admin requests intentionally bypass this handler via delegateAdminReturnRoute.
+ *
+ * Parameters:
+ * - loanId: Valid UUID of the loan
+ *
+ * Response shapes:
+ * - 200 Success: { success: true, message: string, data: Loan }
+ * - 400 Bad Request: Validation failed
+ * - 401 Unauthorized: Invalid credentials
+ * - 403 Forbidden: Member privileges required
+ * - 501 Not Implemented: Endpoint placeholder
+ */
+router.post(
+  '/:loanId/return',
+  authMiddleware,
+  delegateAdminReturnRoute,
+  memberMiddleware,
+  validateReturnLoan,
+  loanController.memberReturnBook
 );
 
 /**
