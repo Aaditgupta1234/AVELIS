@@ -538,8 +538,54 @@ const createLoan = async ({ userId, bookCopyId }) => {
  * @returns {Promise<Object>} The updated loan record
  * @throws {ApiError} 501 Not implemented
  */
-export const memberReturnBook = async ({ userId, loanId }) => {
+/**
+ * Validate if a member is eligible to return a specific loan.
+ *
+ * NOTE: Private helper function.
+ *
+ * @param {Object} eligibilityData - Object containing userId and loanId
+ * @param {string} eligibilityData.userId - The UUID of the member
+ * @param {string} eligibilityData.loanId - The UUID of the loan
+ * @returns {Promise<Object>} Object containing the validated loan
+ * @throws {ApiError} 501 Not implemented
+ */
+const validateReturnEligibility = async ({ userId, loanId }) => {
   throw new ApiError(501, 'Not implemented.');
+};
+
+/**
+ * Perform database updates to complete a loan return inside a transaction.
+ *
+ * NOTE: Private helper function.
+ *
+ * @param {Object} returnData - Object containing loanId and validated loan
+ * @param {string} returnData.loanId - The UUID of the loan
+ * @param {Object} returnData.loan - The validated loan record
+ * @returns {Promise<Object>} The updated loan record
+ * @throws {ApiError} 501 Not implemented
+ */
+const completeLoanReturn = async ({ loanId, loan }) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
+/**
+ * Service orchestrator to return a borrowed book copy for a member.
+ *
+ * Sequentially coordinates member return eligibility validation and loan return completion.
+ *
+ * @param {Object} returnData - Object containing userId and loanId
+ * @param {string} returnData.userId - The UUID of the member
+ * @param {string} returnData.loanId - The UUID of the loan
+ * @returns {Promise<Object>} The updated loan record
+ */
+export const memberReturnBook = async ({ userId, loanId }) => {
+  // 1. Validate return eligibility (Phase 12.3.5)
+  const { loan: validatedLoan } = await validateReturnEligibility({ userId, loanId });
+
+  // 2. Perform the database update transaction (Phase 12.3.6)
+  const updatedLoan = await completeLoanReturn({ loanId, loan: validatedLoan });
+
+  return updatedLoan;
 };
 
 
