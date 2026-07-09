@@ -247,6 +247,67 @@ export const borrowBookValidator = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates requests for the Member Return workflow.
+ *
+ * Ensures the route parameter is valid and that the endpoint
+ * receives no request payload before execution reaches the controller.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const validateReturnLoan = (req, res, next) => {
+  const errors = [];
+
+  // 1. Validate route parameter loanId (req.params.loanId)
+  const loanId = req.params?.loanId;
+  let validatedLoanId = null;
+
+  if (loanId === undefined || loanId === null) {
+    errors.push({ field: 'loanId', message: 'loanId parameter is required.' });
+  } else if (typeof loanId !== 'string') {
+    errors.push({ field: 'loanId', message: 'loanId must be a string.' });
+  } else {
+    const trimmed = loanId.trim();
+    if (trimmed === '') {
+      errors.push({ field: 'loanId', message: 'loanId parameter cannot be empty.' });
+    } else if (!UUID_REGEX.test(trimmed)) {
+      errors.push({ field: 'loanId', message: 'loanId parameter must be a valid UUID.' });
+    } else {
+      validatedLoanId = trimmed;
+    }
+  }
+
+  // 2. The return endpoint currently accepts no request payload.
+  // Reject any unexpected request body fields.
+  if (req.body === null || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    errors.push({
+      field: 'body',
+      message: 'Request body must be a JSON object.'
+    });
+  } else {
+    const bodyKeys = Object.keys(req.body);
+    if (bodyKeys.length > 0) {
+      errors.push({
+        field: 'body',
+        message: `Unknown request fields are not allowed: ${bodyKeys.join(', ')}`
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // Assign normalized/trimmed value
+  if (req.params) {
+    req.params.loanId = validatedLoanId;
+  }
+
+  next();
+};
+
 
 
 
