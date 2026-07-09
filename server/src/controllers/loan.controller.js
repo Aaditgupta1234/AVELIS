@@ -62,8 +62,8 @@ export const returnBook = async (req, res, next) => {
  */
 export const getLoanById = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const loan = await loanService.getLoanById({ loanId: id, currentUser: req.user });
+    const { loanId } = req.params;
+    const loan = await loanService.getLoanById({ loanId, currentUser: req.user });
 
     return sendSuccess(res, 200, loan, 'Loan retrieved successfully.');
   } catch (error) {
