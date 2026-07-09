@@ -526,6 +526,22 @@ const createLoan = async ({ userId, bookCopyId }) => {
   });
 };
 
+/**
+ * Service placeholder to return a borrowed book copy for a member.
+ *
+ * Note: Placeholder for Phase 12.3.3 controller wiring. The implementation
+ * will be completed during Phase 12.3.4.
+ *
+ * @param {Object} returnData - Object containing userId and loanId
+ * @param {string} returnData.userId - The UUID of the member
+ * @param {string} returnData.loanId - The UUID of the loan
+ * @returns {Promise<Object>} The updated loan record
+ * @throws {ApiError} 501 Not implemented
+ */
+export const memberReturnBook = async ({ userId, loanId }) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
 
 
 

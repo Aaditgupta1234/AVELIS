@@ -223,16 +223,21 @@ export const memberBorrowBook = async (req, res, next) => {
 /**
  * Handle a member returning a borrowed book copy.
  *
- * Note: Placeholder for Phase 12.3.2 route wiring. The implementation
- * will be completed during Phase 12.3.3.
+ * Extracts the member's user ID and the validated loan ID, delegates
+ * execution to the service layer, and returns the standardized success response.
  *
- * @param {import('express').Request} req - Express request
- * @param {import('express').Response} res - Express response
- * @param {import('express').NextFunction} next - Express next function
+ * @param {import('express').Request} req - Express request with authenticated user and validated loanId
+ * @param {import('express').Response} res - Express response returning the returned loan record
+ * @param {import('express').NextFunction} next - Express next function for error propagation
  */
 export const memberReturnBook = async (req, res, next) => {
   try {
-    throw new ApiError(501, 'Not implemented.');
+    const { loanId } = req.params;
+    const userId = req.user.id;
+
+    const loan = await loanService.memberReturnBook({ userId, loanId });
+
+    return sendSuccess(res, 200, loan, 'Book returned successfully.');
   } catch (error) {
     next(error);
   }
