@@ -308,6 +308,50 @@ export const validateReturnLoan = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates request parameters for retrieving a loan by ID (GET /loans/:loanId).
+ *
+ * Ensures the route parameter is valid before execution reaches the controller.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getLoanById = (req, res, next) => {
+  const errors = [];
+
+  // Validate route parameter loanId (req.params.loanId)
+  const loanId = req.params?.loanId;
+  let validatedLoanId = null;
+
+  if (loanId === undefined || loanId === null) {
+    errors.push({ field: 'loanId', message: 'loanId parameter is required.' });
+  } else if (typeof loanId !== 'string') {
+    errors.push({ field: 'loanId', message: 'loanId must be a string.' });
+  } else {
+    const trimmed = loanId.trim();
+    if (trimmed === '') {
+      errors.push({ field: 'loanId', message: 'loanId parameter cannot be empty.' });
+    } else if (!UUID_REGEX.test(trimmed)) {
+      errors.push({ field: 'loanId', message: 'loanId parameter must be a valid UUID.' });
+    } else {
+      validatedLoanId = trimmed;
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // Assign normalized/trimmed value
+  if (req.params) {
+    req.params.loanId = validatedLoanId;
+  }
+
+  next();
+};
+
+
 
 
 
