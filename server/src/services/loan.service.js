@@ -287,20 +287,42 @@ export const getMyActiveLoans = async ({ currentUser }) => {
  * @param {Object} params - Input parameters
  * @param {Object} params.currentUser - The authenticated user context object
  * @returns {Promise<Array>} List of raw active loan records
+ * @throws {Error} Propagates any database/connection errors after logging
  */
 const fetchActiveLoans = async ({ currentUser }) => {
-  return prisma.loan.findMany({
-    where: {
-      userId: currentUser.id,
-      status: {
-        in: [LoanStatus.BORROWED, LoanStatus.OVERDUE]
+  try {
+    const loans = await prisma.loan.findMany({
+      where: {
+        userId: currentUser.id,
+        status: {
+          in: [LoanStatus.BORROWED, LoanStatus.OVERDUE]
+        }
+      },
+      select: LOAN_SELECT,
+      orderBy: {
+        createdAt: 'desc'
       }
-    },
-    select: LOAN_SELECT,
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
+    });
+
+    logger.info('[LOAN] Active loans retrieved successfully', {
+      action: 'get_active_loans',
+      userId: currentUser.id,
+      loanCount: loans.length
+    });
+
+    return loans;
+  } catch (error) {
+    logger.error(
+      'Unexpected error during active loans retrieval',
+      {
+        action: 'get_active_loans_error',
+        userId: currentUser.id,
+        reason: error.message
+      },
+      error.stack
+    );
+    throw error;
+  }
 };
 
 /**
