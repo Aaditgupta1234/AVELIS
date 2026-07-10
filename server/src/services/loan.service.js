@@ -281,15 +281,23 @@ export const getMyActiveLoans = async ({ currentUser }) => {
 /**
  * Private helper to fetch active loans from the database.
  *
- * This placeholder will be fully implemented during Phase 12.5.5.
+ * This helper retrieves the raw list of loans for the authenticated user
+ * using Prisma, ordered chronologically by creation date.
  *
  * @param {Object} params - Input parameters
  * @param {Object} params.currentUser - The authenticated user context object
- * @returns {Promise<Array>} List of active loans
- * @throws {ApiError} 501 Not implemented
+ * @returns {Promise<Array>} List of raw loan records
  */
 const fetchActiveLoans = async ({ currentUser }) => {
-  throw new ApiError(501, 'Not implemented.');
+  return prisma.loan.findMany({
+    where: {
+      userId: currentUser.id
+    },
+    select: LOAN_SELECT,
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
 };
 
 /**
