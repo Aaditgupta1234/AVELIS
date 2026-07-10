@@ -12,6 +12,7 @@ import { sendError } from '../utils/index.js';
 import { LoanStatus } from '@prisma/client';
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const ALLOWED_LOAN_STATUSES = Object.values(LoanStatus);
 
 /**
  * Validator middleware for borrowing a book copy.
@@ -346,6 +347,86 @@ export const getLoanById = (req, res, next) => {
   // Assign normalized/trimmed value
   if (req.params) {
     req.params.loanId = validatedLoanId;
+  }
+
+  next();
+};
+
+/**
+ * Validator middleware for retrieving loan history.
+ *
+ * Validates optional query parameters: page, limit, status, and sort.
+ * Does not apply default values for page or limit; defaults are deferred to the service layer.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const loanHistoryValidator = (req, res, next) => {
+  const errors = [];
+  const { page, limit, status, sort } = req.query;
+
+  // 1. Validate page (optional, integer >= 1)
+  if (page !== undefined && page !== null) {
+    const trimmed = String(page).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'page', message: 'page cannot be empty.' });
+    } else {
+      const pageNum = Number(trimmed);
+      if (!Number.isInteger(pageNum) || pageNum < 1) {
+        errors.push({ field: 'page', message: 'Page must be a positive integer.' });
+      } else {
+        req.query.page = pageNum;
+      }
+    }
+  }
+
+  // 2. Validate limit (optional, integer 1 to 100)
+  if (limit !== undefined && limit !== null) {
+    const trimmed = String(limit).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'limit', message: 'limit cannot be empty.' });
+    } else {
+      const limitNum = Number(trimmed);
+      if (!Number.isInteger(limitNum) || limitNum < 1 || limitNum > 100) {
+        errors.push({ field: 'limit', message: 'Limit must be a positive integer between 1 and 100.' });
+      } else {
+        req.query.limit = limitNum;
+      }
+    }
+  }
+
+  // 3. Validate status (optional, must be a valid LoanStatus enum value)
+  if (status !== undefined && status !== null) {
+    const trimmed = String(status).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'status', message: 'status cannot be empty.' });
+    } else {
+      if (!ALLOWED_LOAN_STATUSES.includes(trimmed)) {
+        errors.push({ field: 'status', message: `status must be a valid LoanStatus: ${ALLOWED_LOAN_STATUSES.join(', ')}.` });
+      } else {
+        req.query.status = trimmed;
+      }
+    }
+  }
+
+  // 4. Validate sort (optional, must be 'asc' or 'desc')
+  if (sort !== undefined && sort !== null) {
+    const trimmed = String(sort).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'sort', message: 'sort cannot be empty.' });
+    } else {
+      const normalizedSort = trimmed.toLowerCase();
+      if (normalizedSort !== 'asc' && normalizedSort !== 'desc') {
+        errors.push({ field: 'sort', message: "sort must be 'asc' or 'desc'." });
+      } else {
+        req.query.sort = normalizedSort;
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
   }
 
   next();
