@@ -18,10 +18,10 @@ import {
   loanIdParamValidator,
   queryLoansValidator,
   renewLoanValidator,
-  getLoanHistoryValidator,
   borrowBookValidator,
   validateReturnLoan,
-  getLoanById
+  getLoanById,
+  loanHistoryValidator
 } from '../validations/loan.validation.js';
 
 const router = Router();
@@ -110,13 +110,25 @@ router.get(
 /**
  * Retrieve the current user's loan history (Member only).
  *
- * Note: Placeholder returning 501 Not Implemented.
+ * GET /api/v1/loans/history
+ *
+ * Query parameters (validated via loanHistoryValidator):
+ * - page: optional integer >= 1
+ * - limit: optional integer (1 to 100)
+ * - status: optional valid LoanStatus enum value
+ * - sort: optional sorting direction ('asc' or 'desc')
+ *
+ * Response shapes:
+ * - 200 Success: { success: true, message: string, data: Loan[] }
+ * - 400 Bad Request: Validation failed
+ * - 401 Unauthorized: Invalid credentials
+ * - 403 Forbidden: Member privileges required
  */
 router.get(
   '/history',
   authMiddleware,
   memberMiddleware,
-  getLoanHistoryValidator,
+  loanHistoryValidator,
   loanController.getLoanHistory
 );
 
