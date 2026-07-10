@@ -281,17 +281,20 @@ export const getMyActiveLoans = async ({ currentUser }) => {
 /**
  * Private helper to fetch active loans from the database.
  *
- * This helper retrieves the raw list of loans for the authenticated user
- * using Prisma, ordered chronologically by creation date.
+ * This helper retrieves the raw list of active loans (BORROWED or OVERDUE)
+ * for the authenticated user using Prisma, ordered chronologically by creation date.
  *
  * @param {Object} params - Input parameters
  * @param {Object} params.currentUser - The authenticated user context object
- * @returns {Promise<Array>} List of raw loan records
+ * @returns {Promise<Array>} List of raw active loan records
  */
 const fetchActiveLoans = async ({ currentUser }) => {
   return prisma.loan.findMany({
     where: {
-      userId: currentUser.id
+      userId: currentUser.id,
+      status: {
+        in: [LoanStatus.BORROWED, LoanStatus.OVERDUE]
+      }
     },
     select: LOAN_SELECT,
     orderBy: {
