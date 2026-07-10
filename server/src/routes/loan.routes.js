@@ -86,6 +86,14 @@ router.get(
 /**
  * Retrieve the current user's active loans (Member only).
  *
+ * NOTE:
+ * This endpoint currently accepts no client-supplied body,
+ * route parameters, or query parameters, so no validation
+ * middleware is required. If future roadmap phases introduce
+ * optional query parameters (for example pagination,
+ * sorting, or filtering), validation should be added
+ * during those dedicated implementation phases.
+ *
  * Response shapes:
  * - 200 Success: { success: true, message: string, data: Loan[] }
  * - 401 Unauthorized: Invalid credentials
