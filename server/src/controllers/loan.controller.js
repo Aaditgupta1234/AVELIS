@@ -180,7 +180,18 @@ export const getMyActiveLoans = async (req, res, next) => {
  */
 export const getLoanHistory = async (req, res, next) => {
   try {
-    throw new ApiError(501, 'Not implemented.');
+    const currentUser = req.user;
+    const { page, limit, status, sort } = req.query;
+
+    const history = await loanService.getLoanHistory({
+      currentUser,
+      page,
+      limit,
+      status,
+      sort
+    });
+
+    return sendSuccess(res, 200, history, 'Loan history retrieved successfully.');
   } catch (error) {
     next(error);
   }

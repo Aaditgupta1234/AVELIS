@@ -328,11 +328,16 @@ const fetchActiveLoans = async ({ currentUser }) => {
 /**
  * Service placeholder to retrieve loan history for a specific user.
  *
- * @param {string} userId - The UUID of the authenticated user
+ * @param {Object} params - Input parameters
+ * @param {Object} params.currentUser - The authenticated user context object
+ * @param {number} [params.page] - Optional page number
+ * @param {number} [params.limit] - Optional page limit
+ * @param {string} [params.status] - Optional filter by status
+ * @param {string} [params.sort] - Optional sort direction
  * @returns {Promise<Array>} List of past loans
  * @throws {ApiError} 501 Not implemented
  */
-export const getLoanHistory = async (userId) => {
+export const getLoanHistory = async ({ currentUser, page, limit, status, sort }) => {
   throw new ApiError(501, 'Not implemented.');
 };
 
