@@ -265,13 +265,18 @@ export const syncOverdueLoans = async () => {
 };
 
 /**
- * Service placeholder to retrieve active loans for a specific user.
+ * Retrieves the authenticated member's active loans.
  *
- * @param {string} userId - The UUID of the authenticated user
+ * This placeholder establishes the service contract and will be
+ * fully implemented during the subsequent Phase 12.5 roadmap
+ * milestones.
+ *
+ * @param {Object} params - Input parameters
+ * @param {Object} params.currentUser - The authenticated user context object
  * @returns {Promise<Array>} List of active loans
  * @throws {ApiError} 501 Not implemented
  */
-export const getMyActiveLoans = async (userId) => {
+export const getMyActiveLoans = async ({ currentUser }) => {
   throw new ApiError(501, 'Not implemented.');
 };
 

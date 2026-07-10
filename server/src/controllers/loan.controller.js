@@ -164,7 +164,8 @@ export const syncOverdueLoans = async (req, res, next) => {
  */
 export const getMyActiveLoans = async (req, res, next) => {
   try {
-    throw new ApiError(501, 'Not implemented.');
+    const loans = await loanService.getMyActiveLoans({ currentUser: req.user });
+    return sendSuccess(res, 200, loans, 'Active loans retrieved successfully.');
   } catch (error) {
     next(error);
   }

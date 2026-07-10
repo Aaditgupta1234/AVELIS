@@ -84,6 +84,22 @@ router.get(
 );
 
 /**
+ * Retrieve the current user's active loans (Member only).
+ *
+ * Response shapes:
+ * - 200 Success: { success: true, message: string, data: Loan[] }
+ * - 401 Unauthorized: Invalid credentials
+ * - 403 Forbidden: Member privileges required
+ */
+router.get(
+  '/active',
+  authMiddleware,
+  memberMiddleware,
+  loanController.getMyActiveLoans
+);
+
+
+/**
  * Retrieve the current user's loan history (Member only).
  *
  * Note: Placeholder returning 501 Not Implemented.
