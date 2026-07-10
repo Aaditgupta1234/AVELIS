@@ -267,16 +267,28 @@ export const syncOverdueLoans = async () => {
 /**
  * Retrieves the authenticated member's active loans.
  *
- * This placeholder establishes the service contract and will be
- * fully implemented during the subsequent Phase 12.5 roadmap
- * milestones.
+ * This orchestrator coordinates the active loan retrieval workflow and
+ * delegates data fetching to the private `fetchActiveLoans` helper.
+ *
+ * @param {Object} params - Input parameters
+ * @param {Object} params.currentUser - The authenticated user context object
+ * @returns {Promise<Array>} List of active loans
+ */
+export const getMyActiveLoans = async ({ currentUser }) => {
+  return fetchActiveLoans({ currentUser });
+};
+
+/**
+ * Private helper to fetch active loans from the database.
+ *
+ * This placeholder will be fully implemented during Phase 12.5.5.
  *
  * @param {Object} params - Input parameters
  * @param {Object} params.currentUser - The authenticated user context object
  * @returns {Promise<Array>} List of active loans
  * @throws {ApiError} 501 Not implemented
  */
-export const getMyActiveLoans = async ({ currentUser }) => {
+const fetchActiveLoans = async ({ currentUser }) => {
   throw new ApiError(501, 'Not implemented.');
 };
 
