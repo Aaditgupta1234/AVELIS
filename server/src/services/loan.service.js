@@ -365,7 +365,8 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
 /**
  * Private helper to retrieve loan history records from the database.
  *
- * This placeholder will be fully implemented during Phase 12.6.5.
+ * This helper queries all loan history records for the user from Prisma
+ * and returns them along with pagination metadata.
  *
  * @param {Object} params - Input parameters
  * @param {string} params.userId - The UUID of the authenticated user
@@ -373,11 +374,40 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
  * @param {number} params.take - Query limit take count
  * @param {string} [params.status] - Optional status filter
  * @param {string} params.sort - Sort direction ('asc' or 'desc')
- * @returns {Promise<Array>} List of raw loan records
- * @throws {ApiError} 501 Not implemented
+ * @returns {Promise<Object>} Object containing the loans list and pagination metadata
  */
 const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
-  throw new ApiError(501, 'Not implemented.');
+  const where = {
+    userId,
+    ...(status !== undefined && status !== null ? { status } : {})
+  };
+
+  const [loans, total] = await Promise.all([
+    prisma.loan.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        issueDate: sort
+      },
+      select: LOAN_SELECT
+    }),
+    prisma.loan.count({ where })
+  ]);
+
+  const page = Math.floor(skip / take) + 1;
+  const limit = take;
+  const pages = total === 0 ? 0 : Math.ceil(total / limit);
+
+  return {
+    loans,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages
+    }
+  };
 };
 
 /**
