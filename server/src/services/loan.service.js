@@ -326,7 +326,11 @@ const fetchActiveLoans = async ({ currentUser }) => {
 };
 
 /**
- * Service placeholder to retrieve loan history for a specific user.
+ * Retrieves the authenticated member's loan history.
+ *
+ * This orchestrator applies query parameter defaults, calculates pagination offsets,
+ * enforces user ownership context, and delegates database retrieval to the private
+ * `retrieveLoanHistory` helper.
  *
  * @param {Object} params - Input parameters
  * @param {Object} params.currentUser - The authenticated user context object
@@ -335,9 +339,44 @@ const fetchActiveLoans = async ({ currentUser }) => {
  * @param {string} [params.status] - Optional filter by status
  * @param {string} [params.sort] - Optional sort direction
  * @returns {Promise<Array>} List of past loans
- * @throws {ApiError} 501 Not implemented
  */
 export const getLoanHistory = async ({ currentUser, page, limit, status, sort }) => {
+  const pageVal = page !== undefined && page !== null ? page : 1;
+  const limitVal = limit !== undefined && limit !== null ? limit : 10;
+  const sortVal = sort !== undefined && sort !== null ? sort : 'desc';
+
+  const skip = (pageVal - 1) * limitVal;
+  const take = limitVal;
+
+  const queryParams = {
+    userId: currentUser.id,
+    skip,
+    take,
+    sort: sortVal
+  };
+
+  if (status !== undefined && status !== null) {
+    queryParams.status = status;
+  }
+
+  return retrieveLoanHistory(queryParams);
+};
+
+/**
+ * Private helper to retrieve loan history records from the database.
+ *
+ * This placeholder will be fully implemented during Phase 12.6.5.
+ *
+ * @param {Object} params - Input parameters
+ * @param {string} params.userId - The UUID of the authenticated user
+ * @param {number} params.skip - Query offset skip count
+ * @param {number} params.take - Query limit take count
+ * @param {string} [params.status] - Optional status filter
+ * @param {string} params.sort - Sort direction ('asc' or 'desc')
+ * @returns {Promise<Array>} List of raw loan records
+ * @throws {ApiError} 501 Not implemented
+ */
+const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
   throw new ApiError(501, 'Not implemented.');
 };
 
