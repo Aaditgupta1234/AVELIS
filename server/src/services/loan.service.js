@@ -965,10 +965,20 @@ export const memberReturnBook = async ({ userId, loanId }) => {
 };
 
 /**
- * Retrieve all loans for administrative management.
+ * Retrieve all loans for administrative management with dynamic filtering, pagination, and sorting.
  *
- * @param {Object} query - The validated query parameters (reserved for future implementation)
- * @throws {ApiError} 501 Not implemented placeholder
+ * @param {Object} query - The validated query parameters
+ * @param {string} [query.status] - Filter by loan status
+ * @param {string} [query.memberId] - Filter by member user UUID
+ * @param {string} [query.bookId] - Filter by book UUID
+ * @param {string} [query.startDate] - Filter by start date of loan issue
+ * @param {string} [query.endDate] - Filter by end date of loan issue
+ * @param {number} [query.page] - Page number (defaults to 1)
+ * @param {number} [query.limit] - Page limit (defaults to 10)
+ * @param {string} [query.sortBy] - Sorting field (defaults to 'createdAt')
+ * @param {string} [query.sortOrder] - Sorting direction (defaults to 'desc')
+ * @returns {Promise<Object>} Object containing the list of loans and pagination metadata
+ * @throws {Error} Propagates any database or connection errors
  */
 export const getAllLoans = async (query) => {
   try {
