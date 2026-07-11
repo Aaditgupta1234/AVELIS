@@ -971,10 +971,36 @@ export const memberReturnBook = async ({ userId, loanId }) => {
  * @throws {ApiError} 501 Not implemented placeholder
  */
 export const getAllLoans = async (query) => {
-  void query; // Reserved for future implementation in Phases 12.8.5 and 12.8.6
+  const { status, memberId, bookId, startDate, endDate } = query;
+  const where = {};
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (memberId) {
+    where.userId = memberId;
+  }
+
+  if (bookId) {
+    where.bookCopy = {
+      bookId
+    };
+  }
+
+  if (startDate || endDate) {
+    where.issueDate = {};
+    if (startDate) {
+      where.issueDate.gte = new Date(startDate);
+    }
+    if (endDate) {
+      where.issueDate.lte = new Date(endDate);
+    }
+  }
 
   // Temporary default sorting; query-driven sorting will be implemented in Phase 12.8.6
   const loans = await prisma.loan.findMany({
+    where,
     select: LOAN_SELECT,
     orderBy: {
       createdAt: 'desc'
