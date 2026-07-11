@@ -206,7 +206,15 @@ export const getLoanHistory = async (req, res, next) => {
  */
 export const renewLoan = async (req, res, next) => {
   try {
-    throw new ApiError(501, 'Not implemented.');
+    const { loanId } = req.params;
+    const currentUser = req.user;
+
+    const renewedLoan = await loanService.renewLoan({
+      loanId,
+      currentUser
+    });
+
+    return sendSuccess(res, 200, renewedLoan, 'Loan renewed successfully.');
   } catch (error) {
     next(error);
   }
