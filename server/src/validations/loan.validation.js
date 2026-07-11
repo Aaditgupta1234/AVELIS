@@ -461,6 +461,184 @@ export const loanHistoryValidator = (req, res, next) => {
   next();
 };
 
+const ALLOWED_ADMIN_SORT_FIELDS = ['loanDate', 'dueDate', 'returnDate', 'status', 'createdAt'];
+
+/**
+ * Validator middleware for administrative loan queries.
+ *
+ * Validates optional query parameters: status, memberId, bookId, startDate, endDate, page, limit, sortBy, sortOrder.
+ * Does not apply default values; defaults are deferred to the service layer.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const adminLoanQueryValidator = (req, res, next) => {
+  const errors = [];
+  const { status, memberId, bookId, startDate, endDate, page, limit, sortBy, sortOrder } = req.query;
+
+  let validStatus = null;
+  let validMemberId = null;
+  let validBookId = null;
+  let validStartDate = null;
+  let validEndDate = null;
+  let validPage = null;
+  let validLimit = null;
+  let validSortBy = null;
+  let validSortOrder = null;
+
+  // 1. status (optional, must be a valid LoanStatus enum value)
+  if (status !== undefined && status !== null) {
+    const trimmed = String(status).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'status', message: 'status cannot be empty.' });
+    } else if (!ALLOWED_LOAN_STATUSES.includes(trimmed)) {
+      errors.push({ field: 'status', message: `status must be a valid LoanStatus: ${ALLOWED_LOAN_STATUSES.join(', ')}.` });
+    } else {
+      validStatus = trimmed;
+    }
+  }
+
+  // 2. memberId (optional, valid UUID)
+  if (memberId !== undefined && memberId !== null) {
+    const trimmed = String(memberId).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'memberId', message: 'memberId cannot be empty.' });
+    } else if (!UUID_REGEX.test(trimmed)) {
+      errors.push({ field: 'memberId', message: 'memberId must be a valid UUID.' });
+    } else {
+      validMemberId = trimmed;
+    }
+  }
+
+  // 3. bookId (optional, valid UUID)
+  if (bookId !== undefined && bookId !== null) {
+    const trimmed = String(bookId).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'bookId', message: 'bookId cannot be empty.' });
+    } else if (!UUID_REGEX.test(trimmed)) {
+      errors.push({ field: 'bookId', message: 'bookId must be a valid UUID.' });
+    } else {
+      validBookId = trimmed;
+    }
+  }
+
+  // 4. startDate (optional, valid ISO-8601 date)
+  let parsedStartDate = null;
+  if (startDate !== undefined && startDate !== null) {
+    const trimmed = String(startDate).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'startDate', message: 'startDate cannot be empty.' });
+    } else {
+      const parsed = Date.parse(trimmed);
+      const isIso = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:?\d{2})?)?$/.test(trimmed);
+      if (isNaN(parsed) || !isIso) {
+        errors.push({ field: 'startDate', message: 'startDate must be a valid ISO-8601 date.' });
+      } else {
+        parsedStartDate = new Date(trimmed);
+        validStartDate = trimmed;
+      }
+    }
+  }
+
+  // 5. endDate (optional, valid ISO-8601 date)
+  let parsedEndDate = null;
+  if (endDate !== undefined && endDate !== null) {
+    const trimmed = String(endDate).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'endDate', message: 'endDate cannot be empty.' });
+    } else {
+      const parsed = Date.parse(trimmed);
+      const isIso = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:?\d{2})?)?$/.test(trimmed);
+      if (isNaN(parsed) || !isIso) {
+        errors.push({ field: 'endDate', message: 'endDate must be a valid ISO-8601 date.' });
+      } else {
+        parsedEndDate = new Date(trimmed);
+        validEndDate = trimmed;
+      }
+    }
+  }
+
+  // 6. Date Range Check (if both valid)
+  if (parsedStartDate && parsedEndDate && parsedStartDate.getTime() > parsedEndDate.getTime()) {
+    errors.push({ field: 'startDate', message: 'startDate cannot be after endDate.' });
+  }
+
+  // 7. page (optional, positive integer >= 1)
+  if (page !== undefined && page !== null) {
+    const trimmed = String(page).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'page', message: 'page cannot be empty.' });
+    } else {
+      const pageNum = Number(trimmed);
+      if (!Number.isInteger(pageNum) || pageNum < 1) {
+        errors.push({ field: 'page', message: 'Page must be a positive integer.' });
+      } else {
+        validPage = pageNum;
+      }
+    }
+  }
+
+  // 8. limit (optional, positive integer 1 to 100)
+  if (limit !== undefined && limit !== null) {
+    const trimmed = String(limit).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'limit', message: 'limit cannot be empty.' });
+    } else {
+      const limitNum = Number(trimmed);
+      if (!Number.isInteger(limitNum) || limitNum < 1 || limitNum > 100) {
+        errors.push({ field: 'limit', message: 'Limit must be a positive integer between 1 and 100.' });
+      } else {
+        validLimit = limitNum;
+      }
+    }
+  }
+
+  // 9. sortBy (optional, whitelisted fields, case-sensitive)
+  if (sortBy !== undefined && sortBy !== null) {
+    const trimmed = String(sortBy).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'sortBy', message: 'sortBy cannot be empty.' });
+    } else if (!ALLOWED_ADMIN_SORT_FIELDS.includes(trimmed)) {
+      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${ALLOWED_ADMIN_SORT_FIELDS.join(', ')}.` });
+    } else {
+      validSortBy = trimmed;
+    }
+  }
+
+  // 10. sortOrder (optional, 'asc' or 'desc', case-insensitive)
+  if (sortOrder !== undefined && sortOrder !== null) {
+    const trimmed = String(sortOrder).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'sortOrder', message: 'sortOrder cannot be empty.' });
+    } else {
+      const normalized = trimmed.toLowerCase();
+      if (normalized !== 'asc' && normalized !== 'desc') {
+        errors.push({ field: 'sortOrder', message: "sortOrder must be 'asc' or 'desc'." });
+      } else {
+        validSortOrder = normalized;
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // Normalize/Commit only after all validations have passed
+  if (status !== undefined && status !== null) req.query.status = validStatus;
+  if (memberId !== undefined && memberId !== null) req.query.memberId = validMemberId;
+  if (bookId !== undefined && bookId !== null) req.query.bookId = validBookId;
+  if (startDate !== undefined && startDate !== null) req.query.startDate = validStartDate;
+  if (endDate !== undefined && endDate !== null) req.query.endDate = validEndDate;
+  if (page !== undefined && page !== null) req.query.page = validPage;
+  if (limit !== undefined && limit !== null) req.query.limit = validLimit;
+  if (sortBy !== undefined && sortBy !== null) req.query.sortBy = validSortBy;
+  if (sortOrder !== undefined && sortOrder !== null) req.query.sortOrder = validSortOrder;
+
+  next();
+};
+
 
 
 
