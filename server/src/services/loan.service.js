@@ -971,68 +971,95 @@ export const memberReturnBook = async ({ userId, loanId }) => {
  * @throws {ApiError} 501 Not implemented placeholder
  */
 export const getAllLoans = async (query) => {
-  const { status, memberId, bookId, startDate, endDate, page: queryPage, limit: queryLimit, sortBy, sortOrder } = query;
+  try {
+    const { status, memberId, bookId, startDate, endDate, page: queryPage, limit: queryLimit, sortBy, sortOrder } = query;
 
-  const page = queryPage ?? 1;
-  const limit = queryLimit ?? 10;
-  const skip = (page - 1) * limit;
+    const page = queryPage ?? 1;
+    const limit = queryLimit ?? 10;
+    const skip = (page - 1) * limit;
 
-  const where = {};
+    const where = {};
 
-  if (status) {
-    where.status = status;
-  }
-
-  if (memberId) {
-    where.userId = memberId;
-  }
-
-  if (bookId) {
-    where.bookCopy = {
-      bookId
-    };
-  }
-
-  if (startDate || endDate) {
-    where.issueDate = {};
-    if (startDate) {
-      where.issueDate.gte = new Date(startDate);
+    if (status) {
+      where.status = status;
     }
-    if (endDate) {
-      where.issueDate.lte = new Date(endDate);
+
+    if (memberId) {
+      where.userId = memberId;
     }
-  }
 
-  // Retrieve total record count matching filters
-  const total = await prisma.loan.count({
-    where
-  });
+    if (bookId) {
+      where.bookCopy = {
+        bookId
+      };
+    }
 
-  // Map 'loanDate' parameter to Prisma 'issueDate' field
-  let prismaSortField = sortBy ?? 'createdAt';
-  if (prismaSortField === 'loanDate') {
-    prismaSortField = 'issueDate';
-  }
+    if (startDate || endDate) {
+      where.issueDate = {};
+      if (startDate) {
+        where.issueDate.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.issueDate.lte = new Date(endDate);
+      }
+    }
 
-  const loans = await prisma.loan.findMany({
-    where,
-    select: LOAN_SELECT,
-    orderBy: {
-      [prismaSortField]: sortOrder ?? 'desc'
-    },
-    skip,
-    take: limit
-  });
+    // Retrieve total record count matching filters
+    const total = await prisma.loan.count({
+      where
+    });
 
-  return {
-    loans,
-    pagination: {
+    // Map 'loanDate' parameter to Prisma 'issueDate' field
+    let prismaSortField = sortBy ?? 'createdAt';
+    if (prismaSortField === 'loanDate') {
+      prismaSortField = 'issueDate';
+    }
+
+    const loans = await prisma.loan.findMany({
+      where,
+      select: LOAN_SELECT,
+      orderBy: {
+        [prismaSortField]: sortOrder ?? 'desc'
+      },
+      skip,
+      take: limit
+    });
+
+    const logMeta = {
+      action: 'admin_get_all_loans',
       page,
       limit,
       total,
-      totalPages: total === 0 ? 0 : Math.ceil(total / limit)
-    }
-  };
+      count: loans.length
+    };
+    if (status) logMeta.status = status;
+    if (memberId) logMeta.memberId = memberId;
+    if (bookId) logMeta.bookId = bookId;
+    if (startDate) logMeta.startDate = startDate;
+    if (endDate) logMeta.endDate = endDate;
+
+    logger.info('[LOAN] Admin loans retrieved successfully', logMeta);
+
+    return {
+      loans,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    logger.error(
+      '[LOAN] Unexpected error during admin loans retrieval',
+      {
+        action: 'admin_get_all_loans_error',
+        reason: error.message
+      },
+      error.stack
+    );
+    throw error;
+  }
 };
 
 
