@@ -244,24 +244,42 @@ export const returnLoan = returnBook;
  * @returns {Promise<{updatedCount: number, checkedAt: Date}>} Summary of updates
  */
 export const syncOverdueLoans = async () => {
-  const now = new Date();
+  try {
+    const now = new Date();
 
-  const result = await prisma.loan.updateMany({
-    where: {
-      status: LoanStatus.BORROWED,
-      dueDate: {
-        lt: now
+    const result = await prisma.loan.updateMany({
+      where: {
+        status: LoanStatus.BORROWED,
+        dueDate: {
+          lt: now
+        }
+      },
+      data: {
+        status: LoanStatus.OVERDUE
       }
-    },
-    data: {
-      status: LoanStatus.OVERDUE
-    }
-  });
+    });
 
-  return {
-    updatedCount: result.count,
-    checkedAt: now
-  };
+    logger.info('[LOAN] Overdue loans synchronized successfully', {
+      action: 'sync_overdue_loans',
+      updatedCount: result.count,
+      checkedAt: now.toISOString()
+    });
+
+    return {
+      updatedCount: result.count,
+      checkedAt: now
+    };
+  } catch (error) {
+    logger.error(
+      '[LOAN] Unexpected error during overdue loans synchronization',
+      {
+        action: 'sync_overdue_loans_error',
+        reason: error.message
+      },
+      error.stack
+    );
+    throw error;
+  }
 };
 
 /**
@@ -363,7 +381,7 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
     const history = await retrieveLoanHistory(queryParams);
 
     logger.info('[LOAN] Loan history retrieved successfully', {
-      event: 'loan_history_retrieved',
+      action: 'loan_history_retrieved',
       userId: currentUser.id,
       page: Number(pageVal),
       limit: Number(limitVal),
@@ -375,16 +393,15 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
     return history;
   } catch (error) {
     logger.error(
-      'Unexpected error during loan history retrieval',
+      '[LOAN] Unexpected error during loan history retrieval',
       {
-        event: 'loan_history_retrieved_failed',
+        action: 'loan_history_retrieved_failed',
         userId: currentUser?.id,
         page: Number(pageVal),
         limit: Number(limitVal),
         status: status || null,
         sort: sortVal,
-        error: error.message,
-        errorName: error.name
+        reason: error.message
       },
       error.stack
     );
@@ -633,19 +650,23 @@ export const memberBorrowBook = async ({ userId, bookCopyId }) => {
   } catch (error) {
     // Structured failure logging
     const reason = error.message || 'Unknown error';
-    const metadata = {
-      action: 'borrow_book',
-      memberId: userId,
-      bookCopyId,
-      reason
-    };
     
     if (error.statusCode && error.statusCode < 500) {
-      logger.warn(`[LOAN] Member borrow failed: ${reason}`, metadata);
+      logger.warn(`[LOAN] Member borrow failed: ${reason}`, {
+        action: 'borrow_book_failed',
+        memberId: userId,
+        bookCopyId,
+        reason
+      });
     } else {
       logger.error(
         `[LOAN] Member borrow failed: ${reason}`,
-        metadata,
+        {
+          action: 'borrow_book_error',
+          memberId: userId,
+          bookCopyId,
+          reason
+        },
         error.stack
       );
     }

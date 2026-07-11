@@ -15,7 +15,16 @@ const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}
 const ALLOWED_LOAN_STATUSES = Object.values(LoanStatus);
 
 /**
- * Validator middleware for borrowing a book copy.
+ * Validator middleware for borrowing a book copy (Admin Borrow workflow).
+ *
+ * ARCHITECTURAL CONTEXT:
+ * This validator requires both userId and copyId in the request body, supporting
+ * the administrative borrow action.
+ *
+ * COEXISTENCE POLICY:
+ * - borrowValidator: Dedicated exclusively to Admin Borrow.
+ * - borrowBookValidator: Dedicated exclusively to Member Borrow (where userId is session-resolved).
+ * Both co-exist because they validate different payload schemas.
  *
  * @param {import('express').Request} req - Express request
  * @param {import('express').Response} res - Express response
@@ -64,6 +73,14 @@ export const loanIdParamValidator = (req, res, next) => {
 
 /**
  * Validator middleware for returning a book copy (alias of loanIdParamValidator).
+ *
+ * ARCHITECTURAL CONTEXT:
+ * Validates the `:id` parameter for the Admin Return workflow.
+ *
+ * COEXISTENCE POLICY:
+ * - returnValidator: Used by the Admin Return route.
+ * - validateReturnLoan: Used by the Member Return route (validates `:loanId` and rejects body).
+ * Both co-exist to support distinct route parameters and body payload policies.
  */
 export const returnValidator = loanIdParamValidator;
 
