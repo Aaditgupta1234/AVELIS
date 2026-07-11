@@ -17,6 +17,7 @@ import adminRoutes from './admin.routes.js';
 import loanRoutes from './loan.routes.js';
 import reservationRoutes from './reservation.routes.js';
 import reviewRoutes from '../modules/review/review.routes.js';
+import dashboardRoutes from './dashboard.routes.js';
 
 const router = Router();
 
@@ -40,6 +41,7 @@ router.use('/admin', adminRoutes);
 router.use('/loans', loanRoutes);
 router.use('/reservations', reservationRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/admin/dashboard', dashboardRoutes);
 
 export default router;
 
