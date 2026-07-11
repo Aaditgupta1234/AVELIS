@@ -971,7 +971,12 @@ export const memberReturnBook = async ({ userId, loanId }) => {
  * @throws {ApiError} 501 Not implemented placeholder
  */
 export const getAllLoans = async (query) => {
-  const { status, memberId, bookId, startDate, endDate } = query;
+  const { status, memberId, bookId, startDate, endDate, page: queryPage, limit: queryLimit, sortBy, sortOrder } = query;
+
+  const page = queryPage ?? 1;
+  const limit = queryLimit ?? 10;
+  const skip = (page - 1) * limit;
+
   const where = {};
 
   if (status) {
@@ -998,18 +1003,35 @@ export const getAllLoans = async (query) => {
     }
   }
 
-  // Temporary default sorting; query-driven sorting will be implemented in Phase 12.8.6
+  // Retrieve total record count matching filters
+  const total = await prisma.loan.count({
+    where
+  });
+
+  // Map 'loanDate' parameter to Prisma 'issueDate' field
+  let prismaSortField = sortBy ?? 'createdAt';
+  if (prismaSortField === 'loanDate') {
+    prismaSortField = 'issueDate';
+  }
+
   const loans = await prisma.loan.findMany({
     where,
     select: LOAN_SELECT,
     orderBy: {
-      createdAt: 'desc'
-    }
+      [prismaSortField]: sortOrder ?? 'desc'
+    },
+    skip,
+    take: limit
   });
 
   return {
     loans,
-    pagination: null
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit)
+    }
   };
 };
 
