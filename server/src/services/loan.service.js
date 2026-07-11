@@ -534,17 +534,27 @@ const validateRenewalEligibility = async (context) => {
   }
 };
 
-/**
- * Execute the database transaction to renew the loan.
- *
- * NOTE: Private/encapsulated helper function.
- *
- * @param {Object} context - The renewal context
- * @returns {Promise<Object>} The renewed loan record
- * @throws {ApiError} 501 Not implemented
- */
 const executeLoanRenewal = async (context) => {
-  throw new ApiError(501, 'Not implemented.');
+  const { loan } = context;
+
+  const newDueDate = new Date(loan.dueDate);
+  newDueDate.setDate(newDueDate.getDate() + DEFAULT_BORROW_DAYS);
+
+  return await prisma.$transaction(async (tx) => {
+    const updatedLoan = await tx.loan.update({
+      where: { id: loan.id },
+      data: {
+        dueDate: newDueDate,
+        status: LoanStatus.BORROWED,
+        renewCount: {
+          increment: 1
+        }
+      },
+      select: LOAN_SELECT
+    });
+
+    return updatedLoan;
+  });
 };
 
 /**
