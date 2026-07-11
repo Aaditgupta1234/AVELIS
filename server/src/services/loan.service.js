@@ -964,6 +964,16 @@ export const memberReturnBook = async ({ userId, loanId }) => {
   }
 };
 
+/**
+ * Retrieve all loans for administrative management.
+ *
+ * @param {Object} query - The validated query parameters (reserved for future implementation)
+ * @throws {ApiError} 501 Not implemented placeholder
+ */
+export const getAllLoans = async (query) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
 
 
 

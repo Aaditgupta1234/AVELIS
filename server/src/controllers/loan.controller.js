@@ -272,7 +272,15 @@ export const memberReturnBook = async (req, res, next) => {
  */
 export const getAllLoans = async (req, res, next) => {
   try {
-    throw new ApiError(501, 'Not implemented.');
+    const result = await loanService.getAllLoans(req.query);
+
+    return sendSuccess(
+      res,
+      200,
+      result.loans,
+      'Loans retrieved successfully.',
+      result.pagination
+    );
   } catch (error) {
     next(error);
   }
