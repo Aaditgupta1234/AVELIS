@@ -345,21 +345,51 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
   const limitVal = limit !== undefined && limit !== null ? limit : 10;
   const sortVal = sort !== undefined && sort !== null ? sort : 'desc';
 
-  const skip = (pageVal - 1) * limitVal;
-  const take = limitVal;
+  try {
+    const skip = (pageVal - 1) * limitVal;
+    const take = limitVal;
 
-  const queryParams = {
-    userId: currentUser.id,
-    skip,
-    take,
-    sort: sortVal
-  };
+    const queryParams = {
+      userId: currentUser.id,
+      skip,
+      take,
+      sort: sortVal
+    };
 
-  if (status !== undefined && status !== null) {
-    queryParams.status = status;
+    if (status !== undefined && status !== null) {
+      queryParams.status = status;
+    }
+
+    const history = await retrieveLoanHistory(queryParams);
+
+    logger.info('[LOAN] Loan history retrieved successfully', {
+      event: 'loan_history_retrieved',
+      userId: currentUser.id,
+      page: Number(pageVal),
+      limit: Number(limitVal),
+      status: status || null,
+      sort: sortVal,
+      returnedCount: history.loans?.length ?? 0
+    });
+
+    return history;
+  } catch (error) {
+    logger.error(
+      'Unexpected error during loan history retrieval',
+      {
+        event: 'loan_history_retrieved_failed',
+        userId: currentUser?.id,
+        page: Number(pageVal),
+        limit: Number(limitVal),
+        status: status || null,
+        sort: sortVal,
+        error: error.message,
+        errorName: error.name
+      },
+      error.stack
+    );
+    throw error;
   }
-
-  return retrieveLoanHistory(queryParams);
 };
 
 /**
