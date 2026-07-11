@@ -162,7 +162,36 @@ export const queryLoansValidator = (req, res, next) => {
  * @param {import('express').NextFunction} next - Express next function
  */
 export const renewLoanValidator = (req, res, next) => {
-  // TODO Phase 12.x: implement loanId param and renewal validation
+  const errors = [];
+
+  // Validate route parameter loanId (req.params.loanId)
+  const loanId = req.params?.loanId;
+  let validatedLoanId = null;
+
+  if (loanId === undefined || loanId === null) {
+    errors.push({ field: 'loanId', message: 'loanId parameter is required.' });
+  } else if (typeof loanId !== 'string') {
+    errors.push({ field: 'loanId', message: 'loanId must be a string.' });
+  } else {
+    const trimmed = loanId.trim();
+    if (trimmed === '') {
+      errors.push({ field: 'loanId', message: 'loanId parameter cannot be empty.' });
+    } else if (!UUID_REGEX.test(trimmed)) {
+      errors.push({ field: 'loanId', message: 'loanId parameter must be a valid UUID.' });
+    } else {
+      validatedLoanId = trimmed;
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // Assign normalized/trimmed value
+  if (req.params) {
+    req.params.loanId = validatedLoanId;
+  }
+
   next();
 };
 
@@ -431,6 +460,8 @@ export const loanHistoryValidator = (req, res, next) => {
 
   next();
 };
+
+
 
 
 
