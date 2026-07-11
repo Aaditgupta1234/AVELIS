@@ -447,7 +447,55 @@ const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
  * @returns {Promise<Object>} The renewed loan record
  * @throws {ApiError} 501 Not implemented
  */
-export const renewLoan = async ({ loanId, userId }) => {
+export const renewLoan = async ({ loanId, currentUser }) => {
+  const renewalContext = await getRenewalContext({
+    loanId,
+    currentUser
+  });
+
+  await validateRenewalEligibility(renewalContext);
+
+  const renewedLoan = await executeLoanRenewal(renewalContext);
+
+  return renewedLoan;
+};
+
+/**
+ * Retrieve renewal context from the database.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} params - Input parameters containing loanId and currentUser
+ * @returns {Promise<Object>} The renewal context containing the loan, user, and reservations
+ * @throws {ApiError} 501 Not implemented
+ */
+const getRenewalContext = async ({ loanId, currentUser }) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
+/**
+ * Validate renewal eligibility based on business rules.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} context - The renewal context
+ * @returns {Promise<void>} Resolves if eligible, throws ApiError otherwise
+ * @throws {ApiError} 501 Not implemented
+ */
+const validateRenewalEligibility = async (context) => {
+  throw new ApiError(501, 'Not implemented.');
+};
+
+/**
+ * Execute the database transaction to renew the loan.
+ *
+ * NOTE: Private/encapsulated helper function.
+ *
+ * @param {Object} context - The renewal context
+ * @returns {Promise<Object>} The renewed loan record
+ * @throws {ApiError} 501 Not implemented
+ */
+const executeLoanRenewal = async (context) => {
   throw new ApiError(501, 'Not implemented.');
 };
 
