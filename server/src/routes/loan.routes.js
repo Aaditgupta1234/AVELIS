@@ -264,10 +264,20 @@ router.patch(
 /**
  * Renew an active loan (Member only).
  *
- * Note: Placeholder returning 501 Not Implemented.
+ * PATCH /api/v1/loans/:loanId/renew
+ *
+ * Parameters:
+ * - loanId: Valid UUID of the loan to renew
+ *
+ * Response shapes:
+ * - 200 Success: { success: true, message: string, data: Loan }
+ * - 400 Bad Request: Invalid loan ID
+ * - 401 Unauthorized: Invalid credentials
+ * - 403 Forbidden: Member privileges required
+ * - 501 Not Implemented: Endpoint placeholder
  */
 router.patch(
-  '/:id/renew',
+  '/:loanId/renew',
   authMiddleware,
   memberMiddleware,
   renewLoanValidator,
