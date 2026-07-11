@@ -7,6 +7,7 @@ export const LOAN_SELECT = {
   returnDate: true,
   fineAmount: true,
   status: true,
+  renewCount: true,
   createdAt: true,
   updatedAt: true,
   user: {

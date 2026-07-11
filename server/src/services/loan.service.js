@@ -10,7 +10,7 @@
 import { prisma } from '../lib/prisma.js';
 
 import { ApiError } from '../utils/index.js';
-import { UserRole, CopyStatus, LoanStatus } from '@prisma/client';
+import { UserRole, CopyStatus, LoanStatus, ReservationStatus } from '@prisma/client';
 import { LOAN_SELECT } from '../shared/selects/loan.select.js';
 import { getUserOrThrow } from '../helpers/resource.helper.js';
 
@@ -460,17 +460,40 @@ export const renewLoan = async ({ loanId, currentUser }) => {
   return renewedLoan;
 };
 
-/**
- * Retrieve renewal context from the database.
- *
- * NOTE: Private/encapsulated helper function.
- *
- * @param {Object} params - Input parameters containing loanId and currentUser
- * @returns {Promise<Object>} The renewal context containing the loan, user, and reservations
- * @throws {ApiError} 501 Not implemented
- */
 const getRenewalContext = async ({ loanId, currentUser }) => {
-  throw new ApiError(501, 'Not implemented.');
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    select: LOAN_SELECT
+  });
+
+  if (!loan) {
+    throw new ApiError(404, 'Loan not found.');
+  }
+
+  const book = await prisma.book.findUnique({
+    where: { id: loan.bookCopy.bookId },
+    select: { isDeleted: true }
+  });
+
+  const activeReservations = await prisma.reservation.findMany({
+    where: {
+      bookId: loan.bookCopy.bookId,
+      status: {
+        in: [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP]
+      },
+      userId: {
+        not: currentUser.id
+      }
+    }
+  });
+
+  return {
+    loan,
+    currentUser,
+    book,
+    activeReservations,
+    bookCopy: loan.bookCopy
+  };
 };
 
 /**
@@ -483,7 +506,32 @@ const getRenewalContext = async ({ loanId, currentUser }) => {
  * @throws {ApiError} 501 Not implemented
  */
 const validateRenewalEligibility = async (context) => {
-  throw new ApiError(501, 'Not implemented.');
+  const { loan, currentUser, book, activeReservations } = context;
+
+  // A. Ownership Check
+  if (loan.userId !== currentUser.id) {
+    throw new ApiError(403, 'Access denied. You can only renew your own loans.');
+  }
+
+  // B. Loan Status Check
+  if (loan.status !== LoanStatus.BORROWED && loan.status !== LoanStatus.OVERDUE) {
+    throw new ApiError(400, 'Loan is not active.');
+  }
+
+  // C. Renewal Limit Check
+  if (loan.renewCount >= config.renewalLimit) {
+    throw new ApiError(400, 'Maximum renewal limit reached.');
+  }
+
+  // D. Reservation Conflict Check
+  if (activeReservations.length > 0) {
+    throw new ApiError(400, 'Loan cannot be renewed because another member has reserved this book.');
+  }
+
+  // E. Soft Delete Check
+  if (!book || book.isDeleted === true) {
+    throw new ApiError(400, 'Book is soft deleted and cannot be renewed.');
+  }
 };
 
 /**
