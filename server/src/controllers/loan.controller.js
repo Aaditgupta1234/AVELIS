@@ -263,6 +263,21 @@ export const memberReturnBook = async (req, res, next) => {
   }
 };
 
+/**
+ * Retrieve all loans for administrative management.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const getAllLoans = async (req, res, next) => {
+  try {
+    throw new ApiError(501, 'Not implemented.');
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 
 
