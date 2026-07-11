@@ -448,16 +448,50 @@ const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
  * @throws {ApiError} 501 Not implemented
  */
 export const renewLoan = async ({ loanId, currentUser }) => {
-  const renewalContext = await getRenewalContext({
-    loanId,
-    currentUser
-  });
+  try {
+    const renewalContext = await getRenewalContext({
+      loanId,
+      currentUser
+    });
 
-  await validateRenewalEligibility(renewalContext);
+    await validateRenewalEligibility(renewalContext);
 
-  const renewedLoan = await executeLoanRenewal(renewalContext);
+    const renewedLoan = await executeLoanRenewal(renewalContext);
 
-  return renewedLoan;
+    logger.info('[LOAN] Loan renewed successfully', {
+      action: 'renew_loan',
+      loanId: renewedLoan.id,
+      memberId: currentUser.id,
+      renewCount: renewedLoan.renewCount,
+      newDueDate: renewedLoan.dueDate instanceof Date ? renewedLoan.dueDate.toISOString() : new Date(renewedLoan.dueDate).toISOString()
+    });
+
+    return renewedLoan;
+  } catch (error) {
+    const reason = error.message || 'Unknown error';
+    const metadata = {
+      action: 'renew_loan_failed',
+      loanId,
+      memberId: currentUser?.id,
+      reason
+    };
+
+    if (error instanceof ApiError && error.statusCode < 500) {
+      logger.warn(`[LOAN] Loan renewal failed: ${reason}`, metadata);
+    } else {
+      logger.error(
+        `[LOAN] Loan renewal failed: ${reason}`,
+        {
+          action: 'renew_loan_error',
+          loanId,
+          memberId: currentUser?.id
+        },
+        error.stack
+      );
+    }
+
+    throw error;
+  }
 };
 
 const getRenewalContext = async ({ loanId, currentUser }) => {
