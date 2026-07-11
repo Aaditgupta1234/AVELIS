@@ -971,7 +971,20 @@ export const memberReturnBook = async ({ userId, loanId }) => {
  * @throws {ApiError} 501 Not implemented placeholder
  */
 export const getAllLoans = async (query) => {
-  throw new ApiError(501, 'Not implemented.');
+  void query; // Reserved for future implementation in Phases 12.8.5 and 12.8.6
+
+  // Temporary default sorting; query-driven sorting will be implemented in Phase 12.8.6
+  const loans = await prisma.loan.findMany({
+    select: LOAN_SELECT,
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  return {
+    loans,
+    pagination: null
+  };
 };
 
 
