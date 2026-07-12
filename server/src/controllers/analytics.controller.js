@@ -70,8 +70,9 @@ export const getRatingAnalytics = async (req, res, next) => {
  */
 export const getTimeSeriesAnalytics = async (req, res, next) => {
   try {
-    const data = await analyticsService.getTimeSeriesAnalytics();
-    return res.status(200).json({ success: true, data });
+    const { startDate, endDate, interval } = req.query;
+    const data = await analyticsService.getTimeSeriesAnalytics({ startDate, endDate, interval });
+    return sendSuccess(res, 200, data, 'Time-series analytics retrieved successfully.');
   } catch (error) {
     next(error);
   }

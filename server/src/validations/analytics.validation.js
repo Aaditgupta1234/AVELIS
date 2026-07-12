@@ -334,5 +334,93 @@ export const validateRatingAnalytics = (req, res, next) => {
  * @param {import('express').NextFunction} next - Express next function
  */
 export const validateTimeSeriesAnalytics = (req, res, next) => {
+  const errors = [];
+  const { startDate, endDate, interval } = req.query;
+
+  let validStartDate = null;
+  let validEndDate = null;
+  let parsedStartDate = null;
+  let parsedEndDate = null;
+  let validInterval = 'day';
+
+  if (startDate !== undefined && startDate !== null) {
+    const trimmed = String(startDate).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'startDate', message: 'startDate cannot be empty.' });
+    } else {
+      const parsed = Date.parse(trimmed);
+      const isIso = ISO_DATE_REGEX.test(trimmed);
+      let isValidDate = !isNaN(parsed) && isIso;
+
+      if (isValidDate) {
+        const [datePart] = trimmed.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const utcDate = new Date(Date.UTC(year, month - 1, day));
+        if (utcDate.getUTCFullYear() !== year || (utcDate.getUTCMonth() + 1) !== month || utcDate.getUTCDate() !== day) {
+          isValidDate = false;
+        }
+      }
+
+      if (!isValidDate) {
+        errors.push({ field: 'startDate', message: 'startDate must be a valid ISO-8601 date.' });
+      } else {
+        parsedStartDate = new Date(trimmed);
+        validStartDate = trimmed;
+      }
+    }
+  }
+
+  if (endDate !== undefined && endDate !== null) {
+    const trimmed = String(endDate).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'endDate', message: 'endDate cannot be empty.' });
+    } else {
+      const parsed = Date.parse(trimmed);
+      const isIso = ISO_DATE_REGEX.test(trimmed);
+      let isValidDate = !isNaN(parsed) && isIso;
+
+      if (isValidDate) {
+        const [datePart] = trimmed.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const utcDate = new Date(Date.UTC(year, month - 1, day));
+        if (utcDate.getUTCFullYear() !== year || (utcDate.getUTCMonth() + 1) !== month || utcDate.getUTCDate() !== day) {
+          isValidDate = false;
+        }
+      }
+
+      if (!isValidDate) {
+        errors.push({ field: 'endDate', message: 'endDate must be a valid ISO-8601 date.' });
+      } else {
+        parsedEndDate = new Date(trimmed);
+        validEndDate = trimmed;
+      }
+    }
+  }
+
+  if (parsedStartDate && parsedEndDate && parsedStartDate.getTime() > parsedEndDate.getTime()) {
+    errors.push({ field: 'startDate', message: 'startDate cannot be after endDate.' });
+  }
+
+  if (interval !== undefined && interval !== null) {
+    const trimmed = String(interval).trim();
+    if (trimmed === '') {
+      errors.push({ field: 'interval', message: 'interval cannot be empty.' });
+    } else if (!['day', 'week', 'month'].includes(trimmed)) {
+      errors.push({ field: 'interval', message: 'interval must be one of: day, week, month.' });
+    } else {
+      validInterval = trimmed;
+    }
+  }
+
+  if (errors.length > 0) {
+    return sendError(res, 400, 'Validation failed.', errors);
+  }
+
+  // Clear query entirely and preserve only validated/sanitized parameters
+  req.query = {};
+  if (validStartDate !== null) req.query.startDate = validStartDate;
+  if (validEndDate !== null) req.query.endDate = validEndDate;
+  req.query.interval = validInterval;
+
   next();
 };

@@ -789,11 +789,315 @@ export const getRatingAnalytics = async ({ startDate, endDate, limit = 10 } = {}
 };
 
 /**
- * Retrieve time-series analytics.
+ * Helper to retrieve the ISO-8601 Monday-Sunday week format string (YYYY-Www) in UTC.
  *
- * @returns {Promise<Object>} Placeholder that throws 501 Not Implemented
- * @throws {ApiError} 501 Not implemented
+ * @param {Date} date - Date object
+ * @returns {string} ISO week string
  */
-export const getTimeSeriesAnalytics = async () => {
-  throw new ApiError(501, 'Time-Series Analytics endpoint not implemented yet.');
+const getIsoWeekString = (date) => {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  // Set to nearest Thursday: current date + 4 - current day number
+  // Sunday is treated as day number 7
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  const formattedWeek = String(weekNo).padStart(2, '0');
+  return `${d.getUTCFullYear()}-W${formattedWeek}`;
+};
+
+/**
+ * Helper to retrieve the UTC monthly date string (YYYY-MM).
+ *
+ * @param {Date} date - Date object
+ * @returns {string} Year-month string
+ */
+const getMonthString = (date) => {
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${yyyy}-${mm}`;
+};
+
+/**
+ * Helper to retrieve the UTC daily date string (YYYY-MM-DD).
+ *
+ * @param {Date} date - Date object
+ * @returns {string} Year-month-date string
+ */
+const getDayString = (date) => {
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+/**
+ * Helper to retrieve the UTC Monday of the week containing the given date.
+ *
+ * @param {Date} date - Date object
+ * @returns {Date} Monday Date object in UTC
+ */
+const getMonday = (date) => {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
+  return d;
+};
+
+/**
+ * Build the query filters across multiple models for time-series date ranges.
+ * Excludes soft-deleted book reviews and limits registrations to MEMBERs.
+ *
+ * @param {Object} params - Date params
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @returns {Object} Prisma filters for each model
+ */
+const buildTimeSeriesFilter = ({ startDate, endDate }) => {
+  const dateRange = {};
+  if (startDate) {
+    dateRange.gte = new Date(startDate);
+  }
+  if (endDate) {
+    const normalizedEndDate = endDate.length === 10 ? `${endDate}T23:59:59.999Z` : endDate;
+    dateRange.lte = new Date(normalizedEndDate);
+  }
+
+  const baseFilter = Object.keys(dateRange).length > 0 ? { createdAt: dateRange } : {};
+
+  return {
+    loans: baseFilter,
+    reservations: baseFilter,
+    orders: baseFilter,
+    reviews: {
+      ...baseFilter,
+      book: {
+        isDeleted: false
+      }
+    },
+    registrations: {
+      ...baseFilter,
+      role: UserRole.MEMBER
+    }
+  };
+};
+
+/**
+ * Core helper to group database records by period and count creations.
+ *
+ * @param {Array<Object>} records - Database records
+ * @param {string} interval - Grouping interval (day, week, month)
+ * @returns {Object} Key-value map of period to count
+ */
+const groupRecords = (records, interval) => {
+  const counts = {};
+  for (const r of records) {
+    let key;
+    if (interval === 'month') {
+      key = getMonthString(r.createdAt);
+    } else if (interval === 'week') {
+      key = getIsoWeekString(r.createdAt);
+    } else {
+      key = getDayString(r.createdAt);
+    }
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+};
+
+/**
+ * Group loan creations by period.
+ *
+ * @param {Array<Object>} loans - Loan records
+ * @param {string} interval - Grouping interval
+ * @returns {Object} Period count map
+ */
+const groupLoans = (loans, interval) => groupRecords(loans, interval);
+
+/**
+ * Group reservation creations by period.
+ *
+ * @param {Array<Object>} reservations - Reservation records
+ * @param {string} interval - Grouping interval
+ * @returns {Object} Period count map
+ */
+const groupReservations = (reservations, interval) => groupRecords(reservations, interval);
+
+/**
+ * Group order creations by period.
+ *
+ * @param {Array<Object>} orders - Order records
+ * @param {string} interval - Grouping interval
+ * @returns {Object} Period count map
+ */
+const groupOrders = (orders, interval) => groupRecords(orders, interval);
+
+/**
+ * Group review creations by period.
+ *
+ * @param {Array<Object>} reviews - Review records
+ * @param {string} interval - Grouping interval
+ * @returns {Object} Period count map
+ */
+const groupReviews = (reviews, interval) => groupRecords(reviews, interval);
+
+/**
+ * Group registration creations by period.
+ *
+ * @param {Array<Object>} registrations - User records
+ * @param {string} interval - Grouping interval
+ * @returns {Object} Period count map
+ */
+const groupRegistrations = (registrations, interval) => groupRecords(registrations, interval);
+
+/**
+ * Construct a complete, chronologically sorted, gap-filled timeline of metrics.
+ * 
+ * Period boundaries are defined as:
+ * - Daily: UTC midnight to UTC midnight.
+ * - Weekly: ISO-8601 Monday–Sunday weeks.
+ * - Monthly: Calendar months in UTC.
+ * 
+ * Guarantee:
+ * - Output is always returned in ascending chronological order.
+ * - Missing periods are backfilled with zero values.
+ * 
+ * Future Scaling Note:
+ * - Enforce a maximum date range limit on query validation (e.g. max 1 year for daily timelines)
+ *   to avoid generating excessively large arrays in memory during gap filling.
+ *
+ * @param {Date} start - Timeline start date
+ * @param {Date} end - Timeline end date
+ * @param {string} interval - Timeline interval (day, week, month)
+ * @param {Object} loansMap - Grouped loan counts
+ * @param {Object} reservationsMap - Grouped reservation counts
+ * @param {Object} ordersMap - Grouped order counts
+ * @param {Object} reviewsMap - Grouped review counts
+ * @param {Object} registrationsMap - Grouped registration counts
+ * @returns {Array<Object>} Complete gap-filled activity timeline
+ */
+const buildTimeline = (
+  start,
+  end,
+  interval,
+  loansMap,
+  reservationsMap,
+  ordersMap,
+  reviewsMap,
+  registrationsMap
+) => {
+  if (!start) return [];
+
+  const periods = [];
+  if (interval === 'month') {
+    let current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+    const endUTC = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+    while (current <= endUTC) {
+      periods.push(getMonthString(current));
+      current.setUTCMonth(current.getUTCMonth() + 1);
+    }
+  } else if (interval === 'week') {
+    let current = getMonday(start);
+    const endMonday = getMonday(end);
+    while (current <= endMonday) {
+      periods.push(getIsoWeekString(current));
+      current.setUTCDate(current.getUTCDate() + 7);
+    }
+  } else {
+    let current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+    const endUTC = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+    while (current <= endUTC) {
+      periods.push(getDayString(current));
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+  }
+
+  return periods.map(period => ({
+    period,
+    loans: loansMap[period] || 0,
+    reservations: reservationsMap[period] || 0,
+    orders: ordersMap[period] || 0,
+    reviews: reviewsMap[period] || 0,
+    registrations: registrationsMap[period] || 0
+  }));
+};
+
+/**
+ * Retrieve time-series activity analytics.
+ *
+ * @param {Object} params - Query filters and interval
+ * @returns {Promise<Object>} Time-series analytics data structure
+ */
+export const getTimeSeriesAnalytics = async ({ startDate, endDate, interval = 'day' } = {}) => {
+  const filters = buildTimeSeriesFilter({ startDate, endDate });
+
+  const [loans, reservations, orders, reviews, registrations] = await Promise.all([
+    prisma.loan.findMany({ where: filters.loans, select: { createdAt: true } }),
+    prisma.reservation.findMany({ where: filters.reservations, select: { createdAt: true } }),
+    prisma.order.findMany({ where: filters.orders, select: { createdAt: true } }),
+    prisma.review.findMany({ where: filters.reviews, select: { createdAt: true } }),
+    prisma.user.findMany({ where: filters.registrations, select: { createdAt: true } })
+  ]);
+
+  let start = null;
+  let end = null;
+
+  if (startDate) {
+    start = new Date(startDate);
+  } else {
+    const allDates = [
+      ...loans.map(l => l.createdAt),
+      ...reservations.map(r => r.createdAt),
+      ...orders.map(o => o.createdAt),
+      ...reviews.map(r => r.createdAt),
+      ...registrations.map(r => r.createdAt)
+    ];
+    if (allDates.length > 0) {
+      start = new Date(Math.min(...allDates.map(d => d.getTime())));
+    }
+  }
+
+  if (endDate) {
+    end = new Date(endDate.length === 10 ? `${endDate}T23:59:59.999Z` : endDate);
+  } else {
+    const allDates = [
+      ...loans.map(l => l.createdAt),
+      ...reservations.map(r => r.createdAt),
+      ...orders.map(o => o.createdAt),
+      ...reviews.map(r => r.createdAt),
+      ...registrations.map(r => r.createdAt)
+    ];
+    if (allDates.length > 0) {
+      end = new Date(Math.max(...allDates.map(d => d.getTime()), Date.now()));
+    } else {
+      end = new Date();
+    }
+  }
+
+  const loansMap = groupLoans(loans, interval);
+  const reservationsMap = groupReservations(reservations, interval);
+  const ordersMap = groupOrders(orders, interval);
+  const reviewsMap = groupReviews(reviews, interval);
+  const registrationsMap = groupRegistrations(registrations, interval);
+
+  const timeline = buildTimeline(
+    start,
+    end,
+    interval,
+    loansMap,
+    reservationsMap,
+    ordersMap,
+    reviewsMap,
+    registrationsMap
+  );
+
+  return {
+    filter: {
+      startDate: startDate || null,
+      endDate: endDate || null,
+      interval
+    },
+    timeline
+  };
 };
