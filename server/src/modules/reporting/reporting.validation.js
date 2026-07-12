@@ -22,6 +22,20 @@ const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const INVENTORY_AVAILABILITY = ['all', 'available', 'borrowed', 'reserved', 'lost', 'damaged', 'maintenance'];
+const INVENTORY_SORT_FIELDS = [
+  'title',
+  'totalCopies',
+  'availableCopies',
+  'borrowedCopies',
+  'reservedCopies',
+  'lostCopies',
+  'damagedCopies',
+  'maintenanceCopies',
+  'availabilityPercentage',
+  'createdAt'
+];
+
 /**
  * Validator helper for common search and pagination query parameters.
  *
@@ -546,28 +560,85 @@ export const validateInventoryReport = (req, res, next) => {
   const errors = [];
   const sanitizedQuery = {};
 
+  // Common pagination, sort, search, and dates
   validateCommonQueries(req, sanitizedQuery, errors);
-  validateDateRange(req, sanitizedQuery, errors);
 
-  const { status, categoryId, authorId } = req.query;
+  // Set defaults for page and limit if not provided
+  if (sanitizedQuery.page === undefined) {
+    sanitizedQuery.page = 1;
+  }
+  if (sanitizedQuery.limit === undefined) {
+    sanitizedQuery.limit = 20;
+  }
 
-  // status (optional CopyStatus enum)
-  if (status !== undefined && status !== null) {
-    const trimmed = String(status).trim().toUpperCase();
+  // Validate sortBy against inventory sort fields allow-list
+  if (sanitizedQuery.sortBy === undefined) {
+    sanitizedQuery.sortBy = 'title';
+  } else if (!INVENTORY_SORT_FIELDS.includes(sanitizedQuery.sortBy)) {
+    errors.push({
+      field: 'sortBy',
+      message: `sortBy must be one of: ${INVENTORY_SORT_FIELDS.join(', ')}.`
+    });
+  }
+
+  // Set default for sortOrder if omitted. validateCommonQueries already handles validation if present
+  if (sanitizedQuery.sortOrder === undefined) {
+    sanitizedQuery.sortOrder = 'asc';
+  }
+
+  const { categoryId, authorId, publisher, availability, includeZeroAvailable } = req.query;
+
+  // Validate categoryId UUID
+  const validCategoryId = validateUUID(categoryId, 'categoryId', errors);
+  if (validCategoryId !== null) {
+    sanitizedQuery.categoryId = validCategoryId;
+  }
+
+  // Validate authorId UUID
+  const validAuthorId = validateUUID(authorId, 'authorId', errors);
+  if (validAuthorId !== null) {
+    sanitizedQuery.authorId = validAuthorId;
+  }
+
+  // Validate publisher (optional trimmed string, max 100)
+  if (publisher != null) {
+    const trimmed = String(publisher).trim();
     if (trimmed === '') {
-      errors.push({ field: 'status', message: 'status cannot be empty.' });
-    } else if (!Object.values(CopyStatus).includes(trimmed)) {
-      errors.push({ field: 'status', message: `status must be one of: ${Object.values(CopyStatus).join(', ')}.` });
+      errors.push({ field: 'publisher', message: 'publisher cannot be empty.' });
+    } else if (trimmed.length > 100) {
+      errors.push({ field: 'publisher', message: 'publisher must be 100 characters or less.' });
     } else {
-      sanitizedQuery.status = trimmed;
+      sanitizedQuery.publisher = trimmed;
     }
   }
 
-  const validCategoryId = validateUUID(categoryId, 'categoryId', errors);
-  if (validCategoryId !== null) sanitizedQuery.categoryId = validCategoryId;
+  // Validate availability enum
+  if (availability !== undefined && availability !== null) {
+    const trimmed = String(availability).trim().toLowerCase();
+    if (trimmed === '') {
+      errors.push({ field: 'availability', message: 'availability cannot be empty.' });
+    } else if (!INVENTORY_AVAILABILITY.includes(trimmed)) {
+      errors.push({ field: 'availability', message: `availability must be one of: ${INVENTORY_AVAILABILITY.join(', ')}.` });
+    } else {
+      sanitizedQuery.availability = trimmed;
+    }
+  } else {
+    sanitizedQuery.availability = 'all';
+  }
 
-  const validAuthorId = validateUUID(authorId, 'authorId', errors);
-  if (validAuthorId !== null) sanitizedQuery.authorId = validAuthorId;
+  // Validate includeZeroAvailable boolean string
+  if (includeZeroAvailable !== undefined && includeZeroAvailable !== null) {
+    const trimmed = String(includeZeroAvailable).trim().toLowerCase();
+    if (trimmed === '') {
+      errors.push({ field: 'includeZeroAvailable', message: 'includeZeroAvailable cannot be empty.' });
+    } else if (trimmed !== 'true' && trimmed !== 'false') {
+      errors.push({ field: 'includeZeroAvailable', message: 'includeZeroAvailable must be a boolean (true or false).' });
+    } else {
+      sanitizedQuery.includeZeroAvailable = trimmed === 'true';
+    }
+  } else {
+    sanitizedQuery.includeZeroAvailable = false;
+  }
 
   if (errors.length > 0) {
     return sendError(res, 400, 'Validation failed.', errors);
@@ -615,3 +686,4 @@ export const validateMemberReport = (req, res, next) => {
   req.query = sanitizedQuery;
   next();
 };
+
