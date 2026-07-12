@@ -16,6 +16,7 @@ import {
   validateReports
 } from '../validations/dashboard.validation.js';
 import analyticsRouter from './analytics.routes.js';
+import reportingRouter from '../modules/reporting/reporting.routes.js';
 
 const router = Router();
 
@@ -29,7 +30,7 @@ router.use(authMiddleware, adminMiddleware);
 router.get('/summary', validateDashboardSummary, dashboardController.getDashboardSummary);
 
 /**
- * Retrieve administrative analytics.
+ * Retrieve administrative administrative analytics.
  * GET /admin/dashboard/analytics
  */
 router.use('/analytics', analyticsRouter);
@@ -39,5 +40,6 @@ router.use('/analytics', analyticsRouter);
  * GET /admin/dashboard/reports
  */
 router.get('/reports', validateReports, dashboardController.getReports);
+router.use('/reports', reportingRouter);
 
 export default router;
