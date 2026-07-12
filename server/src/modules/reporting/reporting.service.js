@@ -50,11 +50,15 @@ const buildPagination = ({ page, limit }) => {
  */
 const buildPaginationMetadata = (totalItems, page, limit) => {
   const totalPages = Math.ceil(totalItems / limit) || 0;
+  const hasNextPage = page < totalPages;
+  const hasPreviousPage = page > 1 && totalItems > 0;
   return {
     page,
     limit,
     totalItems,
-    totalPages
+    totalPages,
+    hasNextPage,
+    hasPreviousPage
   };
 };
 
@@ -1024,9 +1028,12 @@ export const getInventoryReport = async (filters = {}) => {
   // 6. Slice page items
   const items = mapped.slice(skip, skip + take);
 
+  const totalItems = summary.totalBooks;
+
   return {
     summary: reportSummary,
-    items
+    items,
+    pagination: buildPaginationMetadata(totalItems, resolvedPage, resolvedLimit)
   };
 };
 
