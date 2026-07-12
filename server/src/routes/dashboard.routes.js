@@ -13,9 +13,9 @@ import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
 import {
   validateDashboardSummary,
-  validateAnalytics,
   validateReports
 } from '../validations/dashboard.validation.js';
+import analyticsRouter from './analytics.routes.js';
 
 const router = Router();
 
@@ -32,7 +32,7 @@ router.get('/summary', validateDashboardSummary, dashboardController.getDashboar
  * Retrieve administrative analytics.
  * GET /admin/dashboard/analytics
  */
-router.get('/analytics', validateAnalytics, dashboardController.getAnalytics);
+router.use('/analytics', analyticsRouter);
 
 /**
  * Retrieve administrative reports.
