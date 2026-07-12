@@ -816,7 +816,7 @@ export const getOverdueReport = async (filters = {}) => {
  * 'reservedCopies', 'lostCopies', 'damagedCopies', 'maintenanceCopies', 'availabilityPercentage', 'createdAt'.
  *
  * @param {Object} filters - Validated query filters
- * @returns {Promise<Object>} Paginated inventory report items list: { items }
+ * @returns {Promise<Object>} Object containing summary stats, paginated items list, and pagination metadata: { summary, items, pagination }
  */
 export const getInventoryReport = async (filters = {}) => {
   const { categoryId, authorId, publisher, availability, includeZeroAvailable, page, limit, sortBy, sortOrder, search } = filters;
