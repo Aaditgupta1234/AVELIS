@@ -9,6 +9,12 @@
 
 import { ApiError } from '../../utils/index.js';
 import { prisma } from '../../lib/prisma.js';
+import { LoanStatus } from '@prisma/client';
+
+const OVERDUE_SEVERITY = {
+  LOW_MAX_DAYS: 7,
+  MEDIUM_MAX_DAYS: 30,
+};
 
 // ==========================================
 // PRIVATE SERVICE HELPERS (Not Exported)
@@ -533,11 +539,238 @@ export const searchOrders = async (filters) => {
 
 /**
  * Retrieve overdue loans report.
+ * Filters date ranges against the loan's `dueDate` timestamp.
+ * Supported Sorting Fields: 'dueDate', 'username', 'daysOverdue'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @param {number} [filters.page] - Page number
+ * @param {number} [filters.limit] - Page limit
+ * @param {string} [filters.sortBy] - Sorting field
+ * @param {string} [filters.sortOrder] - Sorting order
+ * @param {string} [filters.memberId] - User ID UUID
+ * @param {string} [filters.bookId] - Book ID UUID
+ * @param {string} [filters.severity] - Severity filter ('LOW' | 'MEDIUM' | 'HIGH')
+ * @param {string} [filters.fromDate] - ISO-8601 start date limit
+ * @param {string} [filters.toDate] - ISO-8601 end date limit
+ * @returns {Promise<Object>} Paginated search results list and metadata
  */
-export const getOverdueReport = async () => {
-  throw new ApiError(501, 'Overdue Report API not implemented yet.');
+export const getOverdueReport = async (filters = {}) => {
+  const { memberId, bookId, severity, fromDate, toDate } = filters;
+  const { page, limit } = buildPagination(filters);
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  const sortBy = filters.sortBy || 'dueDate';
+  const sortOrder = filters.sortOrder || 'asc';
+
+  const now = new Date();
+  const msInDay = 24 * 60 * 60 * 1000;
+
+  // Build incremental where clause
+  const where = {
+    returnDate: null,
+    status: {
+      in: [LoanStatus.BORROWED, LoanStatus.OVERDUE]
+    },
+    dueDate: {
+      lt: now
+    }
+  };
+
+  if (memberId) {
+    where.userId = memberId;
+  }
+
+  if (bookId) {
+    where.bookCopy = {
+      bookId
+    };
+  }
+
+  // Intersect date range and severity filters
+  if (fromDate) {
+    where.dueDate.gte = new Date(fromDate);
+  }
+  if (toDate) {
+    where.dueDate.lte = new Date(toDate);
+  }
+
+  if (severity) {
+    if (severity === 'LOW') {
+      const lowGt = new Date(now.getTime() - (OVERDUE_SEVERITY.LOW_MAX_DAYS + 1) * msInDay);
+      const lowLte = new Date(now.getTime() - 1 * msInDay);
+      
+      where.dueDate.gt = where.dueDate.gt && where.dueDate.gt > lowGt ? where.dueDate.gt : lowGt;
+      where.dueDate.lte = where.dueDate.lte && where.dueDate.lte < lowLte ? where.dueDate.lte : lowLte;
+    } else if (severity === 'MEDIUM') {
+      const medGt = new Date(now.getTime() - (OVERDUE_SEVERITY.MEDIUM_MAX_DAYS + 1) * msInDay);
+      const medLte = new Date(now.getTime() - (OVERDUE_SEVERITY.LOW_MAX_DAYS + 1) * msInDay);
+
+      where.dueDate.gt = where.dueDate.gt && where.dueDate.gt > medGt ? where.dueDate.gt : medGt;
+      where.dueDate.lte = where.dueDate.lte && where.dueDate.lte < medLte ? where.dueDate.lte : medLte;
+    } else if (severity === 'HIGH') {
+      const highLte = new Date(now.getTime() - (OVERDUE_SEVERITY.MEDIUM_MAX_DAYS + 1) * msInDay);
+      
+      where.dueDate.lte = where.dueDate.lte && where.dueDate.lte < highLte ? where.dueDate.lte : highLte;
+    }
+  }
+
+  let items = [];
+  let totalItems = 0;
+
+  if (sortBy === 'daysOverdue') {
+    // stable in-memory sort is required for computed fields
+    const allItems = await prisma.loan.findMany({
+      where,
+      select: {
+        id: true,
+        issueDate: true,
+        dueDate: true,
+        user: {
+          select: {
+            username: true,
+            email: true
+          }
+        },
+        bookCopy: {
+          select: {
+            barcode: true,
+            book: {
+              select: {
+                title: true,
+                isbn: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    totalItems = allItems.length;
+
+    // Map computed fields
+    const mappedItems = allItems.map(loan => {
+      const diffMs = now.getTime() - new Date(loan.dueDate).getTime();
+      const daysOverdue = Math.floor(diffMs / msInDay);
+      
+      let computedSeverity = 'LOW';
+      if (daysOverdue > OVERDUE_SEVERITY.MEDIUM_MAX_DAYS) {
+        computedSeverity = 'HIGH';
+      } else if (daysOverdue > OVERDUE_SEVERITY.LOW_MAX_DAYS) {
+        computedSeverity = 'MEDIUM';
+      }
+
+      return {
+        loanId: loan.id,
+        issueDate: loan.issueDate,
+        dueDate: loan.dueDate,
+        daysOverdue,
+        severity: computedSeverity,
+        member: {
+          username: loan.user.username,
+          email: loan.user.email
+        },
+        book: {
+          title: loan.bookCopy.book.title,
+          isbn: loan.bookCopy.book.isbn
+        },
+        copy: {
+          barcode: loan.bookCopy.barcode
+        }
+      };
+    });
+
+    // In-memory sort
+    mappedItems.sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return a.daysOverdue - b.daysOverdue || a.loanId.localeCompare(b.loanId);
+      } else {
+        return b.daysOverdue - a.daysOverdue || a.loanId.localeCompare(b.loanId);
+      }
+    });
+
+    // Slice for pagination
+    items = mappedItems.slice(skip, skip + take);
+
+  } else {
+    // Database-level sorting and pagination
+    let orderBy = {};
+    if (sortBy === 'username') {
+      orderBy = { user: { username: sortOrder } };
+    } else {
+      orderBy = { dueDate: sortOrder }; // fallback/default
+    }
+
+    const [dbItems, count] = await Promise.all([
+      prisma.loan.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        select: {
+          id: true,
+          issueDate: true,
+          dueDate: true,
+          user: {
+            select: {
+              username: true,
+              email: true
+            }
+          },
+          bookCopy: {
+            select: {
+              barcode: true,
+              book: {
+                select: {
+                  title: true,
+                  isbn: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.loan.count({ where })
+    ]);
+
+    totalItems = count;
+
+    items = dbItems.map(loan => {
+      const diffMs = now.getTime() - new Date(loan.dueDate).getTime();
+      const daysOverdue = Math.floor(diffMs / msInDay);
+      
+      let computedSeverity = 'LOW';
+      if (daysOverdue > OVERDUE_SEVERITY.MEDIUM_MAX_DAYS) {
+        computedSeverity = 'HIGH';
+      } else if (daysOverdue > OVERDUE_SEVERITY.LOW_MAX_DAYS) {
+        computedSeverity = 'MEDIUM';
+      }
+
+      return {
+        loanId: loan.id,
+        issueDate: loan.issueDate,
+        dueDate: loan.dueDate,
+        daysOverdue,
+        severity: computedSeverity,
+        member: {
+          username: loan.user.username,
+          email: loan.user.email
+        },
+        book: {
+          title: loan.bookCopy.book.title,
+          isbn: loan.bookCopy.book.isbn
+        },
+        copy: {
+          barcode: loan.bookCopy.barcode
+        }
+      };
+    });
+  }
+
+  return {
+    items,
+    pagination: buildPaginationMetadata(totalItems, page, limit)
+  };
 };
 
 /**
