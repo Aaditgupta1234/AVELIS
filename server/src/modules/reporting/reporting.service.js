@@ -1223,13 +1223,28 @@ const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQue
 
 /**
  * Retrieve specific member activity report.
- * Retrieves member profile, active loans, completed loan history, reservations, orders, and reviews.
+ * Retrieves member profile, activity summary statistics, filtered activity collections, and pagination.
  * Note: The summary object represents the member's complete lifetime statistics, independent of the activityType filter.
  *
  * @param {Object} params - Service parameters
  * @param {string} params.memberId - Member ID UUID
  * @param {string} [params.activityType='all'] - Activity type filter
- * @returns {Promise<Object>} Consolidated member activity report
+ * @param {number} [params.page=1] - Page number
+ * @param {number} [params.limit=20] - Page size limit
+ * @param {string} [params.fromDate] - Filter from date
+ * @param {string} [params.toDate] - Filter to date
+ * @returns {Promise<{
+ *   member: Object,
+ *   summary: Object,
+ *   activity: {
+ *     loans: Array,
+ *     loanHistory: Array,
+ *     reservations: Array,
+ *     orders: Array,
+ *     reviews: Array
+ *   },
+ *   pagination: Object
+ * }>} Consolidated member activity report
  */
 export const getMemberReport = async (params = {}) => {
   const { memberId, activityType, page, limit, fromDate, toDate } = params;
@@ -1408,12 +1423,14 @@ export const getMemberReport = async (params = {}) => {
 
   return {
     member,
-    loans: paginatedLoans,
-    loanHistory: paginatedLoanHistory,
-    reservations: paginatedReservations,
-    orders: paginatedOrders,
-    reviews: paginatedReviews,
     summary,
+    activity: {
+      loans: paginatedLoans,
+      loanHistory: paginatedLoanHistory,
+      reservations: paginatedReservations,
+      orders: paginatedOrders,
+      reviews: paginatedReviews
+    },
     pagination
   };
 };
