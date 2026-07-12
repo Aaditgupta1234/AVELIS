@@ -9,7 +9,7 @@
 import { ApiError } from '../utils/index.js';
 
 import { prisma } from '../lib/prisma.js';
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, UserRole } from '@prisma/client';
 
 /**
  * Build the query filter object for borrowing analytics date ranges.
@@ -307,13 +307,206 @@ export const getBorrowingAnalytics = async ({ startDate, endDate, limit = 10 } =
 };
 
 /**
+ * Build the query filter object for member analytics cohorts based on registration date.
+ *
+ * @param {Object} params - Date params
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @returns {Object} Prisma filter object
+ */
+const buildMemberFilter = ({ startDate, endDate }) => {
+  const filter = {
+    role: UserRole.MEMBER
+  };
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) {
+      filter.createdAt.gte = new Date(startDate);
+    }
+    if (endDate) {
+      const normalizedEndDate = endDate.length === 10 ? `${endDate}T23:59:59.999Z` : endDate;
+      filter.createdAt.lte = new Date(normalizedEndDate);
+    }
+  }
+  return filter;
+};
+
+/**
+ * Retrieve overview statistics for the filtered member cohort.
+ *
+ * @param {Object} filter - Prisma user cohort filter
+ * @returns {Promise<Object>} Member overview counts
+ */
+const getMemberOverview = async (filter) => {
+  const [totalMembers, activeMembers, inactiveMembers, membersWithActiveLoans] = await Promise.all([
+    prisma.user.count({ where: filter }),
+    prisma.user.count({ where: { ...filter, isActive: true } }),
+    prisma.user.count({ where: { ...filter, isActive: false } }),
+    prisma.user.count({
+      where: {
+        ...filter,
+        loans: {
+          some: {
+            status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] }
+          }
+        }
+      }
+    })
+  ]);
+
+  return {
+    totalMembers,
+    activeMembers,
+    inactiveMembers,
+    membersWithActiveLoans
+  };
+};
+
+/**
+ * Retrieve the most active members.
+ *
+ * fullName is reserved for future schema support and is currently returned as null.
+ * Deactivated users are included in the cohort to preserve historical analytics integrity.
+ *
+ * @param {Object} filter - Prisma user cohort filter
+ * @param {number} limit - Maximum number of members to return
+ * @returns {Promise<Array<Object>>} List of active members
+ */
+const getMostActiveMembers = async (filter, limit) => {
+  const members = await prisma.user.findMany({
+    where: filter,
+    select: {
+      id: true,
+      username: true,
+      loans: {
+        select: {
+          status: true
+        }
+      }
+    }
+  });
+
+  const memberData = members.map(m => {
+    const borrowCount = m.loans.length;
+    const activeLoans = m.loans.filter(l => l.status === LoanStatus.BORROWED || l.status === LoanStatus.OVERDUE).length;
+    return {
+      memberId: m.id,
+      username: m.username,
+      fullName: null,
+      borrowCount,
+      activeLoans
+    };
+  });
+
+  return memberData
+    .sort((a, b) => {
+      if (b.borrowCount !== a.borrowCount) {
+        return b.borrowCount - a.borrowCount;
+      }
+      return a.username.localeCompare(b.username);
+    })
+    .slice(0, limit);
+};
+
+/**
+ * Retrieve daily member registrations chronological trend.
+ *
+ * @param {Object} filter - Prisma user cohort filter
+ * @returns {Promise<Array<Object>>} Daily registration counts
+ */
+const getRegistrationTrend = async (filter) => {
+  const members = await prisma.user.findMany({
+    where: filter,
+    select: {
+      createdAt: true
+    }
+  });
+
+  const trendMap = {};
+  for (const m of members) {
+    const dateStr = m.createdAt.toISOString().split('T')[0];
+    trendMap[dateStr] = (trendMap[dateStr] || 0) + 1;
+  }
+
+  return Object.entries(trendMap)
+    .map(([date, registrations]) => ({
+      date,
+      registrations
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+/**
+ * Categorize cohort members based on their total historical borrowing counts.
+ *
+ * @param {Object} filter - Prisma user cohort filter
+ * @returns {Promise<Object>} Distribution counts
+ */
+const getBorrowActivityDistribution = async (filter) => {
+  const members = await prisma.user.findMany({
+    where: filter,
+    select: {
+      loans: {
+        select: {
+          id: true
+        }
+      }
+    }
+  });
+
+  let zeroLoans = 0;
+  let oneToFiveLoans = 0;
+  let sixToTenLoans = 0;
+  let moreThanTenLoans = 0;
+
+  for (const m of members) {
+    const count = m.loans.length;
+    if (count === 0) {
+      zeroLoans++;
+    } else if (count >= 1 && count <= 5) {
+      oneToFiveLoans++;
+    } else if (count >= 6 && count <= 10) {
+      sixToTenLoans++;
+    } else if (count > 10) {
+      moreThanTenLoans++;
+    }
+  }
+
+  return {
+    zeroLoans,
+    oneToFiveLoans,
+    sixToTenLoans,
+    moreThanTenLoans
+  };
+};
+
+/**
  * Retrieve member analytics.
  *
- * @returns {Promise<Object>} Placeholder that throws 501 Not Implemented
- * @throws {ApiError} 501 Not implemented
+ * @param {Object} params - Query filters and limit
+ * @returns {Promise<Object>} Member analytics data structure
  */
-export const getMemberAnalytics = async () => {
-  throw new ApiError(501, 'Member Analytics endpoint not implemented yet.');
+export const getMemberAnalytics = async ({ startDate, endDate, limit = 10 } = {}) => {
+  const filter = buildMemberFilter({ startDate, endDate });
+
+  const [overview, mostActiveMembers, registrationTrend, borrowActivityDistribution] = await Promise.all([
+    getMemberOverview(filter),
+    getMostActiveMembers(filter, limit),
+    getRegistrationTrend(filter),
+    getBorrowActivityDistribution(filter)
+  ]);
+
+  return {
+    filter: {
+      startDate: startDate || null,
+      endDate: endDate || null,
+      limit
+    },
+    overview,
+    mostActiveMembers,
+    registrationTrend,
+    borrowActivityDistribution
+  };
 };
 
 /**
