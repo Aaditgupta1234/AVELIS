@@ -8,6 +8,7 @@
  */
 
 import * as analyticsService from '../services/analytics.service.js';
+import { sendSuccess } from '../utils/index.js';
 
 /**
  * Handle retrieving borrowing analytics.
@@ -18,8 +19,9 @@ import * as analyticsService from '../services/analytics.service.js';
  */
 export const getBorrowingAnalytics = async (req, res, next) => {
   try {
-    const data = await analyticsService.getBorrowingAnalytics();
-    return res.status(200).json({ success: true, data });
+    const { startDate, endDate, limit } = req.query;
+    const data = await analyticsService.getBorrowingAnalytics({ startDate, endDate, limit });
+    return sendSuccess(res, 200, data, 'Borrowing analytics retrieved successfully.');
   } catch (error) {
     next(error);
   }
