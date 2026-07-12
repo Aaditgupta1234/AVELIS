@@ -53,8 +53,9 @@ export const getMemberAnalytics = async (req, res, next) => {
  */
 export const getRatingAnalytics = async (req, res, next) => {
   try {
-    const data = await analyticsService.getRatingAnalytics();
-    return res.status(200).json({ success: true, data });
+    const { startDate, endDate, limit } = req.query;
+    const data = await analyticsService.getRatingAnalytics({ startDate, endDate, limit });
+    return sendSuccess(res, 200, data, 'Rating analytics retrieved successfully.');
   } catch (error) {
     next(error);
   }

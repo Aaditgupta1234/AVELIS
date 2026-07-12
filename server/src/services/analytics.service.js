@@ -510,13 +510,282 @@ export const getMemberAnalytics = async ({ startDate, endDate, limit = 10 } = {}
 };
 
 /**
+ * Build the query filter object for rating analytics based on review creation date.
+ * Enforces the policy that reviews belonging to soft-deleted books are fully excluded.
+ *
+ * @param {Object} params - Date params
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @returns {Object} Prisma filter object
+ */
+const buildRatingFilter = ({ startDate, endDate }) => {
+  const filter = {
+    book: {
+      isDeleted: false
+    }
+  };
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) {
+      filter.createdAt.gte = new Date(startDate);
+    }
+    if (endDate) {
+      const normalizedEndDate = endDate.length === 10 ? `${endDate}T23:59:59.999Z` : endDate;
+      filter.createdAt.lte = new Date(normalizedEndDate);
+    }
+  }
+  return filter;
+};
+
+/**
+ * Retrieve overview statistics for the filtered ratings.
+ *
+ * @param {Object} filter - Prisma review filter
+ * @returns {Promise<Object>} Rating overview counts
+ */
+const getRatingOverview = async (filter) => {
+  const aggregate = await prisma.review.aggregate({
+    where: filter,
+    _count: {
+      id: true
+    },
+    _avg: {
+      rating: true
+    }
+  });
+
+  const [fiveStarReviews, oneStarReviews] = await Promise.all([
+    prisma.review.count({ where: { ...filter, rating: 5 } }),
+    prisma.review.count({ where: { ...filter, rating: 1 } })
+  ]);
+
+  const totalReviews = aggregate._count.id || 0;
+  const averageRating = totalReviews > 0 ? Number((aggregate._avg.rating || 0).toFixed(2)) : 0;
+
+  return {
+    totalReviews,
+    averageRating,
+    fiveStarReviews,
+    oneStarReviews
+  };
+};
+
+/**
+ * Retrieve the highest rated books based on filtered reviews.
+ * The system enforces a unique constraint @@unique([userId, bookId]),
+ * meaning each user can post at most one review per book.
+ *
+ * @param {Object} filter - Prisma review filter
+ * @param {number} limit - Maximum number of books to return
+ * @returns {Promise<Array<Object>>} Highest rated books
+ */
+const getHighestRatedBooks = async (filter, limit) => {
+  const reviewGroups = await prisma.review.groupBy({
+    by: ['bookId'],
+    where: filter,
+    _avg: {
+      rating: true
+    },
+    _count: {
+      id: true
+    }
+  });
+
+  if (reviewGroups.length === 0) return [];
+
+  const books = await prisma.book.findMany({
+    where: {
+      id: { in: reviewGroups.map(g => g.bookId) },
+      isDeleted: false
+    },
+    select: {
+      id: true,
+      title: true
+    }
+  });
+
+  const bookRatings = reviewGroups
+    .map(g => {
+      const book = books.find(b => b.id === g.bookId);
+      if (!book) return null;
+      const averageRating = Number((g._avg.rating || 0).toFixed(2));
+      return {
+        bookId: g.bookId,
+        title: book.title,
+        averageRating,
+        reviewCount: g._count.id || 0
+      };
+    })
+    .filter(Boolean);
+
+  return bookRatings
+    .sort((a, b) => {
+      if (b.averageRating !== a.averageRating) {
+        return b.averageRating - a.averageRating;
+      }
+      if (b.reviewCount !== a.reviewCount) {
+        return b.reviewCount - a.reviewCount;
+      }
+      return a.title.localeCompare(b.title);
+    })
+    .slice(0, limit);
+};
+
+/**
+ * Retrieve the lowest rated books based on filtered reviews.
+ *
+ * @param {Object} filter - Prisma review filter
+ * @param {number} limit - Maximum number of books to return
+ * @returns {Promise<Array<Object>>} Lowest rated books
+ */
+const getLowestRatedBooks = async (filter, limit) => {
+  const reviewGroups = await prisma.review.groupBy({
+    by: ['bookId'],
+    where: filter,
+    _avg: {
+      rating: true
+    },
+    _count: {
+      id: true
+    }
+  });
+
+  if (reviewGroups.length === 0) return [];
+
+  const books = await prisma.book.findMany({
+    where: {
+      id: { in: reviewGroups.map(g => g.bookId) },
+      isDeleted: false
+    },
+    select: {
+      id: true,
+      title: true
+    }
+  });
+
+  const bookRatings = reviewGroups
+    .map(g => {
+      const book = books.find(b => b.id === g.bookId);
+      if (!book) return null;
+      const averageRating = Number((g._avg.rating || 0).toFixed(2));
+      return {
+        bookId: g.bookId,
+        title: book.title,
+        averageRating,
+        reviewCount: g._count.id || 0
+      };
+    })
+    .filter(Boolean);
+
+  return bookRatings
+    .sort((a, b) => {
+      if (a.averageRating !== b.averageRating) {
+        return a.averageRating - b.averageRating;
+      }
+      if (b.reviewCount !== a.reviewCount) {
+        return b.reviewCount - a.reviewCount;
+      }
+      return a.title.localeCompare(b.title);
+    })
+    .slice(0, limit);
+};
+
+/**
+ * Retrieve count distribution of rating scores.
+ *
+ * @param {Object} filter - Prisma review filter
+ * @returns {Promise<Object>} Score distribution counts
+ */
+const getRatingDistribution = async (filter) => {
+  const groups = await prisma.review.groupBy({
+    by: ['rating'],
+    where: filter,
+    _count: {
+      id: true
+    }
+  });
+
+  let oneStar = 0;
+  let twoStar = 0;
+  let threeStar = 0;
+  let fourStar = 0;
+  let fiveStar = 0;
+
+  for (const g of groups) {
+    const count = g._count.id || 0;
+    if (g.rating === 1) oneStar = count;
+    else if (g.rating === 2) twoStar = count;
+    else if (g.rating === 3) threeStar = count;
+    else if (g.rating === 4) fourStar = count;
+    else if (g.rating === 5) fiveStar = count;
+  }
+
+  return {
+    oneStar,
+    twoStar,
+    threeStar,
+    fourStar,
+    fiveStar
+  };
+};
+
+/**
+ * Retrieve daily review creations chronological trend.
+ *
+ * @param {Object} filter - Prisma review filter
+ * @returns {Promise<Array<Object>>} Daily review counts
+ */
+const getReviewTrend = async (filter) => {
+  const reviews = await prisma.review.findMany({
+    where: filter,
+    select: {
+      createdAt: true
+    }
+  });
+
+  const trendMap = {};
+  for (const r of reviews) {
+    const dateStr = r.createdAt.toISOString().split('T')[0];
+    trendMap[dateStr] = (trendMap[dateStr] || 0) + 1;
+  }
+
+  return Object.entries(trendMap)
+    .map(([date, reviews]) => ({
+      date,
+      reviews
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+/**
  * Retrieve rating analytics.
  *
- * @returns {Promise<Object>} Placeholder that throws 501 Not Implemented
- * @throws {ApiError} 501 Not implemented
+ * @param {Object} params - Query filters and limit
+ * @returns {Promise<Object>} Rating analytics data structure
  */
-export const getRatingAnalytics = async () => {
-  throw new ApiError(501, 'Rating Analytics endpoint not implemented yet.');
+export const getRatingAnalytics = async ({ startDate, endDate, limit = 10 } = {}) => {
+  const filter = buildRatingFilter({ startDate, endDate });
+
+  const [overview, highestRatedBooks, lowestRatedBooks, ratingDistribution, reviewTrend] = await Promise.all([
+    getRatingOverview(filter),
+    getHighestRatedBooks(filter, limit),
+    getLowestRatedBooks(filter, limit),
+    getRatingDistribution(filter),
+    getReviewTrend(filter)
+  ]);
+
+  return {
+    filter: {
+      startDate: startDate || null,
+      endDate: endDate || null,
+      limit
+    },
+    overview,
+    highestRatedBooks,
+    lowestRatedBooks,
+    ratingDistribution,
+    reviewTrend
+  };
 };
 
 /**
