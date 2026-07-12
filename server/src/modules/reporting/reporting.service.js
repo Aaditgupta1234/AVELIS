@@ -1053,11 +1053,182 @@ export const getInventoryReport = async (filters = {}) => {
 };
 
 /**
- * Retrieve specific member activities report.
+ * Compute overall lifetime summary statistics for a member.
+ * Reuses active in-memory collections when available, otherwise executes optimized database aggregate counts.
+ * Note: The summary object represents the member's complete lifetime statistics, independent of the activityType filter.
  *
- * @param {Object} params - Service params
- * @param {string} params.memberId - Member ID
- * @throws {ApiError} 501 Not Implemented
+ * @param {string} memberId - Member ID
+ * @param {Object} loaded - Active collections loaded in memory (if any)
+ * @param {Object} targets - Boolean flags indicating which collections were fetched
+ * @returns {Promise<Object>} Member summary metrics
+ */
+const buildMemberStatistics = async (memberId, loaded, targets) => {
+  const { loans, loanHistory, reservations, orders, reviews } = loaded;
+  const { fetchLoans, fetchReservations, fetchOrders, fetchReviews } = targets;
+
+  let totalLoans = 0;
+  let activeLoans = 0;
+  let returnedLoans = 0;
+  let overdueLoans = 0;
+  let totalFines = 0;
+  let outstandingFines = 0;
+  let averageLoanDurationDays = 0;
+  let totalReservations = 0;
+  let totalOrders = 0;
+  let totalReviews = 0;
+  let averageReviewRating = 0;
+
+  // Build concurrent fallback queries array
+  const fallbackPromises = [];
+  const fallbackKeys = [];
+
+  if (!fetchLoans) {
+    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, bookCopy: { book: { isDeleted: false } } } }));
+    fallbackKeys.push('loansCount');
+
+    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] }, bookCopy: { book: { isDeleted: false } } } }));
+    fallbackKeys.push('activeCount');
+
+    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, status: LoanStatus.RETURNED, bookCopy: { book: { isDeleted: false } } } }));
+    fallbackKeys.push('returnedCount');
+
+    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, status: LoanStatus.OVERDUE, bookCopy: { book: { isDeleted: false } } } }));
+    fallbackKeys.push('overdueCount');
+
+    fallbackPromises.push(prisma.loan.aggregate({
+      where: { userId: memberId, bookCopy: { book: { isDeleted: false } } },
+      _sum: { fineAmount: true }
+    }));
+    fallbackKeys.push('finesAgg');
+
+    fallbackPromises.push(prisma.loan.aggregate({
+      where: { userId: memberId, status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] }, bookCopy: { book: { isDeleted: false } } },
+      _sum: { fineAmount: true }
+    }));
+    fallbackKeys.push('outstandingAgg');
+
+    fallbackPromises.push(prisma.loan.findMany({
+      where: { userId: memberId, status: LoanStatus.RETURNED, bookCopy: { book: { isDeleted: false } } },
+      select: { issueDate: true, returnDate: true }
+    }));
+    fallbackKeys.push('loanHistoryData');
+  }
+
+  if (!fetchReservations) {
+    fallbackPromises.push(prisma.reservation.count({ where: { userId: memberId, book: { isDeleted: false } } }));
+    fallbackKeys.push('reservationsCount');
+  }
+
+  if (!fetchOrders) {
+    fallbackPromises.push(prisma.order.count({ where: { userId: memberId } }));
+    fallbackKeys.push('ordersCount');
+  }
+
+  if (!fetchReviews) {
+    fallbackPromises.push(prisma.review.count({ where: { userId: memberId, book: { isDeleted: false } } }));
+    fallbackKeys.push('reviewsCount');
+
+    fallbackPromises.push(prisma.review.aggregate({
+      where: { userId: memberId, book: { isDeleted: false } },
+      _avg: { rating: true }
+    }));
+    fallbackKeys.push('reviewsAgg');
+  }
+
+  // Resolve all fallback DB operations concurrently
+  const fallbackResults = await Promise.all(fallbackPromises);
+  const dbData = {};
+  fallbackKeys.forEach((key, index) => {
+    dbData[key] = fallbackResults[index];
+  });
+
+  // 1. Process Loan Statistics
+  if (fetchLoans) {
+    activeLoans = loans.length;
+    returnedLoans = loanHistory.length;
+    totalLoans = activeLoans + returnedLoans;
+    overdueLoans = loans.filter(l => l.status === LoanStatus.OVERDUE).length;
+    totalFines = [...loans, ...loanHistory].reduce((sum, l) => sum + Number(l.fineAmount || 0), 0);
+    outstandingFines = loans.reduce((sum, l) => sum + Number(l.fineAmount || 0), 0);
+
+    const returnedWithDuration = loanHistory.filter(l => l.returnDate && l.issueDate);
+    if (returnedWithDuration.length > 0) {
+      const totalDurationDays = returnedWithDuration.reduce((sum, l) => {
+        const diffMs = new Date(l.returnDate) - new Date(l.issueDate);
+        return sum + Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      }, 0);
+      averageLoanDurationDays = Number((totalDurationDays / returnedWithDuration.length).toFixed(2));
+    }
+  } else {
+    totalLoans = dbData.loansCount;
+    activeLoans = dbData.activeCount;
+    returnedLoans = dbData.returnedCount;
+    overdueLoans = dbData.overdueCount;
+    totalFines = Number(dbData.finesAgg._sum.fineAmount || 0);
+    outstandingFines = Number(dbData.outstandingAgg._sum.fineAmount || 0);
+
+    const hist = dbData.loanHistoryData;
+    if (hist.length > 0) {
+      const totalDurationDays = hist.reduce((sum, l) => {
+        const diffMs = new Date(l.returnDate) - new Date(l.issueDate);
+        return sum + Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      }, 0);
+      averageLoanDurationDays = Number((totalDurationDays / hist.length).toFixed(2));
+    }
+  }
+
+  // 2. Process Reservation Statistics
+  if (fetchReservations) {
+    totalReservations = reservations.length;
+  } else {
+    totalReservations = dbData.reservationsCount;
+  }
+
+  // 3. Process Order Statistics
+  if (fetchOrders) {
+    totalOrders = orders.length;
+  } else {
+    totalOrders = dbData.ordersCount;
+  }
+
+  // 4. Process Review Statistics
+  if (fetchReviews) {
+    totalReviews = reviews.length;
+    if (totalReviews > 0) {
+      const sumRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+      averageReviewRating = Number((sumRating / totalReviews).toFixed(2));
+    }
+  } else {
+    totalReviews = dbData.reviewsCount;
+    averageReviewRating = Number((dbData.reviewsAgg._avg.rating || 0).toFixed(2));
+  }
+
+  return {
+    totalLoans,
+    activeLoans,
+    returnedLoans,
+    overdueLoans,
+    totalReservations,
+    totalOrders,
+    totalReviews,
+    currentlyBorrowedBooks: activeLoans,
+    totalBooksBorrowed: totalLoans,
+    averageLoanDurationDays,
+    averageReviewRating,
+    totalFines,
+    outstandingFines
+  };
+};
+
+/**
+ * Retrieve specific member activity report.
+ * Retrieves member profile, active loans, completed loan history, reservations, orders, and reviews.
+ * Note: The summary object represents the member's complete lifetime statistics, independent of the activityType filter.
+ *
+ * @param {Object} params - Service parameters
+ * @param {string} params.memberId - Member ID UUID
+ * @param {string} [params.activityType='all'] - Activity type filter
+ * @returns {Promise<Object>} Consolidated member activity report
  */
 export const getMemberReport = async (params = {}) => {
   const { memberId, activityType } = params;
@@ -1155,12 +1326,25 @@ export const getMemberReport = async (params = {}) => {
     throw new ApiError(400, 'User is not a member.');
   }
 
+  const summary = await buildMemberStatistics(
+    memberId,
+    {
+      loans: loans || [],
+      loanHistory: loanHistory || [],
+      reservations: reservations || [],
+      orders: orders || [],
+      reviews: reviews || []
+    },
+    { fetchLoans, fetchReservations, fetchOrders, fetchReviews }
+  );
+
   return {
     member,
     loans: loans || [],
     loanHistory: loanHistory || [],
     reservations: reservations || [],
     orders: orders || [],
-    reviews: reviews || []
+    reviews: reviews || [],
+    summary
   };
 };
