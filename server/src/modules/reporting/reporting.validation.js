@@ -36,6 +36,9 @@ const INVENTORY_SORT_FIELDS = [
   'createdAt'
 ];
 
+const MEMBER_REPORT_ACTIVITY_TYPES = ['all', 'loans', 'reservations', 'orders', 'reviews'];
+const MEMBER_REPORT_SORT_FIELDS = ['createdAt'];
+
 /**
  * Validator helper for common search and pagination query parameters.
  *
@@ -675,6 +678,46 @@ export const validateMemberReport = (req, res, next) => {
     }
   }
 
+  // Validate standard query parameters (page, limit, sortBy, sortOrder, search)
+  validateCommonQueries(req, sanitizedQuery, errors);
+
+  // Apply default page/limit values if not present
+  if (sanitizedQuery.page === undefined) {
+    sanitizedQuery.page = 1;
+  }
+  if (sanitizedQuery.limit === undefined) {
+    sanitizedQuery.limit = 20;
+  }
+
+  // Validate and normalize sortBy
+  if (sanitizedQuery.sortBy !== undefined) {
+    if (!MEMBER_REPORT_SORT_FIELDS.includes(sanitizedQuery.sortBy)) {
+      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${MEMBER_REPORT_SORT_FIELDS.join(', ')}.` });
+    }
+  } else {
+    sanitizedQuery.sortBy = 'createdAt';
+  }
+
+  // Validate and normalize sortOrder
+  if (sanitizedQuery.sortOrder === undefined) {
+    sanitizedQuery.sortOrder = 'desc';
+  }
+
+  // Validate and normalize activityType
+  const { activityType } = req.query;
+  if (activityType !== undefined && activityType !== null) {
+    const trimmed = String(activityType).trim().toLowerCase();
+    if (trimmed === '') {
+      errors.push({ field: 'activityType', message: 'activityType cannot be empty.' });
+    } else if (!MEMBER_REPORT_ACTIVITY_TYPES.includes(trimmed)) {
+      errors.push({ field: 'activityType', message: `activityType must be one of: ${MEMBER_REPORT_ACTIVITY_TYPES.join(', ')}.` });
+    } else {
+      sanitizedQuery.activityType = trimmed;
+    }
+  } else {
+    sanitizedQuery.activityType = 'all';
+  }
+
   // Validate optional date ranges in query
   validateDateRange(req, sanitizedQuery, errors);
 
@@ -682,7 +725,10 @@ export const validateMemberReport = (req, res, next) => {
     return sendError(res, 400, 'Validation failed.', errors);
   }
 
-  req.params = sanitizedParams;
+  // Sanitized req.params writes back only the validated memberId
+  req.params = {
+    memberId: sanitizedParams.memberId
+  };
   req.query = sanitizedQuery;
   next();
 };
