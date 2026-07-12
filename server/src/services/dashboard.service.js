@@ -109,19 +109,25 @@ const getLoanStatistics = async (filter) => {
  * to measure reservation demand and active waitlists within the period.
  *
  * @param {Object} filter - Prisma date range criteria
- * @returns {Promise<{total: number, active: number}>} Reservation metrics
+ * @returns {Promise<{total: number, pending: number, fulfilled: number}>} Reservation metrics
  */
 const getReservationStatistics = async (filter) => {
-  const [total, active] = await Promise.all([
+  const [total, pending, fulfilled] = await Promise.all([
     prisma.reservation.count({ where: filter }),
     prisma.reservation.count({
       where: {
         ...filter,
         status: { in: [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP] }
       }
+    }),
+    prisma.reservation.count({
+      where: {
+        ...filter,
+        status: ReservationStatus.COMPLETED
+      }
     })
   ]);
-  return { total, active };
+  return { total, pending, fulfilled };
 };
 
 /**
@@ -132,19 +138,25 @@ const getReservationStatistics = async (filter) => {
  * to track volume and pending logistics/deliveries within the period.
  *
  * @param {Object} filter - Prisma date range criteria
- * @returns {Promise<{total: number, pending: number}>} Order metrics
+ * @returns {Promise<{total: number, pending: number, completed: number}>} Order metrics
  */
 const getOrderStatistics = async (filter) => {
-  const [total, pending] = await Promise.all([
+  const [total, pending, completed] = await Promise.all([
     prisma.order.count({ where: filter }),
     prisma.order.count({
       where: {
         ...filter,
         orderStatus: { in: [OrderStatus.PLACED, OrderStatus.PROCESSING, OrderStatus.SHIPPED] }
       }
+    }),
+    prisma.order.count({
+      where: {
+        ...filter,
+        orderStatus: OrderStatus.DELIVERED
+      }
     })
   ]);
-  return { total, pending };
+  return { total, pending, completed };
 };
 
 /**
