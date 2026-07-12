@@ -9,7 +9,7 @@
 
 import { ApiError } from '../../utils/index.js';
 import { prisma } from '../../lib/prisma.js';
-import { LoanStatus } from '@prisma/client';
+import { LoanStatus, CopyStatus, CopyCondition } from '@prisma/client';
 
 const OVERDUE_SEVERITY = {
   LOW_MAX_DAYS: 7,
@@ -92,6 +92,38 @@ const buildDateRangeFilter = ({ fromDate, toDate }, fieldName) => {
   if (toDate) range.lte = new Date(toDate);
 
   return { [fieldName]: range };
+};
+
+/**
+ * Centralized private helper to aggregate copy counts for a single book.
+ * Computes availability percentage rounded to 2 decimal places.
+ *
+ * @param {Array} copies - Array of BookCopy objects containing { status, condition }
+ * @returns {Object} Aggregated inventory metrics
+ */
+const aggregateBookInventory = (copies) => {
+  const totalCopies = copies.length;
+  const availableCopies = copies.filter(c => c.status === CopyStatus.AVAILABLE).length;
+  const borrowedCopies = copies.filter(c => c.status === CopyStatus.BORROWED).length;
+  const reservedCopies = copies.filter(c => c.status === CopyStatus.RESERVED).length;
+  const lostCopies = copies.filter(c => c.status === CopyStatus.LOST).length;
+  const damagedCopies = copies.filter(c => c.condition === CopyCondition.DAMAGED).length;
+  const maintenanceCopies = copies.filter(c => c.status === CopyStatus.MAINTENANCE).length;
+
+  const availabilityPercentage = totalCopies > 0
+    ? Math.round((availableCopies / totalCopies) * 100 * 100) / 100
+    : 0;
+
+  return {
+    totalCopies,
+    availableCopies,
+    borrowedCopies,
+    reservedCopies,
+    lostCopies,
+    damagedCopies,
+    maintenanceCopies,
+    availabilityPercentage
+  };
 };
 
 // ==========================================
@@ -775,11 +807,207 @@ export const getOverdueReport = async (filters = {}) => {
 
 /**
  * Retrieve library inventory report.
+ * Filters date ranges against the book's `createdAt` timestamp.
+ * Supported Sorting Fields: 'title', 'totalCopies', 'availableCopies', 'borrowedCopies',
+ * 'reservedCopies', 'lostCopies', 'damagedCopies', 'maintenanceCopies', 'availabilityPercentage', 'createdAt'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @returns {Promise<Object>} Paginated inventory report items list: { items }
  */
-export const getInventoryReport = async () => {
-  throw new ApiError(501, 'Inventory Report API not implemented yet.');
+export const getInventoryReport = async (filters = {}) => {
+  const { categoryId, authorId, publisher, availability, includeZeroAvailable, page, limit, sortBy, sortOrder, search } = filters;
+  const resolvedPage = page || 1;
+  const resolvedLimit = limit || 20;
+  const skip = (resolvedPage - 1) * resolvedLimit;
+  const take = resolvedLimit;
+
+  const resolvedSortBy = sortBy || 'title';
+  const resolvedSortOrder = sortOrder || 'asc';
+
+  // Build incremental where clause
+  const where = { isDeleted: false };
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { isbn: { contains: search, mode: 'insensitive' } }
+    ];
+  }
+
+  if (categoryId) {
+    where.categories = {
+      some: {
+        categoryId
+      }
+    };
+  }
+
+  if (authorId) {
+    where.authors = {
+      some: {
+        authorId
+      }
+    };
+  }
+
+  if (publisher) {
+    where.publisher = { contains: publisher, mode: 'insensitive' };
+  }
+
+  // Intersect availability and includeZeroAvailable filters
+  const andConditions = [];
+  
+  if (availability && availability !== 'all') {
+    if (availability === 'damaged') {
+      andConditions.push({
+        copies: {
+          some: {
+            condition: CopyCondition.DAMAGED
+          }
+        }
+      });
+    } else {
+      const targetStatus = availability.toUpperCase();
+      andConditions.push({
+        copies: {
+          some: {
+            status: CopyStatus[targetStatus] || targetStatus
+          }
+        }
+      });
+    }
+  }
+
+  if (includeZeroAvailable === false) {
+    andConditions.push({
+      copies: {
+        some: {
+          status: CopyStatus.AVAILABLE
+        }
+      }
+    });
+  }
+
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
+  }
+
+  const derivedSortFields = [
+    'totalCopies',
+    'availableCopies',
+    'borrowedCopies',
+    'reservedCopies',
+    'lostCopies',
+    'damagedCopies',
+    'maintenanceCopies',
+    'availabilityPercentage'
+  ];
+
+  let items = [];
+
+  const isDerivedSort = derivedSortFields.includes(resolvedSortBy);
+
+  // Prisma select payload options
+  const selectPayload = {
+    id: true,
+    title: true,
+    isbn: true,
+    publisher: true,
+    createdAt: true,
+    authors: {
+      select: {
+        author: {
+          select: {
+            fullName: true
+          }
+        }
+      }
+    },
+    categories: {
+      select: {
+        category: {
+          select: {
+            name: true
+          }
+        }
+      }
+    },
+    copies: {
+      select: {
+        status: true,
+        condition: true
+      }
+    }
+  };
+
+  if (isDerivedSort) {
+    // 1. Fetch ALL matching books
+    const allBooks = await prisma.book.findMany({
+      where,
+      select: selectPayload
+    });
+
+    // 2. Perform aggregation
+    const mapped = allBooks.map(book => {
+      const metrics = aggregateBookInventory(book.copies);
+      return {
+        id: book.id,
+        title: book.title,
+        isbn: book.isbn,
+        publisher: book.publisher,
+        createdAt: book.createdAt,
+        category: book.categories.length > 0 ? book.categories[0].category.name : null,
+        authors: book.authors.map(a => a.author.fullName).join(', '),
+        ...metrics
+      };
+    });
+
+    // 3. In-memory sorting (with stable deterministic fallback sorting on title/id)
+    mapped.sort((a, b) => {
+      const valA = a[resolvedSortBy];
+      const valB = b[resolvedSortBy];
+      if (resolvedSortOrder === 'desc') {
+        return valB - valA || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
+      } else {
+        return valA - valB || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
+      }
+    });
+
+    // 4. Slicing for pagination
+    items = mapped.slice(skip, skip + take);
+
+  } else {
+    // 1. Direct database-level sorting and pagination
+    const dbOrder = [
+      { [resolvedSortBy]: resolvedSortOrder },
+      { title: 'asc' }
+    ];
+
+    const dbBooks = await prisma.book.findMany({
+      where,
+      skip,
+      take,
+      orderBy: dbOrder,
+      select: selectPayload
+    });
+
+    // 2. Run aggregateBookInventory mapping on only the paginated books
+    items = dbBooks.map(book => {
+      const metrics = aggregateBookInventory(book.copies);
+      return {
+        id: book.id,
+        title: book.title,
+        isbn: book.isbn,
+        publisher: book.publisher,
+        createdAt: book.createdAt,
+        category: book.categories.length > 0 ? book.categories[0].category.name : null,
+        authors: book.authors.map(a => a.author.fullName).join(', '),
+        ...metrics
+      };
+    });
+  }
+
+  return { items };
 };
 
 /**
