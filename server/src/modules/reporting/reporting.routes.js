@@ -36,5 +36,6 @@ router.get('/search/orders', reportingValidation.validateSearchOrders, reporting
 router.get('/overdue', reportingValidation.validateOverdueReport, reportingController.getOverdueReport);
 router.get('/inventory', reportingValidation.validateInventoryReport, reportingController.getInventoryReport);
 router.get('/members/:memberId', reportingValidation.validateMemberReport, reportingController.getMemberReport);
+router.get('/member/:memberId', reportingValidation.validateMemberReport, reportingController.getMemberReport);
 
 export default router;
