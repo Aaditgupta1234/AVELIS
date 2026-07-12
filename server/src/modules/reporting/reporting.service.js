@@ -1060,9 +1060,10 @@ export const getInventoryReport = async (filters = {}) => {
  * @param {string} memberId - Member ID
  * @param {Object} loaded - Active collections loaded in memory (if any)
  * @param {Object} targets - Boolean flags indicating which collections were fetched
+ * @param {boolean} isPaginatedDbQuery - True if database-level pagination was applied (so memory collections are incomplete)
  * @returns {Promise<Object>} Member summary metrics
  */
-const buildMemberStatistics = async (memberId, loaded, targets) => {
+const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQuery) => {
   const { loans, loanHistory, reservations, orders, reviews } = loaded;
   const { fetchLoans, fetchReservations, fetchOrders, fetchReviews } = targets;
 
@@ -1082,7 +1083,7 @@ const buildMemberStatistics = async (memberId, loaded, targets) => {
   const fallbackPromises = [];
   const fallbackKeys = [];
 
-  if (!fetchLoans) {
+  if (!fetchLoans || isPaginatedDbQuery) {
     fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, bookCopy: { book: { isDeleted: false } } } }));
     fallbackKeys.push('loansCount');
 
@@ -1114,17 +1115,17 @@ const buildMemberStatistics = async (memberId, loaded, targets) => {
     fallbackKeys.push('loanHistoryData');
   }
 
-  if (!fetchReservations) {
+  if (!fetchReservations || isPaginatedDbQuery) {
     fallbackPromises.push(prisma.reservation.count({ where: { userId: memberId, book: { isDeleted: false } } }));
     fallbackKeys.push('reservationsCount');
   }
 
-  if (!fetchOrders) {
+  if (!fetchOrders || isPaginatedDbQuery) {
     fallbackPromises.push(prisma.order.count({ where: { userId: memberId } }));
     fallbackKeys.push('ordersCount');
   }
 
-  if (!fetchReviews) {
+  if (!fetchReviews || isPaginatedDbQuery) {
     fallbackPromises.push(prisma.review.count({ where: { userId: memberId, book: { isDeleted: false } } }));
     fallbackKeys.push('reviewsCount');
 
@@ -1143,7 +1144,7 @@ const buildMemberStatistics = async (memberId, loaded, targets) => {
   });
 
   // 1. Process Loan Statistics
-  if (fetchLoans) {
+  if (fetchLoans && !isPaginatedDbQuery) {
     activeLoans = loans.length;
     returnedLoans = loanHistory.length;
     totalLoans = activeLoans + returnedLoans;
@@ -1178,21 +1179,21 @@ const buildMemberStatistics = async (memberId, loaded, targets) => {
   }
 
   // 2. Process Reservation Statistics
-  if (fetchReservations) {
+  if (fetchReservations && !isPaginatedDbQuery) {
     totalReservations = reservations.length;
   } else {
     totalReservations = dbData.reservationsCount;
   }
 
   // 3. Process Order Statistics
-  if (fetchOrders) {
+  if (fetchOrders && !isPaginatedDbQuery) {
     totalOrders = orders.length;
   } else {
     totalOrders = dbData.ordersCount;
   }
 
   // 4. Process Review Statistics
-  if (fetchReviews) {
+  if (fetchReviews && !isPaginatedDbQuery) {
     totalReviews = reviews.length;
     if (totalReviews > 0) {
       const sumRating = reviews.reduce((sum, r) => sum + r.rating, 0);
@@ -1231,8 +1232,14 @@ const buildMemberStatistics = async (memberId, loaded, targets) => {
  * @returns {Promise<Object>} Consolidated member activity report
  */
 export const getMemberReport = async (params = {}) => {
-  const { memberId, activityType } = params;
+  const { memberId, activityType, page, limit, fromDate, toDate } = params;
   const fetchAll = !activityType || activityType === 'all';
+  const isPaginatedDbQuery = !fetchAll; // true when filtering to a single activity collection
+
+  const resolvedPage = Number(page) || 1;
+  const resolvedLimit = Number(limit) || 20;
+  const skip = (resolvedPage - 1) * resolvedLimit;
+  const take = resolvedLimit;
 
   const memberPromise = prisma.user.findUnique({
     where: { id: memberId },
@@ -1244,61 +1251,88 @@ export const getMemberReport = async (params = {}) => {
   const fetchOrders = fetchAll || activityType === 'orders';
   const fetchReviews = fetchAll || activityType === 'reviews';
 
+  // 1. Build database filters
+  const loanWhere = {
+    userId: memberId,
+    status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] },
+    bookCopy: { book: { isDeleted: false } }
+  };
+  if (fromDate) loanWhere.issueDate = { ...loanWhere.issueDate, gte: new Date(fromDate) };
+  if (toDate) loanWhere.issueDate = { ...loanWhere.issueDate, lte: new Date(toDate) };
+
+  const loanHistWhere = {
+    userId: memberId,
+    status: LoanStatus.RETURNED,
+    bookCopy: { book: { isDeleted: false } }
+  };
+  if (fromDate) loanHistWhere.returnDate = { ...loanHistWhere.returnDate, gte: new Date(fromDate) };
+  if (toDate) loanHistWhere.returnDate = { ...loanHistWhere.returnDate, lte: new Date(toDate) };
+
+  const resWhere = {
+    userId: memberId,
+    book: { isDeleted: false }
+  };
+  if (fromDate) resWhere.createdAt = { ...resWhere.createdAt, gte: new Date(fromDate) };
+  if (toDate) resWhere.createdAt = { ...resWhere.createdAt, lte: new Date(toDate) };
+
+  const orderWhere = { userId: memberId };
+  if (fromDate) orderWhere.orderedAt = { ...orderWhere.orderedAt, gte: new Date(fromDate) };
+  if (toDate) orderWhere.orderedAt = { ...orderWhere.orderedAt, lte: new Date(toDate) };
+
+  const revWhere = {
+    userId: memberId,
+    book: { isDeleted: false }
+  };
+  if (fromDate) revWhere.createdAt = { ...revWhere.createdAt, gte: new Date(fromDate) };
+  if (toDate) revWhere.createdAt = { ...revWhere.createdAt, lte: new Date(toDate) };
+
   let loansPromise = null;
   let loanHistoryPromise = null;
   let reservationsPromise = null;
   let ordersPromise = null;
   let reviewsPromise = null;
 
+  // 2. Build Prisma queries with optional database pagination
   if (fetchLoans) {
     loansPromise = prisma.loan.findMany({
-      where: {
-        userId: memberId,
-        status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] },
-        bookCopy: { book: { isDeleted: false } }
-      },
-      orderBy: { issueDate: 'desc' },
-      select: LOAN_SELECT
+      where: loanWhere,
+      orderBy: [{ issueDate: 'desc' }, { id: 'desc' }],
+      select: LOAN_SELECT,
+      ...(isPaginatedDbQuery ? { skip, take } : {})
     });
 
     loanHistoryPromise = prisma.loan.findMany({
-      where: {
-        userId: memberId,
-        status: LoanStatus.RETURNED,
-        bookCopy: { book: { isDeleted: false } }
-      },
-      orderBy: { returnDate: 'desc' },
-      select: LOAN_SELECT
+      where: loanHistWhere,
+      orderBy: [{ returnDate: 'desc' }, { id: 'desc' }],
+      select: LOAN_SELECT,
+      ...(isPaginatedDbQuery ? { skip, take } : {})
     });
   }
 
   if (fetchReservations) {
     reservationsPromise = prisma.reservation.findMany({
-      where: {
-        userId: memberId,
-        book: { isDeleted: false }
-      },
-      orderBy: { createdAt: 'desc' },
-      select: RESERVATION_SELECT
+      where: resWhere,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: RESERVATION_SELECT,
+      ...(isPaginatedDbQuery ? { skip, take } : {})
     });
   }
 
   if (fetchOrders) {
     ordersPromise = prisma.order.findMany({
-      where: { userId: memberId },
-      orderBy: { orderedAt: 'desc' },
-      select: MEMBER_REPORT_ORDER_SELECT
+      where: orderWhere,
+      orderBy: [{ orderedAt: 'desc' }, { id: 'desc' }],
+      select: MEMBER_REPORT_ORDER_SELECT,
+      ...(isPaginatedDbQuery ? { skip, take } : {})
     });
   }
 
   if (fetchReviews) {
     reviewsPromise = prisma.review.findMany({
-      where: {
-        userId: memberId,
-        book: { isDeleted: false }
-      },
-      orderBy: { createdAt: 'desc' },
-      select: REVIEW_SELECT
+      where: revWhere,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: REVIEW_SELECT,
+      ...(isPaginatedDbQuery ? { skip, take } : {})
     });
   }
 
@@ -1326,6 +1360,7 @@ export const getMemberReport = async (params = {}) => {
     throw new ApiError(400, 'User is not a member.');
   }
 
+  // 3. Compute overall lifetime statistics
   const summary = await buildMemberStatistics(
     memberId,
     {
@@ -1335,16 +1370,50 @@ export const getMemberReport = async (params = {}) => {
       orders: orders || [],
       reviews: reviews || []
     },
-    { fetchLoans, fetchReservations, fetchOrders, fetchReviews }
+    { fetchLoans, fetchReservations, fetchOrders, fetchReviews },
+    isPaginatedDbQuery
   );
+
+  // 4. In-Memory slicing if not paginated in database
+  let paginatedLoans = loans || [];
+  let paginatedLoanHistory = loanHistory || [];
+  let paginatedReservations = reservations || [];
+  let paginatedOrders = orders || [];
+  let paginatedReviews = reviews || [];
+
+  if (!isPaginatedDbQuery) {
+    paginatedLoans = paginatedLoans.slice(skip, skip + take);
+    paginatedLoanHistory = paginatedLoanHistory.slice(skip, skip + take);
+    paginatedReservations = paginatedReservations.slice(skip, skip + take);
+    paginatedOrders = paginatedOrders.slice(skip, skip + take);
+    paginatedReviews = paginatedReviews.slice(skip, skip + take);
+  }
+
+  // 5. Calculate totalItems and build pagination block
+  let totalItems = 0;
+  if (activityType === 'loans') {
+    totalItems = summary.totalLoans;
+  } else if (activityType === 'reservations') {
+    totalItems = summary.totalReservations;
+  } else if (activityType === 'orders') {
+    totalItems = summary.totalOrders;
+  } else if (activityType === 'reviews') {
+    totalItems = summary.totalReviews;
+  } else {
+    // 'all'
+    totalItems = summary.totalLoans + summary.totalReservations + summary.totalOrders + summary.totalReviews;
+  }
+
+  const pagination = buildPaginationMetadata(totalItems, resolvedPage, resolvedLimit);
 
   return {
     member,
-    loans: loans || [],
-    loanHistory: loanHistory || [],
-    reservations: reservations || [],
-    orders: orders || [],
-    reviews: reviews || [],
-    summary
+    loans: paginatedLoans,
+    loanHistory: paginatedLoanHistory,
+    reservations: paginatedReservations,
+    orders: paginatedOrders,
+    reviews: paginatedReviews,
+    summary,
+    pagination
   };
 };
