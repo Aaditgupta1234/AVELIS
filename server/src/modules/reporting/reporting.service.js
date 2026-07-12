@@ -946,12 +946,15 @@ export const getInventoryReport = async (filters = {}) => {
       select: selectPayload
     });
   } else {
+    const dbOrder = [{ [resolvedSortBy]: resolvedSortOrder }];
+    if (resolvedSortBy !== 'title') {
+      dbOrder.push({ title: 'asc' });
+    }
+    dbOrder.push({ id: 'asc' });
+
     allBooks = await prisma.book.findMany({
       where,
-      orderBy: [
-        { [resolvedSortBy]: resolvedSortOrder },
-        { title: 'asc' }
-      ],
+      orderBy: dbOrder,
       select: selectPayload
     });
   }
