@@ -903,8 +903,6 @@ export const getInventoryReport = async (filters = {}) => {
     'availabilityPercentage'
   ];
 
-  let items = [];
-
   const isDerivedSort = derivedSortFields.includes(resolvedSortBy);
 
   // Prisma select payload options
@@ -940,29 +938,75 @@ export const getInventoryReport = async (filters = {}) => {
     }
   };
 
+  // 1. Fetch matching books based on sorting path
+  let allBooks = [];
   if (isDerivedSort) {
-    // 1. Fetch ALL matching books
-    const allBooks = await prisma.book.findMany({
+    allBooks = await prisma.book.findMany({
       where,
       select: selectPayload
     });
-
-    // 2. Perform aggregation
-    const mapped = allBooks.map(book => {
-      const metrics = aggregateBookInventory(book.copies);
-      return {
-        id: book.id,
-        title: book.title,
-        isbn: book.isbn,
-        publisher: book.publisher,
-        createdAt: book.createdAt,
-        category: book.categories.length > 0 ? book.categories[0].category.name : null,
-        authors: book.authors.map(a => a.author.fullName).join(', '),
-        ...metrics
-      };
+  } else {
+    allBooks = await prisma.book.findMany({
+      where,
+      orderBy: [
+        { [resolvedSortBy]: resolvedSortOrder },
+        { title: 'asc' }
+      ],
+      select: selectPayload
     });
+  }
 
-    // 3. In-memory sorting (with stable deterministic fallback sorting on title/id)
+  // 2. Initialize explicit summary accumulator
+  const summary = {
+    totalBooks: 0,
+    totalCopies: 0,
+    availableCopies: 0,
+    borrowedCopies: 0,
+    reservedCopies: 0,
+    lostCopies: 0,
+    damagedCopies: 0,
+    maintenanceCopies: 0,
+    zeroAvailabilityBooks: 0,
+    totalAvailabilityPercentage: 0
+  };
+
+  // 3. Map and accumulate stats in a single pass
+  const mapped = allBooks.map(book => {
+    const metrics = aggregateBookInventory(book.copies);
+
+    summary.totalBooks++;
+    summary.totalCopies += metrics.totalCopies;
+    summary.availableCopies += metrics.availableCopies;
+    summary.borrowedCopies += metrics.borrowedCopies;
+    summary.reservedCopies += metrics.reservedCopies;
+    summary.lostCopies += metrics.lostCopies;
+    summary.damagedCopies += metrics.damagedCopies;
+    summary.maintenanceCopies += metrics.maintenanceCopies;
+    if (metrics.availableCopies === 0) {
+      summary.zeroAvailabilityBooks++;
+    }
+    summary.totalAvailabilityPercentage += metrics.availabilityPercentage;
+
+    return {
+      id: book.id,
+      title: book.title,
+      isbn: book.isbn,
+      publisher: book.publisher,
+      createdAt: book.createdAt,
+      category: book.categories.length > 0 ? book.categories[0].category.name : null,
+      authors: book.authors.map(a => a.author.fullName).join(', '),
+      ...metrics
+    };
+  });
+
+  // 4. Clean destructuring of reportSummary to avoid mutating the accumulator
+  const { totalAvailabilityPercentage, ...reportSummary } = summary;
+  reportSummary.averageAvailabilityPercentage = summary.totalBooks > 0
+    ? Math.round((totalAvailabilityPercentage / summary.totalBooks) * 100) / 100
+    : 0;
+
+  // 5. Perform sorting for derived fields if necessary
+  if (isDerivedSort) {
     mapped.sort((a, b) => {
       const valA = a[resolvedSortBy];
       const valB = b[resolvedSortBy];
@@ -972,42 +1016,15 @@ export const getInventoryReport = async (filters = {}) => {
         return valA - valB || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
       }
     });
-
-    // 4. Slicing for pagination
-    items = mapped.slice(skip, skip + take);
-
-  } else {
-    // 1. Direct database-level sorting and pagination
-    const dbOrder = [
-      { [resolvedSortBy]: resolvedSortOrder },
-      { title: 'asc' }
-    ];
-
-    const dbBooks = await prisma.book.findMany({
-      where,
-      skip,
-      take,
-      orderBy: dbOrder,
-      select: selectPayload
-    });
-
-    // 2. Run aggregateBookInventory mapping on only the paginated books
-    items = dbBooks.map(book => {
-      const metrics = aggregateBookInventory(book.copies);
-      return {
-        id: book.id,
-        title: book.title,
-        isbn: book.isbn,
-        publisher: book.publisher,
-        createdAt: book.createdAt,
-        category: book.categories.length > 0 ? book.categories[0].category.name : null,
-        authors: book.authors.map(a => a.author.fullName).join(', '),
-        ...metrics
-      };
-    });
   }
 
-  return { items };
+  // 6. Slice page items
+  const items = mapped.slice(skip, skip + take);
+
+  return {
+    summary: reportSummary,
+    items
+  };
 };
 
 /**
