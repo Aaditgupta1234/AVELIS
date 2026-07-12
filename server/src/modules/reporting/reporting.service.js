@@ -1,57 +1,534 @@
 /**
  * @fileoverview Reporting module service.
  *
- * Scaffolds the business logic interface for administrative reports.
- * All methods throw 501 Not Implemented in this initial phase.
+ * Implements business logic for administrative reports search.
+ * Provides helper functions for pagination, sorting allow-lists, and date filters.
  *
  * @module modules/reporting/service
  */
 
 import { ApiError } from '../../utils/index.js';
+import { prisma } from '../../lib/prisma.js';
+
+// ==========================================
+// PRIVATE SERVICE HELPERS (Not Exported)
+// ==========================================
+
+/**
+ * Build pagination offset boundaries (skip and take).
+ * Defaults to page 1 and limit 10 if missing.
+ *
+ * @param {Object} filters - Input filters query object
+ * @param {number} [filters.page] - Page index
+ * @param {number} [filters.limit] - Page size limit
+ * @returns {Object} Pagination parameters (skip, take, page, limit)
+ */
+const buildPagination = ({ page, limit }) => {
+  const resolvedPage = page !== undefined ? page : 1;
+  const resolvedLimit = limit !== undefined ? limit : 10;
+  return {
+    skip: (resolvedPage - 1) * resolvedLimit,
+    take: resolvedLimit,
+    page: resolvedPage,
+    limit: resolvedLimit
+  };
+};
+
+/**
+ * Construct standard pagination metadata output object.
+ *
+ * @param {number} totalItems - Total matching records count
+ * @param {number} page - Current page index
+ * @param {number} limit - Current limit size
+ * @returns {Object} Standard AVELIS pagination metadata
+ */
+const buildPaginationMetadata = (totalItems, page, limit) => {
+  const totalPages = Math.ceil(totalItems / limit) || 0;
+  return {
+    page,
+    limit,
+    totalItems,
+    totalPages
+  };
+};
+
+/**
+ * Construct Prisma sorting criteria safety-checked against an allow-list.
+ *
+ * @param {Object} filters - Input filters query object
+ * @param {string} [filters.sortBy] - Sort field parameter
+ * @param {string} [filters.sortOrder] - Sort order ('asc' | 'desc')
+ * @param {string[]} allowedFields - Valid sorting field names for the entity
+ * @param {string} defaultSortBy - Default sort field fallback
+ * @param {string} [defaultSortOrder='desc'] - Default sort order fallback
+ * @returns {Object} Prisma orderBy sorting clause
+ */
+const buildSorting = ({ sortBy, sortOrder }, allowedFields, defaultSortBy, defaultSortOrder = 'desc') => {
+  const field = sortBy && allowedFields.includes(sortBy) ? sortBy : defaultSortBy;
+  const order = sortOrder ? sortOrder : defaultSortOrder;
+  return { [field]: order };
+};
+
+/**
+ * Construct Prisma query criteria for date ranges.
+ *
+ * @param {Object} filters - Input filters query object
+ * @param {string} [filters.fromDate] - Start date parameter
+ * @param {string} [filters.toDate] - End date parameter
+ * @param {string} fieldName - DB model timestamp field to filter against
+ * @returns {Object} Prisma date range filter object
+ */
+const buildDateRangeFilter = ({ fromDate, toDate }, fieldName) => {
+  if (!fromDate && !toDate) return {};
+
+  const range = {};
+  if (fromDate) range.gte = new Date(fromDate);
+  if (toDate) range.lte = new Date(toDate);
+
+  return { [fieldName]: range };
+};
+
+// ==========================================
+// EXPORTED SERVICE METHODS
+// ==========================================
 
 /**
  * Search books for report generation.
+ * Filters date ranges against the book's `createdAt` timestamp.
+ * Supported Sorting Fields: 'title', 'isbn', 'sellingPrice', 'stockQuantity', 'createdAt'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @param {number} [filters.page] - Page number
+ * @param {number} [filters.limit] - Page limit
+ * @param {string} [filters.sortBy] - Sorting field
+ * @param {string} [filters.sortOrder] - Sorting order
+ * @param {string} [filters.search] - Case-insensitive search keyword (title, isbn, author, category)
+ * @param {string} [filters.categoryId] - Category ID UUID
+ * @param {string} [filters.status] - CopyStatus enum value
+ * @param {string} [filters.fromDate] - ISO-8601 start date limit
+ * @param {string} [filters.toDate] - ISO-8601 end date limit
+ * @returns {Promise<Object>} Paginated search results list and metadata
  */
-export const searchBooks = async () => {
-  throw new ApiError(501, 'Search Books Reporting API not implemented yet.');
+export const searchBooks = async (filters) => {
+  const { skip, take, page, limit } = buildPagination(filters);
+  const orderBy = buildSorting(filters, ['title', 'isbn', 'sellingPrice', 'stockQuantity', 'createdAt'], 'createdAt');
+  
+  // Build incremental where clause
+  const where = { isDeleted: false };
+
+  if (filters.search) {
+    where.OR = [
+      { title: { contains: filters.search, mode: 'insensitive' } },
+      { isbn: { contains: filters.search, mode: 'insensitive' } },
+      {
+        authors: {
+          some: {
+            author: {
+              fullName: { contains: filters.search, mode: 'insensitive' }
+            }
+          }
+        }
+      },
+      {
+        categories: {
+          some: {
+            category: {
+              name: { contains: filters.search, mode: 'insensitive' }
+            }
+          }
+        }
+      }
+    ];
+  }
+
+  if (filters.categoryId) {
+    where.categories = {
+      some: {
+        categoryId: filters.categoryId
+      }
+    };
+  }
+
+  if (filters.status) {
+    where.copies = {
+      some: {
+        status: filters.status
+      }
+    };
+  }
+
+  const dateFilter = buildDateRangeFilter(filters, 'createdAt');
+  Object.assign(where, dateFilter);
+
+  // Execute concurrently
+  const [items, totalItems] = await Promise.all([
+    prisma.book.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        title: true,
+        isbn: true,
+        sellingPrice: true,
+        stockQuantity: true,
+        isBorrowable: true,
+        isForSale: true,
+        createdAt: true,
+        authors: {
+          select: {
+            author: {
+              select: {
+                fullName: true
+              }
+            }
+          }
+        },
+        categories: {
+          select: {
+            category: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      }
+    }),
+    prisma.book.count({ where })
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMetadata(totalItems, page, limit)
+  };
 };
 
 /**
  * Search members for report generation.
+ * Filters date ranges against the user's `createdAt` registration timestamp.
+ * Supported Sorting Fields: 'username', 'email', 'createdAt'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @param {number} [filters.page] - Page number
+ * @param {number} [filters.limit] - Page limit
+ * @param {string} [filters.sortBy] - Sorting field
+ * @param {string} [filters.sortOrder] - Sorting order
+ * @param {string} [filters.search] - Case-insensitive search keyword (username, email)
+ * @param {string} [filters.role] - UserRole enum value
+ * @param {boolean} [filters.isActive] - Member active flag
+ * @param {string} [filters.fromDate] - ISO-8601 start date limit
+ * @param {string} [filters.toDate] - ISO-8601 end date limit
+ * @returns {Promise<Object>} Paginated search results list and metadata
  */
-export const searchMembers = async () => {
-  throw new ApiError(501, 'Search Members Reporting API not implemented yet.');
+export const searchMembers = async (filters) => {
+  const { skip, take, page, limit } = buildPagination(filters);
+  const orderBy = buildSorting(filters, ['username', 'email', 'createdAt'], 'createdAt');
+
+  const where = {};
+
+  if (filters.search) {
+    where.OR = [
+      { username: { contains: filters.search, mode: 'insensitive' } },
+      { email: { contains: filters.search, mode: 'insensitive' } }
+    ];
+  }
+
+  if (filters.role) {
+    where.role = filters.role;
+  }
+
+  if (filters.isActive !== undefined && filters.isActive !== null) {
+    where.isActive = filters.isActive;
+  }
+
+  const dateFilter = buildDateRangeFilter(filters, 'createdAt');
+  Object.assign(where, dateFilter);
+
+  const [items, totalItems] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true
+      }
+    }),
+    prisma.user.count({ where })
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMetadata(totalItems, page, limit)
+  };
 };
 
 /**
  * Search loans for report generation.
+ * Filters date ranges against the loan's `issueDate` timestamp.
+ * Supported Sorting Fields: 'issueDate', 'dueDate', 'returnDate', 'fineAmount', 'createdAt'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @param {number} [filters.page] - Page number
+ * @param {number} [filters.limit] - Page limit
+ * @param {string} [filters.sortBy] - Sorting field
+ * @param {string} [filters.sortOrder] - Sorting order
+ * @param {string} [filters.search] - Case-insensitive search keyword (username, email, book title)
+ * @param {string} [filters.memberId] - User ID UUID
+ * @param {string} [filters.bookId] - Book ID UUID
+ * @param {string} [filters.copyId] - BookCopy ID UUID
+ * @param {string} [filters.status] - LoanStatus enum value
+ * @param {string} [filters.fromDate] - ISO-8601 start date limit
+ * @param {string} [filters.toDate] - ISO-8601 end date limit
+ * @returns {Promise<Object>} Paginated search results list and metadata
  */
-export const searchLoans = async () => {
-  throw new ApiError(501, 'Search Loans Reporting API not implemented yet.');
+export const searchLoans = async (filters) => {
+  const { skip, take, page, limit } = buildPagination(filters);
+  const orderBy = buildSorting(filters, ['issueDate', 'dueDate', 'returnDate', 'fineAmount', 'createdAt'], 'issueDate');
+
+  const where = {};
+
+  if (filters.search) {
+    where.OR = [
+      { user: { username: { contains: filters.search, mode: 'insensitive' } } },
+      { user: { email: { contains: filters.search, mode: 'insensitive' } } },
+      { bookCopy: { book: { title: { contains: filters.search, mode: 'insensitive' } } } }
+    ];
+  }
+
+  if (filters.memberId) {
+    where.userId = filters.memberId;
+  }
+
+  if (filters.bookId) {
+    where.bookCopy = { bookId: filters.bookId };
+  }
+
+  if (filters.copyId) {
+    where.copyId = filters.copyId;
+  }
+
+  if (filters.status) {
+    where.status = filters.status;
+  }
+
+  const dateFilter = buildDateRangeFilter(filters, 'issueDate');
+  Object.assign(where, dateFilter);
+
+  const [items, totalItems] = await Promise.all([
+    prisma.loan.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        userId: true,
+        copyId: true,
+        issueDate: true,
+        dueDate: true,
+        returnDate: true,
+        fineAmount: true,
+        status: true,
+        renewCount: true,
+        createdAt: true,
+        user: {
+          select: {
+            username: true,
+            email: true
+          }
+        },
+        bookCopy: {
+          select: {
+            barcode: true,
+            book: {
+              select: {
+                title: true
+              }
+            }
+          }
+        }
+      }
+    }),
+    prisma.loan.count({ where })
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMetadata(totalItems, page, limit)
+  };
 };
 
 /**
  * Search reservations for report generation.
+ * Filters date ranges against the reservation's `createdAt` timestamp.
+ * Supported Sorting Fields: 'createdAt', 'expiresAt', 'fulfilledAt'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @param {number} [filters.page] - Page number
+ * @param {number} [filters.limit] - Page limit
+ * @param {string} [filters.sortBy] - Sorting field
+ * @param {string} [filters.sortOrder] - Sorting order
+ * @param {string} [filters.search] - Case-insensitive search keyword (username, email, book title)
+ * @param {string} [filters.memberId] - User ID UUID
+ * @param {string} [filters.bookId] - Book ID UUID
+ * @param {string} [filters.status] - ReservationStatus enum value
+ * @param {string} [filters.fromDate] - ISO-8601 start date limit
+ * @param {string} [filters.toDate] - ISO-8601 end date limit
+ * @returns {Promise<Object>} Paginated search results list and metadata
  */
-export const searchReservations = async () => {
-  throw new ApiError(501, 'Search Reservations Reporting API not implemented yet.');
+export const searchReservations = async (filters) => {
+  const { skip, take, page, limit } = buildPagination(filters);
+  const orderBy = buildSorting(filters, ['createdAt', 'expiresAt', 'fulfilledAt'], 'createdAt');
+
+  const where = {};
+
+  if (filters.search) {
+    where.OR = [
+      { user: { username: { contains: filters.search, mode: 'insensitive' } } },
+      { user: { email: { contains: filters.search, mode: 'insensitive' } } },
+      { book: { title: { contains: filters.search, mode: 'insensitive' } } }
+    ];
+  }
+
+  if (filters.memberId) {
+    where.userId = filters.memberId;
+  }
+
+  if (filters.bookId) {
+    where.bookId = filters.bookId;
+  }
+
+  if (filters.status) {
+    where.status = filters.status;
+  }
+
+  const dateFilter = buildDateRangeFilter(filters, 'createdAt');
+  Object.assign(where, dateFilter);
+
+  const [items, totalItems] = await Promise.all([
+    prisma.reservation.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        userId: true,
+        bookId: true,
+        copyId: true,
+        status: true,
+        createdAt: true,
+        fulfilledAt: true,
+        cancelledAt: true,
+        expiresAt: true,
+        user: {
+          select: {
+            username: true,
+            email: true
+          }
+        },
+        book: {
+          select: {
+            title: true
+          }
+        }
+      }
+    }),
+    prisma.reservation.count({ where })
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMetadata(totalItems, page, limit)
+  };
 };
 
 /**
  * Search orders for report generation.
+ * Filters date ranges against the order's `orderedAt` timestamp.
+ * Supported Sorting Fields: 'orderNumber', 'totalAmount', 'orderedAt', 'createdAt'.
  *
- * @throws {ApiError} 501 Not Implemented
+ * @param {Object} filters - Validated query filters
+ * @param {number} [filters.page] - Page number
+ * @param {number} [filters.limit] - Page limit
+ * @param {string} [filters.sortBy] - Sorting field
+ * @param {string} [filters.sortOrder] - Sorting order
+ * @param {string} [filters.search] - Case-insensitive search keyword (username, email)
+ * @param {string} [filters.memberId] - User ID UUID
+ * @param {string} [filters.status] - OrderStatus enum value
+ * @param {string} [filters.paymentStatus] - PaymentStatus enum value
+ * @param {string} [filters.fromDate] - ISO-8601 start date limit
+ * @param {string} [filters.toDate] - ISO-8601 end date limit
+ * @returns {Promise<Object>} Paginated search results list and metadata
  */
-export const searchOrders = async () => {
-  throw new ApiError(501, 'Search Orders Reporting API not implemented yet.');
+export const searchOrders = async (filters) => {
+  const { skip, take, page, limit } = buildPagination(filters);
+  const orderBy = buildSorting(filters, ['orderNumber', 'totalAmount', 'orderedAt', 'createdAt'], 'orderedAt');
+
+  const where = {};
+
+  if (filters.search) {
+    where.OR = [
+      { user: { username: { contains: filters.search, mode: 'insensitive' } } },
+      { user: { email: { contains: filters.search, mode: 'insensitive' } } }
+    ];
+  }
+
+  if (filters.memberId) {
+    where.userId = filters.memberId;
+  }
+
+  if (filters.status) {
+    where.orderStatus = filters.status;
+  }
+
+  if (filters.paymentStatus) {
+    where.paymentStatus = filters.paymentStatus;
+  }
+
+  const dateFilter = buildDateRangeFilter(filters, 'orderedAt');
+  Object.assign(where, dateFilter);
+
+  const [items, totalItems] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        userId: true,
+        orderNumber: true,
+        totalAmount: true,
+        paymentStatus: true,
+        orderStatus: true,
+        shippingAddress: true,
+        orderedAt: true,
+        createdAt: true,
+        user: {
+          select: {
+            username: true,
+            email: true
+          }
+        }
+      }
+    }),
+    prisma.order.count({ where })
+  ]);
+
+  return {
+    items,
+    pagination: buildPaginationMetadata(totalItems, page, limit)
+  };
 };
 
 /**
