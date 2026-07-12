@@ -19,7 +19,8 @@ import { sendSuccess } from '../utils/index.js';
  */
 export const getDashboardSummary = async (req, res, next) => {
   try {
-    const data = await dashboardService.getDashboardSummary();
+    const { startDate, endDate } = req.query;
+    const data = await dashboardService.getDashboardSummary({ startDate, endDate });
     return sendSuccess(res, 200, data, 'Dashboard summary retrieved successfully.');
   } catch (error) {
     next(error);
