@@ -164,7 +164,7 @@ const aggregateBookInventory = (copies) => {
  * @param {string} [filters.status] - CopyStatus enum value
  * @param {string} [filters.fromDate] - ISO-8601 start date limit
  * @param {string} [filters.toDate] - ISO-8601 end date limit
- * @returns {Promise<Object>} Paginated search results list and metadata
+ * @returns {Promise<{items: Array, pagination: Object}>} Paginated search results list and metadata
  */
 export const searchBooks = async (filters) => {
   const { skip, take, page, limit } = buildPagination(filters);
@@ -277,7 +277,7 @@ export const searchBooks = async (filters) => {
  * @param {boolean} [filters.isActive] - Member active flag
  * @param {string} [filters.fromDate] - ISO-8601 start date limit
  * @param {string} [filters.toDate] - ISO-8601 end date limit
- * @returns {Promise<Object>} Paginated search results list and metadata
+ * @returns {Promise<{items: Array, pagination: Object}>} Paginated search results list and metadata
  */
 export const searchMembers = async (filters) => {
   const { skip, take, page, limit } = buildPagination(filters);
@@ -345,7 +345,7 @@ export const searchMembers = async (filters) => {
  * @param {string} [filters.status] - LoanStatus enum value
  * @param {string} [filters.fromDate] - ISO-8601 start date limit
  * @param {string} [filters.toDate] - ISO-8601 end date limit
- * @returns {Promise<Object>} Paginated search results list and metadata
+ * @returns {Promise<{items: Array, pagination: Object}>} Paginated search results list and metadata
  */
 export const searchLoans = async (filters) => {
   const { skip, take, page, limit } = buildPagination(filters);
@@ -440,7 +440,7 @@ export const searchLoans = async (filters) => {
  * @param {string} [filters.status] - ReservationStatus enum value
  * @param {string} [filters.fromDate] - ISO-8601 start date limit
  * @param {string} [filters.toDate] - ISO-8601 end date limit
- * @returns {Promise<Object>} Paginated search results list and metadata
+ * @returns {Promise<{items: Array, pagination: Object}>} Paginated search results list and metadata
  */
 export const searchReservations = async (filters) => {
   const { skip, take, page, limit } = buildPagination(filters);
@@ -525,7 +525,7 @@ export const searchReservations = async (filters) => {
  * @param {string} [filters.paymentStatus] - PaymentStatus enum value
  * @param {string} [filters.fromDate] - ISO-8601 start date limit
  * @param {string} [filters.toDate] - ISO-8601 end date limit
- * @returns {Promise<Object>} Paginated search results list and metadata
+ * @returns {Promise<{items: Array, pagination: Object}>} Paginated search results list and metadata
  */
 export const searchOrders = async (filters) => {
   const { skip, take, page, limit } = buildPagination(filters);
@@ -603,7 +603,7 @@ export const searchOrders = async (filters) => {
  * @param {string} [filters.severity] - Severity filter ('LOW' | 'MEDIUM' | 'HIGH')
  * @param {string} [filters.fromDate] - ISO-8601 start date limit
  * @param {string} [filters.toDate] - ISO-8601 end date limit
- * @returns {Promise<Object>} Paginated search results list and metadata
+ * @returns {Promise<{items: Array, pagination: Object}>} Paginated search results list and metadata
  */
 export const getOverdueReport = async (filters = {}) => {
   const { memberId, bookId, severity, fromDate, toDate } = filters;
@@ -831,7 +831,7 @@ export const getOverdueReport = async (filters = {}) => {
  * 'reservedCopies', 'lostCopies', 'damagedCopies', 'maintenanceCopies', 'availabilityPercentage', 'createdAt'.
  *
  * @param {Object} filters - Validated query filters
- * @returns {Promise<Object>} Object containing summary stats, paginated items list, and pagination metadata: { summary, items, pagination }
+ * @returns {Promise<{summary: Object, items: Array, pagination: Object}>} Object containing summary stats, paginated items list, and pagination metadata
  */
 export const getInventoryReport = async (filters = {}) => {
   const { categoryId, authorId, publisher, availability, includeZeroAvailable, page, limit, sortBy, sortOrder, search } = filters;
