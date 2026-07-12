@@ -277,8 +277,14 @@ const getLoanStatusDistribution = async (filter) => {
 
 /**
  * Retrieve borrowing analytics.
+ * Enforces the soft-deletion policy by excluding reviews/loans belonging to soft-deleted books.
+ * Dates are parsed and grouped using UTC daily periods.
+ * Resulting lists sort books with alphabetical and ID secondary/tertiary fallbacks to ensure determinism.
  *
  * @param {Object} params - Query filters and limit
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @param {number} [params.limit=10] - Maximum records for list arrays
  * @returns {Promise<Object>} Borrowing analytics data structure
  */
 export const getBorrowingAnalytics = async ({ startDate, endDate, limit = 10 } = {}) => {
@@ -482,8 +488,15 @@ const getBorrowActivityDistribution = async (filter) => {
 
 /**
  * Retrieve member analytics.
+ * Filters cohort based on registration date (`createdAt` of `MEMBER` users).
+ * Deactivated users are included in the cohort to maintain historical integrity.
+ * Note: fullName is reserved for future schema support and is currently returned as null.
+ * Dates are grouped daily under UTC.
  *
  * @param {Object} params - Query filters and limit
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @param {number} [params.limit=10] - Maximum records for list arrays
  * @returns {Promise<Object>} Member analytics data structure
  */
 export const getMemberAnalytics = async ({ startDate, endDate, limit = 10 } = {}) => {
@@ -759,8 +772,14 @@ const getReviewTrend = async (filter) => {
 
 /**
  * Retrieve rating analytics.
+ * Enforces the soft-deletion policy by completely excluding reviews of soft-deleted books.
+ * Enforces the user-to-book review uniqueness constraint (`@@unique([userId, bookId])`).
+ * Dates are parsed and daily trend reviews are grouped in UTC.
  *
  * @param {Object} params - Query filters and limit
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @param {number} [params.limit=10] - Maximum records for list arrays
  * @returns {Promise<Object>} Rating analytics data structure
  */
 export const getRatingAnalytics = async ({ startDate, endDate, limit = 10 } = {}) => {
@@ -1025,8 +1044,14 @@ const buildTimeline = (
 
 /**
  * Retrieve time-series activity analytics.
+ * Concurrently queries loans, reservations, orders, reviews, and user registrations in UTC.
+ * Soft-deletion filters apply to reviews. Registration filters count MEMBER users only.
+ * Output is guaranteed to be returned in ascending chronological order with gap-filled zero values.
  *
  * @param {Object} params - Query filters and interval
+ * @param {string} [params.startDate] - ISO-8601 start date
+ * @param {string} [params.endDate] - ISO-8601 end date
+ * @param {string} [params.interval='day'] - Grouping interval (day, week, month)
  * @returns {Promise<Object>} Time-series analytics data structure
  */
 export const getTimeSeriesAnalytics = async ({ startDate, endDate, interval = 'day' } = {}) => {
