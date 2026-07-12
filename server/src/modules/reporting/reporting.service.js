@@ -9,7 +9,22 @@
 
 import { ApiError } from '../../utils/index.js';
 import { prisma } from '../../lib/prisma.js';
-import { LoanStatus, CopyStatus, CopyCondition } from '@prisma/client';
+import { LoanStatus, CopyStatus, CopyCondition, UserRole } from '@prisma/client';
+import { USER_SELECT } from '../../shared/selects/user.select.js';
+import { LOAN_SELECT } from '../../shared/selects/loan.select.js';
+import { RESERVATION_SELECT } from '../../shared/selects/reservation.select.js';
+import { REVIEW_SELECT } from '../../shared/selects/review.select.js';
+
+const MEMBER_REPORT_ORDER_SELECT = {
+  id: true,
+  orderNumber: true,
+  totalAmount: true,
+  paymentStatus: true,
+  orderStatus: true,
+  shippingAddress: true,
+  orderedAt: true,
+  createdAt: true
+};
 
 const OVERDUE_SEVERITY = {
   LOW_MAX_DAYS: 7,
@@ -1044,6 +1059,108 @@ export const getInventoryReport = async (filters = {}) => {
  * @param {string} params.memberId - Member ID
  * @throws {ApiError} 501 Not Implemented
  */
-export const getMemberReport = async ({ memberId }) => {
-  throw new ApiError(501, `Member Report API for member ${memberId} not implemented yet.`);
+export const getMemberReport = async (params = {}) => {
+  const { memberId, activityType } = params;
+  const fetchAll = !activityType || activityType === 'all';
+
+  const memberPromise = prisma.user.findUnique({
+    where: { id: memberId },
+    select: USER_SELECT
+  });
+
+  const fetchLoans = fetchAll || activityType === 'loans';
+  const fetchReservations = fetchAll || activityType === 'reservations';
+  const fetchOrders = fetchAll || activityType === 'orders';
+  const fetchReviews = fetchAll || activityType === 'reviews';
+
+  let loansPromise = null;
+  let loanHistoryPromise = null;
+  let reservationsPromise = null;
+  let ordersPromise = null;
+  let reviewsPromise = null;
+
+  if (fetchLoans) {
+    loansPromise = prisma.loan.findMany({
+      where: {
+        userId: memberId,
+        status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] },
+        bookCopy: { book: { isDeleted: false } }
+      },
+      orderBy: { issueDate: 'desc' },
+      select: LOAN_SELECT
+    });
+
+    loanHistoryPromise = prisma.loan.findMany({
+      where: {
+        userId: memberId,
+        status: LoanStatus.RETURNED,
+        bookCopy: { book: { isDeleted: false } }
+      },
+      orderBy: { returnDate: 'desc' },
+      select: LOAN_SELECT
+    });
+  }
+
+  if (fetchReservations) {
+    reservationsPromise = prisma.reservation.findMany({
+      where: {
+        userId: memberId,
+        book: { isDeleted: false }
+      },
+      orderBy: { createdAt: 'desc' },
+      select: RESERVATION_SELECT
+    });
+  }
+
+  if (fetchOrders) {
+    ordersPromise = prisma.order.findMany({
+      where: { userId: memberId },
+      orderBy: { orderedAt: 'desc' },
+      select: MEMBER_REPORT_ORDER_SELECT
+    });
+  }
+
+  if (fetchReviews) {
+    reviewsPromise = prisma.review.findMany({
+      where: {
+        userId: memberId,
+        book: { isDeleted: false }
+      },
+      orderBy: { createdAt: 'desc' },
+      select: REVIEW_SELECT
+    });
+  }
+
+  const [
+    member,
+    loans,
+    loanHistory,
+    reservations,
+    orders,
+    reviews
+  ] = await Promise.all([
+    memberPromise,
+    loansPromise,
+    loanHistoryPromise,
+    reservationsPromise,
+    ordersPromise,
+    reviewsPromise
+  ]);
+
+  if (!member) {
+    throw new ApiError(404, 'Member not found.');
+  }
+
+  if (member.role !== UserRole.MEMBER) {
+    throw new ApiError(400, 'User is not a member.');
+  }
+
+  return {
+    member,
+    loans: loans || [],
+    loanHistory: loanHistory || [],
+    reservations: reservations || [],
+    orders: orders || [],
+    reviews: reviews || []
+  };
 };
