@@ -65,9 +65,9 @@ const getUserStatistics = async (filter) => {
  */
 const getBookStatistics = async (filter) => {
   const [total, copies, availableCopies] = await Promise.all([
-    prisma.book.count(),
-    prisma.bookCopy.count(),
-    prisma.bookCopy.count({ where: { status: CopyStatus.AVAILABLE } })
+    prisma.book.count({ where: { isDeleted: false } }),
+    prisma.bookCopy.count({ where: { book: { isDeleted: false } } }),
+    prisma.bookCopy.count({ where: { status: CopyStatus.AVAILABLE, book: { isDeleted: false } } })
   ]);
   return { total, copies, availableCopies };
 };
