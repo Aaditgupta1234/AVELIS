@@ -141,7 +141,7 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
     });
 
     return reservation;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**
@@ -359,7 +359,7 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
     });
 
     return updatedReservation;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**
@@ -394,7 +394,7 @@ export const handleExpiredReservations = async () => {
 
   return await prisma.$transaction(async (tx) => {
     return await processExpiredReservations(tx, expiredReservations);
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 // ============================================================================

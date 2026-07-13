@@ -93,7 +93,7 @@ export const borrowBook = async ({ userId, copyId }) => {
     });
 
     return loan;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**
@@ -160,7 +160,7 @@ export const returnBook = async ({ loanId }) => {
     });
 
     return updatedLoan;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**
@@ -600,20 +600,16 @@ const executeLoanRenewal = async (context) => {
   const newDueDate = new Date(loan.dueDate);
   newDueDate.setDate(newDueDate.getDate() + DEFAULT_BORROW_DAYS);
 
-  return await prisma.$transaction(async (tx) => {
-    const updatedLoan = await tx.loan.update({
-      where: { id: loan.id },
-      data: {
-        dueDate: newDueDate,
-        status: LoanStatus.BORROWED,
-        renewCount: {
-          increment: 1
-        }
-      },
-      select: LOAN_SELECT
-    });
-
-    return updatedLoan;
+  return await prisma.loan.update({
+    where: { id: loan.id },
+    data: {
+      dueDate: newDueDate,
+      status: LoanStatus.BORROWED,
+      renewCount: {
+        increment: 1
+      }
+    },
+    select: LOAN_SELECT
   });
 };
 
@@ -847,7 +843,7 @@ const createLoan = async ({ userId, bookCopyId }) => {
     });
 
     return loan;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**
@@ -936,7 +932,7 @@ const completeLoanReturn = async ({ loan }) => {
     });
 
     return updatedLoan;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**

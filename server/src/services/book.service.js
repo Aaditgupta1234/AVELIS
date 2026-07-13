@@ -87,7 +87,7 @@ export const createBook = async (bookData) => {
     });
 
     return book;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**
@@ -301,7 +301,7 @@ export const updateBook = async (id, bookData) => {
     });
 
     return updatedBook;
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 };
 
 /**

@@ -31,6 +31,7 @@ export const apiLimiter = rateLimit({
     message: 'Too many requests from this IP, please try again after 15 minutes.'
   },
   skipSuccessfulRequests: false,
+  skip: () => process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true',
 });
 
 /**
@@ -49,4 +50,5 @@ export const authLimiter = rateLimit({
     message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
   },
   skipSuccessfulRequests: false,
+  skip: () => process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true',
 });

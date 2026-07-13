@@ -14,14 +14,24 @@
 
 import { config, logger } from './config/index.js';
 import app from './app.js';
+import { prisma } from './lib/prisma.js';
 
 /**
  * Start the application server.
  *
- * Starts listening for HTTP requests on the configured port
+ * Verifies database connectivity, starts listening for HTTP requests,
  * and registers graceful shutdown handlers.
  */
-const startServer = () => {
+const startServer = async () => {
+  // 1. Verify Prisma connection cleanly on startup
+  try {
+    await prisma.$connect();
+    logger.info('Database connection established successfully');
+  } catch (err) {
+    logger.error('Failed to establish database connection on startup:', err);
+    process.exit(1);
+  }
+
   const server = app.listen(config.port, () => {
     logger.info('================================================');
     logger.info('  AVELIS Server');
@@ -31,34 +41,56 @@ const startServer = () => {
   });
 
   // -------------------------------------------------------------------------
-  // Graceful Shutdown
+  // Graceful Shutdown & Exception Handling
   // -------------------------------------------------------------------------
+
+  let shuttingDown = false;
 
   /**
    * Handle shutdown signals gracefully.
-   * Closes the HTTP server before exiting the process.
+   * Closes the HTTP server and Prisma client before exiting.
    *
-   * @param {string} signal - The signal that triggered shutdown
+   * @param {string} signal - The signal or event that triggered shutdown
    */
-  const gracefulShutdown = (signal) => {
+  const gracefulShutdown = async (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
     logger.info(`\n${signal} received. Starting graceful shutdown...`);
 
-    server.close(() => {
-      logger.info('HTTP server closed');
-      logger.info('Graceful shutdown complete');
-      process.exit(0);
-    });
-
     // Force shutdown after 10 seconds if graceful shutdown hangs
-    setTimeout(() => {
+    const forceShutdownTimer = setTimeout(() => {
       logger.error('Forced shutdown — graceful shutdown timed out');
       process.exit(1);
     }, 10000);
+
+    server.close(async () => {
+      logger.info('HTTP server closed');
+      try {
+        await prisma.$disconnect();
+        logger.info('Database connection gracefully closed');
+      } catch (e) {
+        logger.error('Error during database disconnect:', e);
+      }
+      clearTimeout(forceShutdownTimer);
+      logger.info('Graceful shutdown complete');
+      process.exit(0);
+    });
   };
 
   // Listen for termination signals
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  // Listen for uncaught exceptions/rejections
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception:', err);
+    gracefulShutdown('uncaughtException');
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('unhandledRejection');
+  });
 };
 
 // Start the server
