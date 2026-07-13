@@ -48,7 +48,7 @@ class ApiError extends Error {
 
     if (stack) {
       this.stack = stack;
-    } else {
+    } else if (process.env.NODE_ENV !== 'production' || statusCode >= 500) {
       Error.captureStackTrace(this, this.constructor);
     }
   }

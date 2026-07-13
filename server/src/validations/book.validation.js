@@ -9,8 +9,7 @@
 
 import { sendError } from '../utils/index.js';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER } from '../constants/book.constants.js';
-
-const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+import { UUID_REGEX } from '../helpers/validation.helper.js';
 
 const validatePublicationYear = (publicationYear, errors) => {
   if (publicationYear !== undefined && publicationYear !== null) {

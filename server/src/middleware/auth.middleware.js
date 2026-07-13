@@ -33,7 +33,7 @@ export const authMiddleware = (req, res, next) => {
       );
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.slice(7);
     if (!token) {
       return next(new ApiError(401, 'Token is missing'));
     }

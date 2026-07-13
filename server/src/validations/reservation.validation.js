@@ -1,7 +1,6 @@
 import { sendError } from '../utils/index.js';
 import { ReservationStatus } from '@prisma/client';
-
-const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+import { UUID_REGEX } from '../helpers/validation.helper.js';
 
 /**
  * Validator middleware for creating a reservation.

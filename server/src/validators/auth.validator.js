@@ -8,6 +8,7 @@
  */
 
 import { sendError } from '../utils/index.js';
+import { EMAIL_REGEX } from '../helpers/validation.helper.js';
 
 /**
  * Validator placeholder for user registration requests.
@@ -38,8 +39,7 @@ export const registerValidator = (req, res, next) => {
     if (email === '') {
       errors.push({ field: 'email', message: 'Email cannot be empty.' });
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!EMAIL_REGEX.test(email)) {
         errors.push({ field: 'email', message: 'Email is invalid.' });
       }
     }
@@ -88,8 +88,7 @@ export const loginValidator = (req, res, next) => {
     if (email === '') {
       errors.push({ field: 'email', message: 'Email cannot be empty.' });
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!EMAIL_REGEX.test(email)) {
         errors.push({ field: 'email', message: 'Email is invalid.' });
       }
     }

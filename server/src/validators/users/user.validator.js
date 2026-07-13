@@ -1,6 +1,8 @@
 import { sendError } from '../../utils/index.js';
 import { UserRole } from '@prisma/client';
 
+const ROLES_LIST = Object.values(UserRole);
+
 /**
  * Validator for user profile update requests.
  *
@@ -107,11 +109,10 @@ export const updateUserRoleValidator = (req, res, next) => {
   if (role === undefined || role === null || String(role).trim() === '') {
     errors.push({ field: 'role', message: 'Role is required.' });
   } else {
-    const rolesList = Object.values(UserRole);
-    if (!rolesList.includes(role)) {
+    if (!ROLES_LIST.includes(role)) {
       errors.push({
         field: 'role',
-        message: `Role must be one of: ${rolesList.join(', ')}.`,
+        message: `Role must be one of: ${ROLES_LIST.join(', ')}.`,
       });
     }
   }

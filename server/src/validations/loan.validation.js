@@ -11,7 +11,7 @@ import { sendError } from '../utils/index.js';
 
 import { LoanStatus } from '@prisma/client';
 
-const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+import { UUID_REGEX } from '../helpers/validation.helper.js';
 const ALLOWED_LOAN_STATUSES = Object.values(LoanStatus);
 
 /**

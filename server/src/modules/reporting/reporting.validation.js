@@ -16,11 +16,10 @@ import {
   OrderStatus,
   PaymentStatus
 } from '@prisma/client';
+import { UUID_REGEX, EMAIL_REGEX } from '../../helpers/validation.helper.js';
 
 // Project-standard regex definitions
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:?\d{2})?)?$/;
-const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const INVENTORY_AVAILABILITY = ['all', 'available', 'borrowed', 'reserved', 'lost', 'damaged', 'maintenance'];
 const INVENTORY_SORT_FIELDS = [
