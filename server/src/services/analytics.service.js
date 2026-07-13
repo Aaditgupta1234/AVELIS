@@ -121,10 +121,14 @@ const getMostBorrowedBooks = async (filter, limit) => {
     const book = loan.bookCopy?.book;
     if (!book) continue;
 
-    const authorName = book.authors
-      .map(a => a.author?.fullName)
-      .filter(Boolean)
-      .join(', ') || 'Unknown';
+    let authorName = '';
+    for (const a of book.authors) {
+      if (a.author?.fullName) {
+        if (authorName) authorName += ', ';
+        authorName += a.author.fullName;
+      }
+    }
+    if (!authorName) authorName = 'Unknown';
 
     if (!bookMap[book.id]) {
       bookMap[book.id] = {
@@ -167,7 +171,7 @@ const getBorrowFrequency = async (filter) => {
 
   const frequencyMap = {};
   for (const loan of loans) {
-    const dateStr = loan.createdAt.toISOString().split('T')[0];
+    const dateStr = loan.createdAt.toISOString().substring(0, 10);
     frequencyMap[dateStr] = (frequencyMap[dateStr] || 0) + 1;
   }
 
@@ -410,7 +414,12 @@ const getMostActiveMembers = async (filter, limit) => {
 
   const memberData = members.map(m => {
     const borrowCount = m.loans.length;
-    const activeLoans = m.loans.filter(l => l.status === LoanStatus.BORROWED || l.status === LoanStatus.OVERDUE).length;
+    let activeLoans = 0;
+    for (const l of m.loans) {
+      if (l.status === LoanStatus.BORROWED || l.status === LoanStatus.OVERDUE) {
+        activeLoans++;
+      }
+    }
     return {
       memberId: m.id,
       username: m.username,
@@ -446,7 +455,7 @@ const getRegistrationTrend = async (filter) => {
 
   const trendMap = {};
   for (const m of members) {
-    const dateStr = m.createdAt.toISOString().split('T')[0];
+    const dateStr = m.createdAt.toISOString().substring(0, 10);
     trendMap[dateStr] = (trendMap[dateStr] || 0) + 1;
   }
 
@@ -641,19 +650,18 @@ const getHighestRatedBooks = async (filter, limit) => {
     }
   });
 
-  const bookRatings = reviewGroups
-    .map(g => {
-      const book = books.find(b => b.id === g.bookId);
-      if (!book) return null;
-      const averageRating = Number((g._avg.rating || 0).toFixed(2));
-      return {
-        bookId: g.bookId,
-        title: book.title,
-        averageRating,
-        reviewCount: g._count.id || 0
-      };
-    })
-    .filter(Boolean);
+  const bookMap = new Map(books.map(b => [b.id, b]));
+  const bookRatings = [];
+  for (const g of reviewGroups) {
+    const book = bookMap.get(g.bookId);
+    if (!book) continue;
+    bookRatings.push({
+      bookId: g.bookId,
+      title: book.title,
+      averageRating: Number((g._avg.rating || 0).toFixed(2)),
+      reviewCount: g._count.id || 0
+    });
+  }
 
   return bookRatings
     .sort((a, b) => {
@@ -700,19 +708,18 @@ const getLowestRatedBooks = async (filter, limit) => {
     }
   });
 
-  const bookRatings = reviewGroups
-    .map(g => {
-      const book = books.find(b => b.id === g.bookId);
-      if (!book) return null;
-      const averageRating = Number((g._avg.rating || 0).toFixed(2));
-      return {
-        bookId: g.bookId,
-        title: book.title,
-        averageRating,
-        reviewCount: g._count.id || 0
-      };
-    })
-    .filter(Boolean);
+  const bookMap = new Map(books.map(b => [b.id, b]));
+  const bookRatings = [];
+  for (const g of reviewGroups) {
+    const book = bookMap.get(g.bookId);
+    if (!book) continue;
+    bookRatings.push({
+      bookId: g.bookId,
+      title: book.title,
+      averageRating: Number((g._avg.rating || 0).toFixed(2)),
+      reviewCount: g._count.id || 0
+    });
+  }
 
   return bookRatings
     .sort((a, b) => {
@@ -782,7 +789,7 @@ const getReviewTrend = async (filter) => {
 
   const trendMap = {};
   for (const r of reviews) {
-    const dateStr = r.createdAt.toISOString().split('T')[0];
+    const dateStr = r.createdAt.toISOString().substring(0, 10);
     trendMap[dateStr] = (trendMap[dateStr] || 0) + 1;
   }
 

@@ -103,10 +103,10 @@ export const getLoans = async (req, res, next) => {
  */
 export const getCurrentUserLoans = async (req, res, next) => {
   try {
-    const result = await loanService.getLoans({
-      ...req.query,
-      userId: req.user.id
-    });
+    // Assign userId directly onto the validated query object rather than
+    // spreading into a new temporary object (avoids per-request allocation).
+    req.query.userId = req.user.id;
+    const result = await loanService.getLoans(req.query);
 
     return sendSuccess(
       res,

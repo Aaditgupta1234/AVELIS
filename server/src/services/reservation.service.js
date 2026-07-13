@@ -10,6 +10,9 @@ export const RESERVATION_PICKUP_WINDOW_HOURS = config.reservationPickupWindowHou
 
 import { RESERVATION_SELECT, RESERVATION_SELECT_WITH_OWNER } from '../shared/selects/reservation.select.js';
 
+/** Module-level constant: hoisted to avoid per-request array allocation in cancelReservation. */
+const CANCELLABLE_RESERVATION_STATUSES = Object.freeze([ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP]);
+
 /**
  * Service to create a book reservation.
  *
@@ -309,8 +312,7 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
   }
 
   // Stage 3 — Business Rule Validation
-  const allowedStatuses = [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP];
-  if (!allowedStatuses.includes(reservationData.status)) {
+  if (!CANCELLABLE_RESERVATION_STATUSES.includes(reservationData.status)) {
     throw new ApiError(400, 'Reservation cannot be cancelled in its current state.');
   }
 
@@ -320,7 +322,7 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
     const updateResult = await tx.reservation.updateMany({
       where: {
         id: reservationId,
-        status: { in: allowedStatuses }
+        status: { in: CANCELLABLE_RESERVATION_STATUSES }
       },
       data: {
         status: ReservationStatus.CANCELLED,

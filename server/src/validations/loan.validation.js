@@ -12,7 +12,13 @@ import { sendError } from '../utils/index.js';
 import { LoanStatus } from '@prisma/client';
 
 import { UUID_REGEX } from '../helpers/validation.helper.js';
-const ALLOWED_LOAN_STATUSES = Object.values(LoanStatus);
+const ALLOWED_LOAN_STATUSES = Object.freeze(Object.values(LoanStatus));
+
+/** Module-level constant: hoisted to avoid per-request array allocation in queryLoansValidator. */
+const ALLOWED_QUERY_SORT_FIELDS = Object.freeze(['issueDate', 'dueDate', 'returnDate', 'createdAt']);
+
+/** Module-level constant: hoisted to avoid per-request array allocation in borrowBookValidator. */
+const ALLOWED_BORROW_KEYS = Object.freeze(['bookCopyId']);
 
 /**
  * Validator middleware for borrowing a book copy (Admin Borrow workflow).
@@ -120,10 +126,9 @@ export const queryLoansValidator = (req, res, next) => {
   }
 
   // 2. Sorting Parameter Validation & Normalization
-  const allowedSortFields = ['issueDate', 'dueDate', 'returnDate', 'createdAt'];
   if (sortBy !== undefined && sortBy !== null) {
-    if (!allowedSortFields.includes(sortBy)) {
-      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${allowedSortFields.join(', ')}.` });
+    if (!ALLOWED_QUERY_SORT_FIELDS.includes(sortBy)) {
+      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${ALLOWED_QUERY_SORT_FIELDS.join(', ')}.` });
     }
   } else {
     req.query.sortBy = 'createdAt';
@@ -142,9 +147,8 @@ export const queryLoansValidator = (req, res, next) => {
 
   // 3. Filters Validation & Normalization
   if (status !== undefined && status !== null) {
-    const allowedStatuses = Object.values(LoanStatus);
-    if (!allowedStatuses.includes(status)) {
-      errors.push({ field: 'status', message: `status must be a valid LoanStatus: ${allowedStatuses.join(', ')}.` });
+    if (!ALLOWED_LOAN_STATUSES.includes(status)) {
+      errors.push({ field: 'status', message: `status must be a valid LoanStatus: ${ALLOWED_LOAN_STATUSES.join(', ')}.` });
     }
   }
 
@@ -247,7 +251,6 @@ export const getLoanHistoryValidator = (req, res, next) => {
  */
 export const borrowBookValidator = (req, res, next) => {
   const errors = [];
-  const allowedKeys = ['bookCopyId'];
 
   // Defensively ensure req.body is a writable plain object before validation or assignment
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
@@ -257,7 +260,7 @@ export const borrowBookValidator = (req, res, next) => {
 
   // 1. Reject unknown request fields
   const bodyKeys = Object.keys(requestBody);
-  const unknownKeys = bodyKeys.filter(key => !allowedKeys.includes(key));
+  const unknownKeys = bodyKeys.filter(key => !ALLOWED_BORROW_KEYS.includes(key));
   if (unknownKeys.length > 0) {
     errors.push({
       field: unknownKeys.join(', '),

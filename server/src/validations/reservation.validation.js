@@ -2,6 +2,12 @@ import { sendError } from '../utils/index.js';
 import { ReservationStatus } from '@prisma/client';
 import { UUID_REGEX } from '../helpers/validation.helper.js';
 
+/** Module-level constant: hoisted to avoid per-request allocation in reservationQueryValidator. */
+const ALLOWED_RESERVATION_STATUSES = Object.freeze(Object.values(ReservationStatus));
+
+/** Module-level constant: hoisted to avoid per-request array allocation in reservationQueryValidator. */
+const ALLOWED_SORT_FIELDS = Object.freeze(['createdAt', 'expiresAt', 'status']);
+
 /**
  * Validator middleware for creating a reservation.
  *
@@ -102,9 +108,8 @@ export const reservationQueryValidator = (req, res, next) => {
   // 3. status validation
   if (status !== undefined && status !== null) {
     const statusStr = String(status).trim();
-    const allowedStatuses = Object.values(ReservationStatus);
-    if (!allowedStatuses.includes(statusStr)) {
-      errors.push({ field: 'status', message: `status must be a valid ReservationStatus: ${allowedStatuses.join(', ')}.` });
+    if (!ALLOWED_RESERVATION_STATUSES.includes(statusStr)) {
+      errors.push({ field: 'status', message: `status must be a valid ReservationStatus: ${ALLOWED_RESERVATION_STATUSES.join(', ')}.` });
     } else {
       req.query.status = statusStr;
     }
@@ -131,11 +136,10 @@ export const reservationQueryValidator = (req, res, next) => {
   }
 
   // 6. sortBy validation
-  const allowedSortFields = ['createdAt', 'expiresAt', 'status'];
   if (sortBy !== undefined && sortBy !== null) {
     const sortByStr = String(sortBy).trim();
-    if (!allowedSortFields.includes(sortByStr)) {
-      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${allowedSortFields.join(', ')}.` });
+    if (!ALLOWED_SORT_FIELDS.includes(sortByStr)) {
+      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${ALLOWED_SORT_FIELDS.join(', ')}.` });
     } else {
       req.query.sortBy = sortByStr;
     }

@@ -19,6 +19,9 @@ import { logger } from '../config/logger.js';
 
 const DEFAULT_BORROW_DAYS = config.loanDurationDays;
 
+/** Module-level constant: hoisted to avoid per-call primitive allocation in checkBorrowEligibility. */
+const MAX_ACTIVE_LOANS = 5;
+
 /**
  * Service to borrow a book copy.
  *
@@ -437,13 +440,15 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
 const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
   const where = {
     userId,
-    ...(status !== undefined && status !== null ? { status } : {}),
     bookCopy: {
       book: {
         isDeleted: false
       }
     }
   };
+  if (status !== undefined && status !== null) {
+    where.status = status;
+  }
 
   const [loans, total] = await Promise.all([
     prisma.loan.findMany({
@@ -708,8 +713,6 @@ const validateBorrowRequest = async ({ userId, bookCopyId }) => {
  * @throws {ApiError} Thrown if user is not found, user is not a member, user account is inactive, or borrowing limit is reached.
  */
 const checkBorrowEligibility = async ({ userId }) => {
-  const MAX_ACTIVE_LOANS = 5;
-
   // 1. Fetch user status and role with a minimal select query
   const user = await prisma.user.findUnique({
     where: { id: userId },
