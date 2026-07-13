@@ -24,7 +24,8 @@ import { REVIEW_SELECT } from '../../shared/selects/review.select.js';
 export const createReview = async ({ userId, bookId, rating, comment }) => {
   // 1. Verify book exists and is not soft-deleted
   const book = await prisma.book.findUnique({
-    where: { id: bookId }
+    where: { id: bookId },
+    select: { id: true, isDeleted: true }
   });
 
   if (!book || book.isDeleted) {
@@ -102,7 +103,8 @@ export const getReviewById = async (reviewId) => {
  */
 export const getBookReviews = async (bookId) => {
   const book = await prisma.book.findUnique({
-    where: { id: bookId }
+    where: { id: bookId },
+    select: { id: true, isDeleted: true }
   });
 
   if (!book || book.isDeleted) {
@@ -126,7 +128,12 @@ export const getBookReviews = async (bookId) => {
  */
 export const getCurrentUserReviews = async (userId) => {
   const reviews = await prisma.review.findMany({
-    where: { userId },
+    where: {
+      userId,
+      book: {
+        isDeleted: false
+      }
+    },
     select: REVIEW_SELECT,
     orderBy: { createdAt: 'desc' }
   });

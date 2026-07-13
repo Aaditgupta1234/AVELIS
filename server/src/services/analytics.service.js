@@ -344,10 +344,12 @@ const buildMemberFilter = ({ startDate, endDate }) => {
  * @returns {Promise<Object>} Member overview counts
  */
 const getMemberOverview = async (filter) => {
-  const [totalMembers, activeMembers, inactiveMembers, membersWithActiveLoans] = await Promise.all([
-    prisma.user.count({ where: filter }),
-    prisma.user.count({ where: { ...filter, isActive: true } }),
-    prisma.user.count({ where: { ...filter, isActive: false } }),
+  const [userGroups, membersWithActiveLoans] = await Promise.all([
+    prisma.user.groupBy({
+      by: ['isActive'],
+      where: filter,
+      _count: { id: true }
+    }),
     prisma.user.count({
       where: {
         ...filter,
@@ -359,6 +361,20 @@ const getMemberOverview = async (filter) => {
       }
     })
   ]);
+
+  let activeMembers = 0;
+  let inactiveMembers = 0;
+  let totalMembers = 0;
+
+  for (const group of userGroups) {
+    const count = group._count.id;
+    totalMembers += count;
+    if (group.isActive === true) {
+      activeMembers = count;
+    } else if (group.isActive === false) {
+      inactiveMembers = count;
+    }
+  }
 
   return {
     totalMembers,
@@ -557,23 +573,31 @@ const buildRatingFilter = ({ startDate, endDate }) => {
  * @returns {Promise<Object>} Rating overview counts
  */
 const getRatingOverview = async (filter) => {
-  const aggregate = await prisma.review.aggregate({
+  const ratingGroups = await prisma.review.groupBy({
+    by: ['rating'],
     where: filter,
-    _count: {
-      id: true
-    },
-    _avg: {
-      rating: true
-    }
+    _count: { id: true },
+    _sum: { rating: true }
   });
 
-  const [fiveStarReviews, oneStarReviews] = await Promise.all([
-    prisma.review.count({ where: { ...filter, rating: 5 } }),
-    prisma.review.count({ where: { ...filter, rating: 1 } })
-  ]);
+  let totalReviews = 0;
+  let totalRatingSum = 0;
+  let fiveStarReviews = 0;
+  let oneStarReviews = 0;
 
-  const totalReviews = aggregate._count.id || 0;
-  const averageRating = totalReviews > 0 ? Number((aggregate._avg.rating || 0).toFixed(2)) : 0;
+  for (const group of ratingGroups) {
+    const count = group._count.id;
+    totalReviews += count;
+    totalRatingSum += (group._sum.rating || 0);
+    if (group.rating === 5) {
+      fiveStarReviews = count;
+    }
+    if (group.rating === 1) {
+      oneStarReviews = count;
+    }
+  }
+
+  const averageRating = totalReviews > 0 ? Number((totalRatingSum / totalReviews).toFixed(2)) : 0;
 
   return {
     totalReviews,

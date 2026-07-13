@@ -42,14 +42,25 @@ const buildDashboardFilter = ({ startDate, endDate }) => {
  * Both total and active user counts represent current inventory state,
  * and are intentionally unfiltered by date range to reflect the current library enrollment.
  *
- * @param {Object} filter - Prisma date range criteria (unused here)
  * @returns {Promise<{total: number, active: number}>} User metrics
  */
-const getUserStatistics = async (filter) => {
-  const [total, active] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { isActive: true } })
-  ]);
+const getUserStatistics = async () => {
+  const userGroups = await prisma.user.groupBy({
+    by: ['isActive'],
+    _count: { id: true }
+  });
+
+  let total = 0;
+  let active = 0;
+
+  for (const group of userGroups) {
+    const count = group._count.id;
+    total += count;
+    if (group.isActive) {
+      active = count;
+    }
+  }
+
   return { total, active };
 };
 
@@ -60,15 +71,29 @@ const getUserStatistics = async (filter) => {
  * Book inventory metrics reflect the physical current state of cataloged books and copies,
  * and are intentionally unfiltered by date range to show current overall available resources.
  *
- * @param {Object} filter - Prisma date range criteria (unused here)
  * @returns {Promise<{total: number, copies: number, availableCopies: number}>} Book metrics
  */
-const getBookStatistics = async (filter) => {
-  const [total, copies, availableCopies] = await Promise.all([
+const getBookStatistics = async () => {
+  const [total, copyGroups] = await Promise.all([
     prisma.book.count({ where: { isDeleted: false } }),
-    prisma.bookCopy.count({ where: { book: { isDeleted: false } } }),
-    prisma.bookCopy.count({ where: { status: CopyStatus.AVAILABLE, book: { isDeleted: false } } })
+    prisma.bookCopy.groupBy({
+      by: ['status'],
+      where: { book: { isDeleted: false } },
+      _count: { id: true }
+    })
   ]);
+
+  let copies = 0;
+  let availableCopies = 0;
+
+  for (const group of copyGroups) {
+    const count = group._count.id;
+    copies += count;
+    if (group.status === CopyStatus.AVAILABLE) {
+      availableCopies = count;
+    }
+  }
+
   return { total, copies, availableCopies };
 };
 
@@ -83,21 +108,27 @@ const getBookStatistics = async (filter) => {
  * @returns {Promise<{total: number, active: number, overdue: number}>} Loan metrics
  */
 const getLoanStatistics = async (filter) => {
-  const [total, active, overdue] = await Promise.all([
-    prisma.loan.count({ where: filter }),
-    prisma.loan.count({
-      where: {
-        ...filter,
-        status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] }
-      }
-    }),
-    prisma.loan.count({
-      where: {
-        ...filter,
-        status: LoanStatus.OVERDUE
-      }
-    })
-  ]);
+  const loanGroups = await prisma.loan.groupBy({
+    by: ['status'],
+    where: filter,
+    _count: { id: true }
+  });
+
+  let total = 0;
+  let active = 0;
+  let overdue = 0;
+
+  for (const group of loanGroups) {
+    const count = group._count.id;
+    total += count;
+    if (group.status === LoanStatus.BORROWED || group.status === LoanStatus.OVERDUE) {
+      active += count;
+    }
+    if (group.status === LoanStatus.OVERDUE) {
+      overdue = count;
+    }
+  }
+
   return { total, active, overdue };
 };
 
@@ -112,21 +143,27 @@ const getLoanStatistics = async (filter) => {
  * @returns {Promise<{total: number, pending: number, fulfilled: number}>} Reservation metrics
  */
 const getReservationStatistics = async (filter) => {
-  const [total, pending, fulfilled] = await Promise.all([
-    prisma.reservation.count({ where: filter }),
-    prisma.reservation.count({
-      where: {
-        ...filter,
-        status: { in: [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP] }
-      }
-    }),
-    prisma.reservation.count({
-      where: {
-        ...filter,
-        status: ReservationStatus.COMPLETED
-      }
-    })
-  ]);
+  const reservationGroups = await prisma.reservation.groupBy({
+    by: ['status'],
+    where: filter,
+    _count: { id: true }
+  });
+
+  let total = 0;
+  let pending = 0;
+  let fulfilled = 0;
+
+  for (const group of reservationGroups) {
+    const count = group._count.id;
+    total += count;
+    if (group.status === ReservationStatus.PENDING || group.status === ReservationStatus.READY_FOR_PICKUP) {
+      pending += count;
+    }
+    if (group.status === ReservationStatus.COMPLETED) {
+      fulfilled = count;
+    }
+  }
+
   return { total, pending, fulfilled };
 };
 
@@ -141,21 +178,29 @@ const getReservationStatistics = async (filter) => {
  * @returns {Promise<{total: number, pending: number, completed: number}>} Order metrics
  */
 const getOrderStatistics = async (filter) => {
-  const [total, pending, completed] = await Promise.all([
-    prisma.order.count({ where: filter }),
-    prisma.order.count({
-      where: {
-        ...filter,
-        orderStatus: { in: [OrderStatus.PLACED, OrderStatus.PROCESSING, OrderStatus.SHIPPED] }
-      }
-    }),
-    prisma.order.count({
-      where: {
-        ...filter,
-        orderStatus: OrderStatus.DELIVERED
-      }
-    })
-  ]);
+  const orderGroups = await prisma.order.groupBy({
+    by: ['orderStatus'],
+    where: filter,
+    _count: { id: true }
+    // Ensure we filter out orders of deleted users if soft-deleted users are tracked,
+    // but the current database schema does not have soft delete on users.
+  });
+
+  let total = 0;
+  let pending = 0;
+  let completed = 0;
+
+  for (const group of orderGroups) {
+    const count = group._count.id;
+    total += count;
+    if (group.orderStatus === OrderStatus.PLACED || group.orderStatus === OrderStatus.PROCESSING || group.orderStatus === OrderStatus.SHIPPED) {
+      pending += count;
+    }
+    if (group.orderStatus === OrderStatus.DELIVERED) {
+      completed = count;
+    }
+  }
+
   return { total, pending, completed };
 };
 
@@ -173,8 +218,8 @@ export const getDashboardSummary = async ({ startDate, endDate } = {}) => {
   const filter = buildDashboardFilter({ startDate, endDate });
 
   const [users, books, loans, reservations, orders] = await Promise.all([
-    getUserStatistics(filter),
-    getBookStatistics(filter),
+    getUserStatistics(),
+    getBookStatistics(),
     getLoanStatistics(filter),
     getReservationStatistics(filter),
     getOrderStatistics(filter)

@@ -1084,29 +1084,15 @@ const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQue
   const fallbackKeys = [];
 
   if (!fetchLoans || isPaginatedDbQuery) {
-    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, bookCopy: { book: { isDeleted: false } } } }));
-    fallbackKeys.push('loansCount');
-
-    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] }, bookCopy: { book: { isDeleted: false } } } }));
-    fallbackKeys.push('activeCount');
-
-    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, status: LoanStatus.RETURNED, bookCopy: { book: { isDeleted: false } } } }));
-    fallbackKeys.push('returnedCount');
-
-    fallbackPromises.push(prisma.loan.count({ where: { userId: memberId, status: LoanStatus.OVERDUE, bookCopy: { book: { isDeleted: false } } } }));
-    fallbackKeys.push('overdueCount');
-
-    fallbackPromises.push(prisma.loan.aggregate({
-      where: { userId: memberId, bookCopy: { book: { isDeleted: false } } },
-      _sum: { fineAmount: true }
-    }));
-    fallbackKeys.push('finesAgg');
-
-    fallbackPromises.push(prisma.loan.aggregate({
-      where: { userId: memberId, status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] }, bookCopy: { book: { isDeleted: false } } },
-      _sum: { fineAmount: true }
-    }));
-    fallbackKeys.push('outstandingAgg');
+    fallbackPromises.push(
+      prisma.loan.groupBy({
+        by: ['status'],
+        where: { userId: memberId, bookCopy: { book: { isDeleted: false } } },
+        _count: { id: true },
+        _sum: { fineAmount: true }
+      })
+    );
+    fallbackKeys.push('loansGroupBy');
 
     fallbackPromises.push(prisma.loan.findMany({
       where: { userId: memberId, status: LoanStatus.RETURNED, bookCopy: { book: { isDeleted: false } } },
@@ -1126,14 +1112,14 @@ const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQue
   }
 
   if (!fetchReviews || isPaginatedDbQuery) {
-    fallbackPromises.push(prisma.review.count({ where: { userId: memberId, book: { isDeleted: false } } }));
-    fallbackKeys.push('reviewsCount');
-
-    fallbackPromises.push(prisma.review.aggregate({
-      where: { userId: memberId, book: { isDeleted: false } },
-      _avg: { rating: true }
-    }));
-    fallbackKeys.push('reviewsAgg');
+    fallbackPromises.push(
+      prisma.review.aggregate({
+        where: { userId: memberId, book: { isDeleted: false } },
+        _count: { id: true },
+        _avg: { rating: true }
+      })
+    );
+    fallbackKeys.push('reviewsAggregated');
   }
 
   // Resolve all fallback DB operations concurrently
@@ -1161,14 +1147,32 @@ const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQue
       averageLoanDurationDays = Number((totalDurationDays / returnedWithDuration.length).toFixed(2));
     }
   } else {
-    totalLoans = dbData.loansCount;
-    activeLoans = dbData.activeCount;
-    returnedLoans = dbData.returnedCount;
-    overdueLoans = dbData.overdueCount;
-    totalFines = Number(dbData.finesAgg._sum.fineAmount || 0);
-    outstandingFines = Number(dbData.outstandingAgg._sum.fineAmount || 0);
+    const loanGroups = dbData.loansGroupBy || [];
+    totalLoans = 0;
+    activeLoans = 0;
+    returnedLoans = 0;
+    overdueLoans = 0;
+    totalFines = 0;
+    outstandingFines = 0;
 
-    const hist = dbData.loanHistoryData;
+    for (const group of loanGroups) {
+      const count = group._count.id;
+      const fines = Number(group._sum.fineAmount || 0);
+      totalLoans += count;
+      totalFines += fines;
+      if (group.status === LoanStatus.BORROWED || group.status === LoanStatus.OVERDUE) {
+        activeLoans += count;
+        outstandingFines += fines;
+      }
+      if (group.status === LoanStatus.RETURNED) {
+        returnedLoans = count;
+      }
+      if (group.status === LoanStatus.OVERDUE) {
+        overdueLoans = count;
+      }
+    }
+
+    const hist = dbData.loanHistoryData || [];
     if (hist.length > 0) {
       const totalDurationDays = hist.reduce((sum, l) => {
         const diffMs = new Date(l.returnDate) - new Date(l.issueDate);
@@ -1200,8 +1204,9 @@ const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQue
       averageReviewRating = Number((sumRating / totalReviews).toFixed(2));
     }
   } else {
-    totalReviews = dbData.reviewsCount;
-    averageReviewRating = Number((dbData.reviewsAgg._avg.rating || 0).toFixed(2));
+    const aggregated = dbData.reviewsAggregated || { _count: { id: 0 }, _avg: { rating: 0 } };
+    totalReviews = aggregated._count.id || 0;
+    averageReviewRating = Number((aggregated._avg.rating || 0).toFixed(2));
   }
 
   return {

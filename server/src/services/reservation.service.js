@@ -21,7 +21,7 @@ import { RESERVATION_SELECT, RESERVATION_SELECT_WITH_OWNER } from '../shared/sel
  */
 export const createReservation = async ({ userId, bookId, currentUser }) => {
   // 1. Verify target user exists
-  const user = await getUserOrThrow(userId);
+  const user = await getUserOrThrow(userId, prisma, { id: true, role: true });
 
   // 2. Only admins can reserve for other users; members only for themselves
   if (currentUser.role !== UserRole.ADMIN && userId !== currentUser.id) {
@@ -34,7 +34,7 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
   }
 
   // 4. Verify book exists and is eligible for reservations
-  const book = await getBookOrThrow(bookId);
+  const book = await getBookOrThrow(bookId, prisma, { id: true, isDeleted: true, isBorrowable: true });
   if (book.isDeleted) {
     throw new ApiError(400, 'Book is soft deleted and cannot be reserved.');
   }
@@ -182,7 +182,11 @@ export const getReservationById = async ({ reservationId, currentUser }) => {
  */
 export const getReservations = async ({ page, limit, sortBy, sortOrder, status, userId, bookId }) => {
   // Stage 1: Build Prisma where clause
-  const where = {};
+  const where = {
+    book: {
+      isDeleted: false
+    }
+  };
   if (status) {
     where.status = status;
   }
@@ -239,7 +243,10 @@ export const getReservations = async ({ page, limit, sortBy, sortOrder, status, 
 export const getCurrentUserReservations = async ({ page, limit, sortBy, sortOrder, status, bookId, currentUser }) => {
   // Stage 1: Build mandatory member scope
   const where = {
-    userId: currentUser.id
+    userId: currentUser.id,
+    book: {
+      isDeleted: false
+    }
   };
 
   // Stage 2: Append optional filters
@@ -377,8 +384,32 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
  * @returns {Promise<Object>} Operational summary counts
  */
 export const handleExpiredReservations = async () => {
+  const now = new Date();
+
+  // Stage 1 — Locate Expired Reservations outside the transaction
+  const expiredReservations = await prisma.reservation.findMany({
+    where: {
+      status: ReservationStatus.READY_FOR_PICKUP,
+      expiresAt: {
+        lte: now
+      }
+    },
+    orderBy: [
+      { expiresAt: 'asc' },
+      { id: 'asc' }
+    ]
+  });
+
+  if (expiredReservations.length === 0) {
+    return {
+      processedReservations: 0,
+      releasedCopies: 0,
+      fulfilledReservations: 0
+    };
+  }
+
   return await prisma.$transaction(async (tx) => {
-    return await processExpiredReservations(tx);
+    return await processExpiredReservations(tx, expiredReservations);
   });
 };
 
@@ -467,33 +498,10 @@ const fulfillNextReservationForBook = async (bookId, tx) => {
  * Uses a provided Prisma transaction client.
  *
  * @param {import('@prisma/client').Prisma.TransactionClient} tx - Prisma transaction client
+ * @param {Array<Object>} expiredReservations - Pre-fetched list of expired reservations
  * @returns {Promise<Object>} Operational summary counts
  */
-const processExpiredReservations = async (tx) => {
-  const now = new Date();
-
-  // Stage 1 — Locate Expired Reservations
-  const expiredReservations = await tx.reservation.findMany({
-    where: {
-      status: ReservationStatus.READY_FOR_PICKUP,
-      expiresAt: {
-        lte: now
-      }
-    },
-    orderBy: [
-      { expiresAt: 'asc' },
-      { id: 'asc' }
-    ]
-  });
-
-  if (expiredReservations.length === 0) {
-    return {
-      processedReservations: 0,
-      releasedCopies: 0,
-      fulfilledReservations: 0
-    };
-  }
-
+const processExpiredReservations = async (tx, expiredReservations) => {
   let processedReservations = 0;
   let releasedCopies = 0;
   let fulfilledReservations = 0;

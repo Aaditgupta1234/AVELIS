@@ -9,9 +9,10 @@ import { ApiError } from '../utils/index.js';
  * @returns {Promise<Object>} The user record
  * @throws {ApiError} 404 if user not found
  */
-export const getUserOrThrow = async (userId, tx = prisma) => {
+export const getUserOrThrow = async (userId, tx = prisma, select = null) => {
   const user = await tx.user.findUnique({
-    where: { id: userId }
+    where: { id: userId },
+    ...(select && { select })
   });
   if (!user) {
     throw new ApiError(404, 'User not found.');
@@ -24,12 +25,14 @@ export const getUserOrThrow = async (userId, tx = prisma) => {
  *
  * @param {string} bookId - Book ID
  * @param {Object} [tx=prisma] - Prisma transaction client or default prisma
+ * @param {Object} [select=null] - Optional select projection
  * @returns {Promise<Object>} The book record
  * @throws {ApiError} 404 if book not found
  */
-export const getBookOrThrow = async (bookId, tx = prisma) => {
+export const getBookOrThrow = async (bookId, tx = prisma, select = null) => {
   const book = await tx.book.findUnique({
-    where: { id: bookId }
+    where: { id: bookId },
+    ...(select && { select })
   });
   if (!book) {
     throw new ApiError(404, 'Book not found.');

@@ -29,38 +29,38 @@ const DEFAULT_BORROW_DAYS = config.loanDurationDays;
  * @throws {ApiError} 409 if book copy is not AVAILABLE
  */
 export const borrowBook = async ({ userId, copyId }) => {
+  // 1. Verify user exists and role is MEMBER
+  const user = await getUserOrThrow(userId, prisma, { id: true, role: true });
+  if (user.role !== UserRole.MEMBER) {
+    throw new ApiError(400, 'Only members can borrow books.');
+  }
+
+  // 2. Verify copy exists, and retrieve parent book
+  const copy = await prisma.bookCopy.findUnique({
+    where: { id: copyId },
+    include: { book: true }
+  });
+  if (!copy) {
+    throw new ApiError(404, 'Book copy not found.');
+  }
+
+  // 3. Verify parent book exists and is not soft deleted
+  const book = copy.book;
+  if (!book || book.isDeleted) {
+    throw new ApiError(400, 'Book is soft deleted and cannot be borrowed.');
+  }
+
+  // 4. Verify copy is AVAILABLE
+  if (copy.status !== CopyStatus.AVAILABLE) {
+    throw new ApiError(409, 'Book copy is unavailable.');
+  }
+
+  // Calculate dates using the project's configured default loan period
+  const issueDate = new Date();
+  const dueDate = new Date();
+  dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
+
   return await prisma.$transaction(async (tx) => {
-    // 1. Verify user exists and role is MEMBER
-    const user = await getUserOrThrow(userId, tx);
-    if (user.role !== UserRole.MEMBER) {
-      throw new ApiError(400, 'Only members can borrow books.');
-    }
-
-    // 2. Verify copy exists, and retrieve parent book
-    const copy = await tx.bookCopy.findUnique({
-      where: { id: copyId },
-      include: { book: true }
-    });
-    if (!copy) {
-      throw new ApiError(404, 'Book copy not found.');
-    }
-
-    // 3. Verify parent book exists and is not soft deleted
-    const book = copy.book;
-    if (!book || book.isDeleted) {
-      throw new ApiError(400, 'Book is soft deleted and cannot be borrowed.');
-    }
-
-    // 4. Verify copy is AVAILABLE
-    if (copy.status !== CopyStatus.AVAILABLE) {
-      throw new ApiError(409, 'Book copy is unavailable.');
-    }
-
-    // Calculate dates using the project's configured default loan period
-    const issueDate = new Date();
-    const dueDate = new Date();
-    dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
-
     // 5. Update BookCopy status to BORROWED only if it is AVAILABLE (OCC check)
     const updateResult = await tx.bookCopy.updateMany({
       where: { id: copyId, status: CopyStatus.AVAILABLE },
@@ -98,30 +98,30 @@ export const borrowBook = async ({ userId, copyId }) => {
  * @throws {ApiError} 400 if loan is already returned
  */
 export const returnBook = async ({ loanId }) => {
+  // 1. Verify loan exists
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId }
+  });
+  if (!loan) {
+    throw new ApiError(404, 'Loan not found.');
+  }
+
+  // 2. Verify loan is not already returned
+  if (loan.status === LoanStatus.RETURNED) {
+    throw new ApiError(400, 'Loan already returned.');
+  }
+
+  // 3. Verify associated BookCopy exists
+  const copy = await prisma.bookCopy.findUnique({
+    where: { id: loan.copyId }
+  });
+  if (!copy) {
+    throw new ApiError(404, 'Copy not found.');
+  }
+
+  const returnDate = new Date();
+
   return await prisma.$transaction(async (tx) => {
-    // 1. Verify loan exists
-    const loan = await tx.loan.findUnique({
-      where: { id: loanId }
-    });
-    if (!loan) {
-      throw new ApiError(404, 'Loan not found.');
-    }
-
-    // 2. Verify loan is not already returned
-    if (loan.status === LoanStatus.RETURNED) {
-      throw new ApiError(400, 'Loan already returned.');
-    }
-
-    // 3. Verify associated BookCopy exists
-    const copy = await tx.bookCopy.findUnique({
-      where: { id: loan.copyId }
-    });
-    if (!copy) {
-      throw new ApiError(404, 'Copy not found.');
-    }
-
-    const returnDate = new Date();
-
     // 4. Update Loan status to RETURNED only if it is not already RETURNED (OCC check)
     const updateResult = await tx.loan.updateMany({
       where: {
@@ -189,7 +189,13 @@ export const getLoanById = async ({ loanId, currentUser }) => {
  * @returns {Promise<Object>} Object containing the list of loans and pagination metadata
  */
 export const getLoans = async ({ page, limit, sortBy, sortOrder, status, userId, copyId }) => {
-  const where = {};
+  const where = {
+    bookCopy: {
+      book: {
+        isDeleted: false
+      }
+    }
+  };
 
   if (status) {
     where.status = status;
@@ -314,6 +320,11 @@ const fetchActiveLoans = async ({ currentUser }) => {
         userId: currentUser.id,
         status: {
           in: [LoanStatus.BORROWED, LoanStatus.OVERDUE]
+        },
+        bookCopy: {
+          book: {
+            isDeleted: false
+          }
         }
       },
       select: LOAN_SELECT,
@@ -426,7 +437,12 @@ export const getLoanHistory = async ({ currentUser, page, limit, status, sort })
 const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
   const where = {
     userId,
-    ...(status !== undefined && status !== null ? { status } : {})
+    ...(status !== undefined && status !== null ? { status } : {}),
+    bookCopy: {
+      book: {
+        isDeleted: false
+      }
+    }
   };
 
   const [loans, total] = await Promise.all([

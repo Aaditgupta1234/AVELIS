@@ -10,9 +10,10 @@ import { BOOK_SELECT, BOOK_PUBLIC_INCLUDE } from '../shared/selects/book.select.
  * @returns {Promise<Object>} The book record
  * @throws {ApiError} 404 if book not found
  */
-const getBookOrThrow = async (tx, id) => {
+const getBookOrThrow = async (tx, id, select = null) => {
   const book = await tx.book.findUnique({
-    where: { id }
+    where: { id },
+    ...(select && { select })
   });
   if (!book) {
     throw new ApiError(404, 'Book not found.');
@@ -311,29 +312,32 @@ export const updateBook = async (id, bookData) => {
  * @throws {ApiError} 404 if book not found, 400 if already soft deleted
  */
 export const softDeleteBook = async (bookId) => {
-  return await prisma.$transaction(async (tx) => {
-    // 1. Retrieve the book and verify existence
-    const book = await getBookOrThrow(tx, bookId);
-
-    // 2. If the book is already soft deleted, throw 400 Bad Request error
-    if (book.isDeleted) {
-      throw new ApiError(400, 'Book has already been deleted.');
-    }
-
-    // 3. Update the record inside the transaction
-    const updatedBook = await tx.book.update({
-      where: { id: bookId },
+  try {
+    return await prisma.book.update({
+      where: { id: bookId, isDeleted: false },
       data: {
         isDeleted: true,
         deletedAt: new Date()
       },
       include: BOOK_PUBLIC_INCLUDE
     });
-
-    // 4. Return the updated book using the selection helper
-    return updatedBook;
-  });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      const book = await prisma.book.findUnique({
+        where: { id: bookId },
+        select: { id: true, isDeleted: true }
+      });
+      if (!book) {
+        throw new ApiError(404, 'Book not found.');
+      }
+      if (book.isDeleted) {
+        throw new ApiError(400, 'Book has already been deleted.');
+      }
+    }
+    throw error;
+  }
 };
+
 /**
  * Service to permanently delete a previously soft-deleted book.
  *
@@ -342,24 +346,26 @@ export const softDeleteBook = async (bookId) => {
  * @throws {ApiError} 404 if book not found, 400 if book is not soft-deleted
  */
 export const permanentDeleteBook = async (bookId) => {
-  return await prisma.$transaction(async (tx) => {
-    // 1. Retrieve the book and verify existence
-    const book = await getBookOrThrow(tx, bookId);
-
-    // 2. If the book is not soft-deleted, throw standard 400 error
-    if (!book.isDeleted) {
-      throw new ApiError(400, 'Book must be soft deleted before permanent deletion.');
-    }
-
-    // 3. Permanently remove the book using Prisma's delete() method
-    const deletedBook = await tx.book.delete({
-      where: { id: bookId },
+  try {
+    return await prisma.book.delete({
+      where: { id: bookId, isDeleted: true },
       include: BOOK_PUBLIC_INCLUDE
     });
-
-    // 4. Return the deleted book object
-    return deletedBook;
-  });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      const book = await prisma.book.findUnique({
+        where: { id: bookId },
+        select: { id: true, isDeleted: true }
+      });
+      if (!book) {
+        throw new ApiError(404, 'Book not found.');
+      }
+      if (!book.isDeleted) {
+        throw new ApiError(400, 'Book must be soft deleted before permanent deletion.');
+      }
+    }
+    throw error;
+  }
 };
 
 /**
@@ -370,28 +376,30 @@ export const permanentDeleteBook = async (bookId) => {
  * @throws {ApiError} 404 if book not found, 400 if book is not deleted
  */
 export const restoreBook = async (bookId) => {
-  return await prisma.$transaction(async (tx) => {
-    // 1. Retrieve the book and verify existence
-    const book = await getBookOrThrow(tx, bookId);
-
-    // 2. If the book is not deleted (isDeleted === false), throw standard 400 error
-    if (!book.isDeleted) {
-      throw new ApiError(400, 'Book is not deleted.');
-    }
-
-    // 3. Perform the restore update
-    const restoredBook = await tx.book.update({
-      where: { id: bookId },
+  try {
+    return await prisma.book.update({
+      where: { id: bookId, isDeleted: true },
       data: {
         isDeleted: false,
         deletedAt: null
       },
       include: BOOK_PUBLIC_INCLUDE
     });
-
-    // 4. Return the restored book
-    return restoredBook;
-  });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      const book = await prisma.book.findUnique({
+        where: { id: bookId },
+        select: { id: true, isDeleted: true }
+      });
+      if (!book) {
+        throw new ApiError(404, 'Book not found.');
+      }
+      if (!book.isDeleted) {
+        throw new ApiError(400, 'Book is not deleted.');
+      }
+    }
+    throw error;
+  }
 };
 
 /**
