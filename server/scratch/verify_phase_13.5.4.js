@@ -26,7 +26,6 @@ import { ApiError } from '../src/utils/ApiError.js';
 import { UserRole } from '@prisma/client';
 
 const PORT = 5594;
-const BASE_URL = `http://localhost:${PORT}/api/v1`;
 const WARMUP_ROUNDS = 3;
 const BENCHMARK_ROUNDS = 5;
 const CONCURRENT_REQUESTS = 100;
@@ -133,9 +132,7 @@ async function runTests() {
 
   let adminToken = null;
   let memberToken = null;
-  let testBookId = null;
   let server = null;
-  let queryCount = 0;
 
   try {
     // ── Setup Server ─────────────────────────────────────────────────────────
@@ -219,7 +216,6 @@ async function runTests() {
     assert(routesIdx < notFoundIdx && notFoundIdx < errorHandlerIdx, 'Middleware ordering: routes → notFound → errorHandler');
 
     // Middleware execution-frequency: instrument a request through authMiddleware
-    let authCallCount = 0;
     const authContent = fs.readFileSync(path.resolve('src/middleware/auth.middleware.js'), 'utf8');
     assert(authContent.includes('authHeader.slice(7)'), 'authMiddleware uses slice(7) instead of split');
     assert(!authContent.includes("split(' ')"), 'authMiddleware has no split() array allocation');
@@ -384,7 +380,6 @@ async function runTests() {
 
     // Regression thresholds (compared against aggregated warm-up baseline)
     const LATENCY_REGRESSION_LIMIT = 1.05; // 5% tolerance
-    const HEAP_REGRESSION_LIMIT = 1.05;     // 5% tolerance
 
     assert(allRequestsOk, `All ${totalRequests} benchmark requests returned 200 OK`);
     assert(
