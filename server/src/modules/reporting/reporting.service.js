@@ -7,7 +7,7 @@
  * @module modules/reporting/service
  */
 
-import { ApiError } from '../../utils/index.js';
+import { ApiError, buildPaginationMetadata } from '../../utils/index.js';
 import { prisma } from '../../lib/prisma.js';
 import { LoanStatus, CopyStatus, CopyCondition, UserRole } from '@prisma/client';
 import { USER_SELECT } from '../../shared/selects/user.select.js';
@@ -52,28 +52,6 @@ const buildPagination = ({ page, limit }) => {
     take: resolvedLimit,
     page: resolvedPage,
     limit: resolvedLimit
-  };
-};
-
-/**
- * Construct standard pagination metadata output object.
- *
- * @param {number} totalItems - Total matching records count
- * @param {number} page - Current page index
- * @param {number} limit - Current limit size
- * @returns {Object} Standard AVELIS pagination metadata
- */
-const buildPaginationMetadata = (totalItems, page, limit) => {
-  const totalPages = Math.ceil(totalItems / limit) || 0;
-  const hasNextPage = page < totalPages;
-  const hasPreviousPage = page > 1 && totalItems > 0;
-  return {
-    page,
-    limit,
-    totalItems,
-    totalPages,
-    hasNextPage,
-    hasPreviousPage
   };
 };
 
@@ -1135,7 +1113,8 @@ const buildMemberStatistics = async (memberId, loaded, targets, isPaginatedDbQue
     returnedLoans = loanHistory.length;
     totalLoans = activeLoans + returnedLoans;
     overdueLoans = loans.filter(l => l.status === LoanStatus.OVERDUE).length;
-    totalFines = [...loans, ...loanHistory].reduce((sum, l) => sum + Number(l.fineAmount || 0), 0);
+    totalFines = loans.reduce((sum, l) => sum + Number(l.fineAmount || 0), 0) +
+                 loanHistory.reduce((sum, l) => sum + Number(l.fineAmount || 0), 0);
     outstandingFines = loans.reduce((sum, l) => sum + Number(l.fineAmount || 0), 0);
 
     const returnedWithDuration = loanHistory.filter(l => l.returnDate && l.issueDate);

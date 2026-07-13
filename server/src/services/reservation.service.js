@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { ApiError } from '../utils/index.js';
+import { ApiError, buildPaginationMetadata } from '../utils/index.js';
 import { UserRole, CopyStatus, ReservationStatus, LoanStatus, CopyCondition } from '@prisma/client';
 import { getUserOrThrow, getBookOrThrow } from '../helpers/resource.helper.js';
 
@@ -219,18 +219,10 @@ export const getReservations = async ({ page, limit, sortBy, sortOrder, status, 
     prisma.reservation.count({ where })
   ]);
 
-  // Stage 5: Calculate pagination metadata
-  const totalPages = Math.ceil(total / limit) || 0;
-
-  // Stage 6: Return standardized response object
+  // Stage 5: Return standardized response object
   return {
     reservations,
-    pagination: {
-      page,
-      limit,
-      totalResults: total,
-      totalPages
-    }
+    pagination: buildPaginationMetadata(total, page, limit, 'legacy')
   };
 };
 
@@ -279,18 +271,10 @@ export const getCurrentUserReservations = async ({ page, limit, sortBy, sortOrde
     prisma.reservation.count({ where })
   ]);
 
-  // Stage 6: Calculate pagination metadata
-  const totalPages = Math.ceil(total / limit) || 0;
-
-  // Stage 7: Return standardized response
+  // Stage 6: Return standardized response
   return {
     reservations,
-    pagination: {
-      page,
-      limit,
-      totalResults: total,
-      totalPages
-    }
+    pagination: buildPaginationMetadata(total, page, limit, 'legacy')
   };
 };
 

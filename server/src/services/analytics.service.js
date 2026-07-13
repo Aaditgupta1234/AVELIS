@@ -1094,33 +1094,38 @@ export const getTimeSeriesAnalytics = async ({ startDate, endDate, interval = 'd
 
   if (startDate) {
     start = new Date(startDate);
-  } else {
-    const allDates = [
-      ...loans.map(l => l.createdAt),
-      ...reservations.map(r => r.createdAt),
-      ...orders.map(o => o.createdAt),
-      ...reviews.map(r => r.createdAt),
-      ...registrations.map(r => r.createdAt)
-    ];
-    if (allDates.length > 0) {
-      start = new Date(Math.min(...allDates.map(d => d.getTime())));
-    }
   }
 
   if (endDate) {
     end = new Date(endDate.length === 10 ? `${endDate}T23:59:59.999Z` : endDate);
-  } else {
-    const allDates = [
-      ...loans.map(l => l.createdAt),
-      ...reservations.map(r => r.createdAt),
-      ...orders.map(o => o.createdAt),
-      ...reviews.map(r => r.createdAt),
-      ...registrations.map(r => r.createdAt)
-    ];
-    if (allDates.length > 0) {
-      end = new Date(Math.max(...allDates.map(d => d.getTime()), Date.now()));
-    } else {
-      end = new Date();
+  }
+
+  if (!startDate || !endDate) {
+    let minTime = null;
+    let maxTime = null;
+
+    const processCollection = (col) => {
+      for (let i = 0; i < col.length; i++) {
+        const date = col[i].createdAt;
+        if (date) {
+          const t = date.getTime();
+          if (minTime === null || t < minTime) minTime = t;
+          if (maxTime === null || t > maxTime) maxTime = t;
+        }
+      }
+    };
+
+    processCollection(loans);
+    processCollection(reservations);
+    processCollection(orders);
+    processCollection(reviews);
+    processCollection(registrations);
+
+    if (!startDate) {
+      start = minTime !== null ? new Date(minTime) : null;
+    }
+    if (!endDate) {
+      end = maxTime !== null ? new Date(Math.max(maxTime, Date.now())) : new Date();
     }
   }
 

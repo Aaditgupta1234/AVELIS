@@ -38,12 +38,43 @@ export const getPagination = (query = {}) => {
  * @returns {{ page: number, limit: number, totalResults: number, totalPages: number }}
  */
 export const getPaginationMeta = (page, limit, totalResults) => {
-  const totalPages = Math.ceil(totalResults / limit);
+  return buildPaginationMetadata(totalResults, page, limit, 'legacy');
+};
 
+/**
+ * Unified pagination metadata builder.
+ * Supporting standard, legacy (totalResults), and history (total/pages) schemas.
+ *
+ * @param {number} total - Total matching records count
+ * @param {number} page - Current page index
+ * @param {number} limit - Current limit size
+ * @param {string} [format='standard'] - Output schema format ('standard' | 'legacy' | 'history')
+ * @returns {Object} Pagination metadata object
+ */
+export const buildPaginationMetadata = (total, page, limit, format = 'standard') => {
+  const totalPages = Math.ceil(total / limit) || 0;
+  if (format === 'legacy') {
+    return {
+      page,
+      limit,
+      totalResults: total,
+      totalPages
+    };
+  }
+  if (format === 'history') {
+    return {
+      total,
+      page,
+      limit,
+      pages: totalPages
+    };
+  }
   return {
     page,
     limit,
-    totalResults,
+    totalItems: total,
     totalPages,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1 && total > 0
   };
 };

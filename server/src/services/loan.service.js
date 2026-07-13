@@ -9,7 +9,7 @@
 
 import { prisma } from '../lib/prisma.js';
 
-import { ApiError } from '../utils/index.js';
+import { ApiError, buildPaginationMetadata } from '../utils/index.js';
 import { UserRole, CopyStatus, LoanStatus, ReservationStatus } from '@prisma/client';
 import { LOAN_SELECT } from '../shared/selects/loan.select.js';
 import { getUserOrThrow } from '../helpers/resource.helper.js';
@@ -38,7 +38,14 @@ export const borrowBook = async ({ userId, copyId }) => {
   // 2. Verify copy exists, and retrieve parent book
   const copy = await prisma.bookCopy.findUnique({
     where: { id: copyId },
-    include: { book: true }
+    include: {
+      book: {
+        select: {
+          id: true,
+          isDeleted: true
+        }
+      }
+    }
   });
   if (!copy) {
     throw new ApiError(404, 'Book copy not found.');
@@ -222,16 +229,9 @@ export const getLoans = async ({ page, limit, sortBy, sortOrder, status, userId,
     prisma.loan.count({ where })
   ]);
 
-  const totalPages = Math.ceil(total / limit) || 0;
-
   return {
     loans,
-    pagination: {
-      page,
-      limit,
-      totalResults: total,
-      totalPages
-    }
+    pagination: buildPaginationMetadata(total, page, limit, 'legacy')
   };
 };
 
@@ -459,17 +459,10 @@ const retrieveLoanHistory = async ({ userId, skip, take, status, sort }) => {
   ]);
 
   const page = Math.floor(skip / take) + 1;
-  const limit = take;
-  const pages = total === 0 ? 0 : Math.ceil(total / limit);
 
   return {
     loans,
-    pagination: {
-      total,
-      page,
-      limit,
-      pages
-    }
+    pagination: buildPaginationMetadata(total, page, take, 'history')
   };
 };
 
