@@ -1,0 +1,312 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "smoke",
+  "date": "2026-07-14T08:27:16.453Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "raw": [
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636457
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636457
+    },
+    {
+      "durationMs": 1,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636457
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636458
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    },
+    {
+      "durationMs": 0,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784017636459
+    }
+  ]
+}

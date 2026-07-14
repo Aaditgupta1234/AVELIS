@@ -1,0 +1,15 @@
+# Benchmark Scenarios
+
+This directory is reserved for Phase 13.5.6.2 — API Benchmarking.
+
+Each file here will export a scenario object:
+
+```js
+export const scenario = {
+  name: 'books-list',
+  request: async () => httpClient.request('GET', `${benchmarkConfig.baseUrl}/books`),
+};
+```
+
+Scenario files added here will be picked up by a Phase 13.5.6.2 runner
+that iterates all concurrencyLevels from benchmarkConfig.
