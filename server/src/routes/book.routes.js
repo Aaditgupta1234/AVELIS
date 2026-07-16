@@ -12,6 +12,7 @@ import * as bookController from '../controllers/book.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
 import { createBookValidator, queryBookValidator, updateBookValidator, bookIdParamValidator, getBookRatingValidator } from '../validations/book.validation.js';
+import { searchRateLimiter } from '../middleware/rate-limit.middleware.js';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ const router = Router();
 router.post('/', authMiddleware, adminMiddleware, createBookValidator, bookController.createBook);
 
 // GET    / — Retrieve paginated/filtered list of books
-router.get('/', queryBookValidator, bookController.getBooks);
+router.get('/', searchRateLimiter, queryBookValidator, bookController.getBooks);
 
 // GET    /:id — Retrieve specific book details
 router.get('/:id', bookController.getBookById);

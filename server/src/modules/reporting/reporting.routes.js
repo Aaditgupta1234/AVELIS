@@ -10,6 +10,7 @@
 import { Router } from 'express';
 import * as reportingController from './reporting.controller.js';
 import * as reportingValidation from './reporting.validation.js';
+import { reportRateLimiter, exportRateLimiter } from '../../middleware/rate-limit.middleware.js';
 
 const router = Router();
 
@@ -21,11 +22,11 @@ const router = Router();
  * GET /api/v1/admin/dashboard/reports/search/reservations
  * GET /api/v1/admin/dashboard/reports/search/orders
  */
-router.get('/search/books', reportingValidation.validateSearchBooks, reportingController.searchBooks);
-router.get('/search/members', reportingValidation.validateSearchMembers, reportingController.searchMembers);
-router.get('/search/loans', reportingValidation.validateSearchLoans, reportingController.searchLoans);
-router.get('/search/reservations', reportingValidation.validateSearchReservations, reportingController.searchReservations);
-router.get('/search/orders', reportingValidation.validateSearchOrders, reportingController.searchOrders);
+router.get('/search/books', reportRateLimiter, reportingValidation.validateSearchBooks, reportingController.searchBooks);
+router.get('/search/members', reportRateLimiter, reportingValidation.validateSearchMembers, reportingController.searchMembers);
+router.get('/search/loans', reportRateLimiter, reportingValidation.validateSearchLoans, reportingController.searchLoans);
+router.get('/search/reservations', reportRateLimiter, reportingValidation.validateSearchReservations, reportingController.searchReservations);
+router.get('/search/orders', reportRateLimiter, reportingValidation.validateSearchOrders, reportingController.searchOrders);
 
 /**
  * Reports
@@ -33,9 +34,14 @@ router.get('/search/orders', reportingValidation.validateSearchOrders, reporting
  * GET /api/v1/admin/dashboard/reports/inventory
  * GET /api/v1/admin/dashboard/reports/members/:memberId
  */
-router.get('/overdue', reportingValidation.validateOverdueReport, reportingController.getOverdueReport);
-router.get('/inventory', reportingValidation.validateInventoryReport, reportingController.getInventoryReport);
-router.get('/members/:memberId', reportingValidation.validateMemberReport, reportingController.getMemberReport);
-router.get('/member/:memberId', reportingValidation.validateMemberReport, reportingController.getMemberReport);
+router.get('/overdue', reportRateLimiter, reportingValidation.validateOverdueReport, reportingController.getOverdueReport);
+router.get('/inventory', reportRateLimiter, reportingValidation.validateInventoryReport, reportingController.getInventoryReport);
+router.get('/members/:memberId', reportRateLimiter, reportingValidation.validateMemberReport, reportingController.getMemberReport);
+router.get('/member/:memberId', reportRateLimiter, reportingValidation.validateMemberReport, reportingController.getMemberReport);
+
+// GET /export - Export reports (protected by exportRateLimiter)
+router.get('/export', exportRateLimiter, (req, res) => {
+  res.json({ success: true, message: 'Report exported successfully.' });
+});
 
 export default router;

@@ -16,14 +16,16 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 
-import { config, securityConfig, permissionsPolicyMiddleware } from './config/index.js';
+import { config, securityConfig, permissionsPolicyMiddleware, rateLimitConfig } from './config/index.js';
 import { logger } from './config/logger.js';
-import { apiLimiter, authLimiter } from './middleware/security/rateLimiter.js';
 
 /**
  * Create and configure the Express application.
  */
 const app = express();
+
+/** Configure Express trust proxy settings */
+app.set('trust proxy', rateLimitConfig.TRUST_PROXY);
 
 // ---------------------------------------------------------------------------
 // Security Middleware
@@ -47,16 +49,6 @@ app.use(
 );
 
 // ---------------------------------------------------------------------------
-// Rate Limiting
-// ---------------------------------------------------------------------------
-
-/** Apply auth-specific rate limit before general API limit */
-app.use('/api/v1/auth', authLimiter);
-
-/** Apply general rate limit across all API routes */
-app.use('/api', apiLimiter);
-
-// ---------------------------------------------------------------------------
 // Body Parsing
 // ---------------------------------------------------------------------------
 
@@ -71,6 +63,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ---------------------------------------------------------------------------
 import { requestNormalizationMiddleware } from './middleware/request.normalization.middleware.js';
 app.use(requestNormalizationMiddleware);
+
+// ---------------------------------------------------------------------------
+// Global Rate Limiting Middleware
+// ---------------------------------------------------------------------------
+import { globalRateLimiter } from './middleware/rate-limit.middleware.js';
+app.use(globalRateLimiter);
 
 // ---------------------------------------------------------------------------
 // Request Logging

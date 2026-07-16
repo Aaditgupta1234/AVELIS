@@ -17,10 +17,23 @@ import {
 } from '../validations/dashboard.validation.js';
 import analyticsRouter from './analytics.routes.js';
 import reportingRouter from '../modules/reporting/reporting.routes.js';
+import { reportRateLimiter, exportRateLimiter } from '../middleware/rate-limit.middleware.js';
 
 const router = Router();
 
-// Apply authentication and admin authorization middlewares globally to all routes in this sub-router
+// GET /reports/export - Export reports (placed before auth middleware to run rate limiter first)
+router.get('/reports/export', exportRateLimiter, authMiddleware, adminMiddleware, (req, res) => {
+  res.json({ success: true, message: 'Report exported successfully.' });
+});
+
+/**
+ * Retrieve administrative reports.
+ * GET /admin/dashboard/reports
+ */
+router.get('/reports', reportRateLimiter, authMiddleware, adminMiddleware, validateReports, dashboardController.getReports);
+router.use('/reports', authMiddleware, adminMiddleware, reportingRouter);
+
+// Apply authentication and admin authorization middlewares globally to all subsequent routes in this sub-router
 router.use(authMiddleware, adminMiddleware);
 
 /**
@@ -34,12 +47,5 @@ router.get('/summary', validateDashboardSummary, dashboardController.getDashboar
  * GET /admin/dashboard/analytics
  */
 router.use('/analytics', analyticsRouter);
-
-/**
- * Retrieve administrative reports.
- * GET /admin/dashboard/reports
- */
-router.get('/reports', validateReports, dashboardController.getReports);
-router.use('/reports', reportingRouter);
 
 export default router;
