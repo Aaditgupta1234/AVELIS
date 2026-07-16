@@ -16,7 +16,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 
-import { config } from './config/index.js';
+import { config, securityConfig, permissionsPolicyMiddleware } from './config/index.js';
 import { logger } from './config/logger.js';
 import { apiLimiter, authLimiter } from './middleware/security/rateLimiter.js';
 
@@ -30,12 +30,10 @@ const app = express();
 // ---------------------------------------------------------------------------
 
 /** Apply Helmet security headers with explicit production-safe configuration */
-app.use(
-  helmet({
-    contentSecurityPolicy: config.nodeEnv === 'production',
-    crossOriginEmbedderPolicy: config.nodeEnv === 'production',
-  })
-);
+app.use(helmet(securityConfig.helmetOptions));
+
+/** Apply custom Permissions Policy headers */
+app.use(permissionsPolicyMiddleware);
 
 /** Compress response bodies */
 app.use(compression());
