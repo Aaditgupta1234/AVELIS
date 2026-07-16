@@ -1,0 +1,333 @@
+{
+  "schemaVersion": "1.0",
+  "phase": "13.5.6.3",
+  "generatedAt": "2026-07-16T09:09:02.035Z",
+  "startedAt": "2026-07-16T09:08:59.790Z",
+  "finishedAt": "2026-07-16T09:09:08.104Z",
+  "durationMs": 8311.1311,
+  "config": {
+    "warmupIterations": 5,
+    "measurementIterations": 100
+  },
+  "environment": {
+    "nodeVersion": "v25.1.0",
+    "prismaVersion": "6.19.3",
+    "postgresVersion": "PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35225, 64-bit"
+  },
+  "metadata": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpus": 8,
+    "freeMem": 319209472,
+    "totalMem": 8299257856
+  },
+  "memoryUsage": {
+    "heapUsedBefore": 8531600,
+    "heapUsedAfter": 11120096
+  },
+  "results": [
+    {
+      "name": "User Lookup",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 0.9985179999999986,
+          "min": 0.6295999999999822,
+          "max": 2.1965000000000146,
+          "p50": 0.9436999999999784,
+          "p95": 1.6410999999999945,
+          "p99": 1.8077000000000112,
+          "stddev": 0.2845973047588449
+        },
+        "totalTimeMs": 99.85179999999986
+      },
+      "queryAnalysis": {
+        "totalQueries": 1,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "User",
+          "operation": "findUnique",
+          "fingerprint": "User.findUnique({\"where\":{\"id\":\"?\"},\"select\":{\"id\":\"?\",\"email\":\"?\",\"username\":\"?\",\"role\":\"?\",\"isActive\":\"?\"}})"
+        }
+      ]
+    },
+    {
+      "name": "Book Listing",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 2.054128000000004,
+          "min": 1.5224000000000615,
+          "max": 4.315899999999942,
+          "p50": 1.9640999999999167,
+          "p95": 2.697200000000066,
+          "p99": 3.004599999999982,
+          "stddev": 0.41549605752160823
+        },
+        "totalTimeMs": 205.4128000000004
+      },
+      "queryAnalysis": {
+        "totalQueries": 1,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "Book",
+          "operation": "findMany",
+          "fingerprint": "Book.findMany({\"skip\":\"?\",\"take\":\"?\",\"where\":{\"isDeleted\":\"?\"},\"include\":{\"copies\":\"?\"}})"
+        }
+      ]
+    },
+    {
+      "name": "Book Search",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 1.5774719999999933,
+          "min": 0.9701000000000022,
+          "max": 3.3592000000001008,
+          "p50": 1.4921000000000504,
+          "p95": 2.2420000000000755,
+          "p99": 2.5926999999999225,
+          "stddev": 0.4042353718021268
+        },
+        "totalTimeMs": 157.74719999999934
+      },
+      "queryAnalysis": {
+        "totalQueries": 1,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "Book",
+          "operation": "findMany",
+          "fingerprint": "Book.findMany({\"where\":{\"OR\":[{\"title\":{\"contains\":\"?\"}},{\"isbn\":{\"contains\":\"?\"}}],\"isDeleted\":\"?\"}})"
+        }
+      ]
+    },
+    {
+      "name": "Loan Queries",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 2.446663000000011,
+          "min": 1.459400000000187,
+          "max": 5.41560000000004,
+          "p50": 2.314100000000053,
+          "p95": 3.6358999999999924,
+          "p99": 4.39610000000016,
+          "stddev": 0.7341027397653583
+        },
+        "totalTimeMs": 244.66630000000112
+      },
+      "queryAnalysis": {
+        "totalQueries": 1,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "Loan",
+          "operation": "findMany",
+          "fingerprint": "Loan.findMany({\"where\":{\"userId\":\"?\"},\"include\":{\"bookCopy\":{\"include\":{\"book\":\"?\"}}}})"
+        }
+      ]
+    },
+    {
+      "name": "Reservation Queries",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 1.6786680000000092,
+          "min": 1.1382000000000971,
+          "max": 3.4087999999999283,
+          "p50": 1.5962999999999283,
+          "p95": 2.426200000000108,
+          "p99": 2.7883999999999105,
+          "stddev": 0.4294405704821031
+        },
+        "totalTimeMs": 167.86680000000092
+      },
+      "queryAnalysis": {
+        "totalQueries": 1,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "Reservation",
+          "operation": "findMany",
+          "fingerprint": "Reservation.findMany({\"where\":{\"userId\":\"?\"},\"include\":{\"book\":\"?\"}})"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard Aggregation",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 1.9728709999999956,
+          "min": 1.109499999999798,
+          "max": 8.442700000000059,
+          "p50": 1.5460000000000491,
+          "p95": 5.805799999999863,
+          "p99": 7.643899999999803,
+          "stddev": 1.3950143238902433
+        },
+        "totalTimeMs": 197.28709999999955
+      },
+      "queryAnalysis": {
+        "totalQueries": 6,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": true
+      },
+      "rawQueries": [
+        {
+          "model": "Reservation",
+          "operation": "groupBy",
+          "fingerprint": "Reservation.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+        },
+        {
+          "model": "Book",
+          "operation": "count",
+          "fingerprint": "Book.count({\"where\":{\"isDeleted\":\"?\"}})"
+        },
+        {
+          "model": "Loan",
+          "operation": "groupBy",
+          "fingerprint": "Loan.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+        },
+        {
+          "model": "User",
+          "operation": "groupBy",
+          "fingerprint": "User.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+        },
+        {
+          "model": "BookCopy",
+          "operation": "groupBy",
+          "fingerprint": "BookCopy.groupBy({\"by\":[\"?\"],\"where\":{\"book\":{\"isDeleted\":\"?\"}},\"_count\":{\"id\":\"?\"}})"
+        },
+        {
+          "model": "Order",
+          "operation": "groupBy",
+          "fingerprint": "Order.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+        }
+      ]
+    },
+    {
+      "name": "Analytics Aggregation",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 1.1481080000000043,
+          "min": 0.6981000000000677,
+          "max": 4.604199999999992,
+          "p50": 1.0111000000001695,
+          "p95": 1.7705000000000837,
+          "p99": 4.601499999999987,
+          "stddev": 0.5649003715134141
+        },
+        "totalTimeMs": 114.81080000000043
+      },
+      "queryAnalysis": {
+        "totalQueries": 4,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "Loan",
+          "operation": "groupBy",
+          "fingerprint": "Loan.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+        },
+        {
+          "model": "Review",
+          "operation": "aggregate",
+          "fingerprint": "Review.aggregate({\"_avg\":{\"rating\":\"?\"},\"_count\":{\"id\":\"?\"}})"
+        },
+        {
+          "model": "Loan",
+          "operation": "findMany",
+          "fingerprint": "Loan.findMany({\"select\":{\"createdAt\":\"?\",\"status\":\"?\"}})"
+        },
+        {
+          "model": "User",
+          "operation": "groupBy",
+          "fingerprint": "User.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+        }
+      ]
+    },
+    {
+      "name": "Reporting Queries",
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 100,
+        "durationMs": {
+          "avg": 4.497717000000002,
+          "min": 2.945699999999988,
+          "max": 34.328700000000026,
+          "p50": 3.923699999999826,
+          "p95": 6.035399999999754,
+          "p99": 8.755300000000261,
+          "stddev": 3.167402224475296
+        },
+        "totalTimeMs": 449.77170000000024
+      },
+      "queryAnalysis": {
+        "totalQueries": 4,
+        "duplicateQueries": [],
+        "redundantLookups": [],
+        "potentialNPlusOne": false,
+        "excessiveRoundTrips": false
+      },
+      "rawQueries": [
+        {
+          "model": "Book",
+          "operation": "findMany",
+          "fingerprint": "Book.findMany({\"where\":{\"title\":{\"contains\":\"?\"},\"isDeleted\":\"?\"}})"
+        },
+        {
+          "model": "BookCopy",
+          "operation": "findMany",
+          "fingerprint": "BookCopy.findMany({\"include\":{\"book\":\"?\",\"loans\":{\"where\":{\"status\":\"?\"}}}})"
+        },
+        {
+          "model": "Loan",
+          "operation": "findMany",
+          "fingerprint": "Loan.findMany({\"where\":{\"status\":\"?\"},\"include\":{\"user\":\"?\",\"bookCopy\":{\"include\":{\"book\":\"?\"}}}})"
+        },
+        {
+          "model": "User",
+          "operation": "findUnique",
+          "fingerprint": "User.findUnique({\"where\":{\"id\":\"?\"},\"include\":{\"loans\":{\"include\":{\"bookCopy\":{\"include\":{\"book\":\"?\"}}}},\"reservations\":{\"include\":{\"book\":\"?\"}}}})"
+        }
+      ]
+    }
+  ]
+}

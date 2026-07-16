@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0",
+  "phase": "13.5.6.3",
+  "generatedAt": "2026-07-16T09:09:08.104Z",
+  "flagged": [
+    {
+      "queryName": "BookCopy.findMany",
+      "type": "Potential Full Table Scan",
+      "duration": 2.4692999999999756,
+      "severity": "HIGH",
+      "recommendation": "Avoid full table scans by adding a WHERE clause filtering on indexed columns.",
+      "fingerprint": "BookCopy.findMany({\"include\":{\"book\":\"?\",\"loans\":{\"where\":{\"status\":\"?\"}}}})"
+    },
+    {
+      "queryName": "mock_book.findMany",
+      "type": "Slow Query",
+      "duration": 150,
+      "threshold": 100,
+      "severity": "MEDIUM",
+      "recommendation": "Optimize database indexes, analyze query execution plan, or cache the result.",
+      "fingerprint": "mock_book.findMany({\"where\":{\"title\":\"?\"}})"
+    },
+    {
+      "queryName": "mock_book.findMany",
+      "type": "Large Result Set",
+      "duration": 150,
+      "resultSize": 120,
+      "threshold": 100,
+      "severity": "MEDIUM",
+      "recommendation": "Implement pagination (use skip and take) or select only necessary fields.",
+      "fingerprint": "mock_book.findMany({\"where\":{\"title\":\"?\"}})"
+    },
+    {
+      "queryName": "loan.findMany",
+      "type": "Potential Full Table Scan",
+      "duration": 5,
+      "severity": "HIGH",
+      "recommendation": "Avoid full table scans by adding a WHERE clause filtering on indexed columns.",
+      "fingerprint": "loan.findMany({})"
+    },
+    {
+      "queryName": "bookCopy.findMany",
+      "type": "Potential Full Table Scan",
+      "duration": 10,
+      "severity": "HIGH",
+      "recommendation": "Avoid full table scans by adding a WHERE clause filtering on indexed columns.",
+      "fingerprint": "bookCopy.findMany({\"include\":{\"book\":{\"include\":{\"authors\":{\"include\":{\"author\":{\"include\":{\"books\":\"?\"}}}}}}}})"
+    },
+    {
+      "queryName": "bookCopy.findMany",
+      "type": "Expensive Nested Joins",
+      "duration": 10,
+      "depth": 3,
+      "severity": "MEDIUM",
+      "recommendation": "Flatten nested inclusions or execute split queries instead of loading multiple deep relations concurrently.",
+      "fingerprint": "bookCopy.findMany({\"include\":{\"book\":{\"include\":{\"authors\":{\"include\":{\"author\":{\"include\":{\"books\":\"?\"}}}}}}}})"
+    }
+  ]
+}
