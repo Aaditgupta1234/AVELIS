@@ -15,3 +15,5 @@ export { securityConfig, permissionsPolicyMiddleware } from './security.config.j
 export { authSecurityConfig } from './auth.security.config.js';
 export { authorizationConfig, ROLES } from './authorization.config.js';
 export { validationSecurityConfig } from './validation.security.config.js';
+export { rateLimitConfig } from './rate-limit.config.js';
+export { requestLimitConfig } from './request-limit.config.js';
