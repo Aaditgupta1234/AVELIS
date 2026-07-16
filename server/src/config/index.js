@@ -13,3 +13,4 @@ export { config } from './env.js';
 export { logger } from './logger.js';
 export { securityConfig, permissionsPolicyMiddleware } from './security.config.js';
 export { authSecurityConfig } from './auth.security.config.js';
+export { authorizationConfig, ROLES } from './authorization.config.js';

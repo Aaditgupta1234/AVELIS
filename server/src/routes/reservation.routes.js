@@ -2,8 +2,8 @@ import { Router } from 'express';
 import * as reservationController from '../controllers/reservation.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { adminMiddleware } from '../middleware/admin.middleware.js';
-import { UserRole } from '@prisma/client';
-import { ApiError } from '../utils/index.js';
+import { requireRole } from '../middleware/authorization.middleware.js';
+import { ROLES } from '../config/index.js';
 import {
   createReservationValidator,
   reservationIdParamValidator,
@@ -11,18 +11,6 @@ import {
 } from '../validations/reservation.validation.js';
 
 const router = Router();
-
-// Local memberMiddleware to restrict access to MEMBER role only
-const memberMiddleware = (req, res, next) => {
-  try {
-    if (!req.user || !req.user.role || req.user.role !== UserRole.MEMBER) {
-      return next(new ApiError(403, 'Access denied. Member privileges required.'));
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
 
 // GET / - Retrieve a paginated list of all reservations (Admin only)
 router.get(
@@ -37,7 +25,7 @@ router.get(
 router.get(
   '/me',
   authMiddleware,
-  memberMiddleware,
+  requireRole(ROLES.MEMBER),
   reservationQueryValidator,
   reservationController.getCurrentUserReservations
 );

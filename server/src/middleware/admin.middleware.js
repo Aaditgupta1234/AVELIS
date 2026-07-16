@@ -1,26 +1,14 @@
-import { ApiError } from '../utils/index.js';
-import { UserRole } from '@prisma/client';
-
 /**
- * Middleware to restrict access to administrator users only.
+ * @fileoverview Deprecated admin middleware wrapper.
  *
- * Assumes the request has already passed through the auth middleware,
- * which decodes the JWT and attaches the user details to req.user.
+ * Delegates role-based restriction to the centralized authorization middleware.
+ * Exposes a fallback interface to preserve backward-compatibility with routes.
  *
- * @param {import('express').Request} req - Express request
- * @param {import('express').Response} res - Express response
- * @param {import('express').NextFunction} next - Express next function
+ * @module middleware/admin.middleware
  */
-export const adminMiddleware = (req, res, next) => {
-  try {
-    if (!req.user || !req.user.role || req.user.role !== UserRole.ADMIN) {
-      return next(
-        new ApiError(403, 'Access denied. Administrator privileges required.')
-      );
-    }
 
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
+import { requireRole } from './authorization.middleware.js';
+import { ROLES } from '../config/index.js';
+
+export const adminMiddleware = requireRole(ROLES.ADMIN);
+export default adminMiddleware;

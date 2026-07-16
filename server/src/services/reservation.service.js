@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { ApiError, buildPaginationMetadata } from '../utils/index.js';
+import { ApiError, buildPaginationMetadata, canAccessResource } from '../utils/index.js';
 import { UserRole, CopyStatus, ReservationStatus, LoanStatus, CopyCondition } from '@prisma/client';
 import { getUserOrThrow, getBookOrThrow } from '../helpers/resource.helper.js';
 
@@ -27,8 +27,8 @@ export const createReservation = async ({ userId, bookId, currentUser }) => {
   const user = await getUserOrThrow(userId, prisma, { id: true, role: true });
 
   // 2. Only admins can reserve for other users; members only for themselves
-  if (currentUser.role !== UserRole.ADMIN && userId !== currentUser.id) {
-    throw new ApiError(403, 'Access denied. You can only create reservations for yourself.');
+  if (!canAccessResource(currentUser, userId)) {
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   // 3. Only members can reserve books
@@ -168,8 +168,8 @@ export const getReservationById = async ({ reservationId, currentUser }) => {
   }
 
   // Step 3: Validate ownership/role authorization
-  if (currentUser.role === UserRole.MEMBER && reservationData.userId !== currentUser.id) {
-    throw new ApiError(403, 'Access denied. You can only retrieve your own reservations.');
+  if (!canAccessResource(currentUser, reservationData.userId)) {
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   // Step 4: Destructure to extract the public API payload
@@ -307,8 +307,8 @@ export const cancelReservation = async ({ reservationId, currentUser }) => {
   }
 
   // Stage 2 — Authorization
-  if (currentUser.role === UserRole.MEMBER && reservationData.userId !== currentUser.id) {
-    throw new ApiError(403, 'Access denied. You can only cancel your own reservations.');
+  if (!canAccessResource(currentUser, reservationData.userId)) {
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   // Stage 3 — Business Rule Validation

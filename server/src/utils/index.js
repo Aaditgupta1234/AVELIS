@@ -16,3 +16,12 @@ export { generateToken, verifyToken } from './jwt.js';
 export { hashPassword, comparePassword } from './hash.js';
 export { sendSuccess, sendError } from './response.js';
 export { slugify } from './slugify.js';
+export {
+  resolveRoleLevel,
+  hasRole,
+  hasAnyRole,
+  hasMinimumRole,
+  isAdmin,
+  isOwner,
+  canAccessResource
+} from './authorization.js';

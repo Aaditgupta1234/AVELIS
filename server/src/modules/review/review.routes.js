@@ -12,36 +12,17 @@ import { Router } from 'express';
 import * as reviewController from './review.controller.js';
 import { createReviewValidator, getReviewByIdValidator, getBookReviewsValidator, updateReviewValidator, deleteReviewValidator } from './review.validation.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { UserRole } from '@prisma/client';
-import { ApiError } from '../../utils/index.js';
+import { requireRole } from '../../middleware/authorization.middleware.js';
+import { ROLES } from '../../config/index.js';
 
 const router = Router();
-
-/**
- * Local memberMiddleware to restrict access to MEMBER role only,
- * consistent with reservation.routes.js.
- *
- * @param {import('express').Request} req - Express request
- * @param {import('express').Response} res - Express response
- * @param {import('express').NextFunction} next - Express next function
- */
-const memberMiddleware = (req, res, next) => {
-  try {
-    if (!req.user || !req.user.role || req.user.role !== UserRole.MEMBER) {
-      return next(new ApiError(403, 'Access denied. Member privileges required.'));
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
 
 // POST / — Create a new book review (Member only)
 router.post(
   '/',
   createReviewValidator,
   authMiddleware,
-  memberMiddleware,
+  requireRole(ROLES.MEMBER),
   reviewController.createReview
 );
 
@@ -49,7 +30,7 @@ router.post(
 router.get(
   '/me',
   authMiddleware,
-  memberMiddleware,
+  requireRole(ROLES.MEMBER),
   reviewController.getCurrentUserReviews
 );
 
@@ -58,7 +39,7 @@ router.get(
   '/book/:bookId',
   getBookReviewsValidator,
   authMiddleware,
-  memberMiddleware,
+  requireRole(ROLES.MEMBER),
   reviewController.getBookReviews
 );
 
@@ -67,7 +48,7 @@ router.get(
   '/:reviewId',
   getReviewByIdValidator,
   authMiddleware,
-  memberMiddleware,
+  requireRole(ROLES.MEMBER),
   reviewController.getReviewById
 );
 
@@ -76,7 +57,7 @@ router.patch(
   '/:reviewId',
   updateReviewValidator,
   authMiddleware,
-  memberMiddleware,
+  requireRole(ROLES.MEMBER),
   reviewController.updateReview
 );
 
@@ -87,6 +68,5 @@ router.delete(
   deleteReviewValidator,
   reviewController.deleteReview
 );
-
 
 export default router;

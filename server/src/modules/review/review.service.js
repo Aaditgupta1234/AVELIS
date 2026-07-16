@@ -159,7 +159,7 @@ export const updateReview = async ({ reviewId, rating, comment, userId }) => {
   }
 
   if (existingReview.userId !== userId) {
-    throw new ApiError(403, 'You can only update your own reviews.');
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   const updatedReview = await prisma.review.update({
@@ -197,7 +197,7 @@ export const deleteReview = async (reviewId, userId) => {
   }
 
   if (review.userId !== userId) {
-    throw new ApiError(403, 'You can only delete your own reviews.');
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   await prisma.review.delete({

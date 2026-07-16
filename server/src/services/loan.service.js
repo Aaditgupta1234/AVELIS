@@ -9,7 +9,7 @@
 
 import { prisma } from '../lib/prisma.js';
 
-import { ApiError, buildPaginationMetadata } from '../utils/index.js';
+import { ApiError, buildPaginationMetadata, canAccessResource, isOwner } from '../utils/index.js';
 import { UserRole, CopyStatus, LoanStatus, ReservationStatus } from '@prisma/client';
 import { LOAN_SELECT } from '../shared/selects/loan.select.js';
 import { getUserOrThrow } from '../helpers/resource.helper.js';
@@ -185,8 +185,8 @@ export const getLoanById = async ({ loanId, currentUser }) => {
   }
 
   // Enforce access control: Admin can retrieve any loan, Member only their own.
-  if (currentUser.role !== UserRole.ADMIN && loan.userId !== currentUser.id) {
-    throw new ApiError(403, 'Access denied. You can only retrieve your own loans.');
+  if (!canAccessResource(currentUser, loan.userId)) {
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   return loan;
@@ -574,8 +574,8 @@ const validateRenewalEligibility = async (context) => {
   const { loan, currentUser, book, activeReservations } = context;
 
   // A. Ownership Check
-  if (loan.userId !== currentUser.id) {
-    throw new ApiError(403, 'Access denied. You can only renew your own loans.');
+  if (!isOwner(currentUser, loan.userId)) {
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   // B. Loan Status Check
@@ -885,8 +885,8 @@ const validateReturnEligibility = async ({ userId, loanId }) => {
   }
 
   // 3. Validate Ownership
-  if (loan.userId !== userId) {
-    throw new ApiError(403, 'Access denied. You can only return your own loans.');
+  if (!isOwner({ id: userId }, loan.userId)) {
+    throw new ApiError(403, 'You do not have permission to perform this action.');
   }
 
   // 4. Positive Loan Status Validation
