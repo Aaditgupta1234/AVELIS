@@ -134,6 +134,16 @@ const rateLimitRaw = {
     skipFailedRequests: false,
   },
 
+  /** Global API Slowdown Configuration */
+  globalSlowdownConfig: {
+    windowMs: parseRateLimitInteger(process.env.GLOBAL_WINDOW_MS, FIFTEEN_MINS_MS, 'GLOBAL_WINDOW_MS'),
+    delayAfter: parseRateLimitInteger(process.env.GLOBAL_DELAY_AFTER, 50, 'GLOBAL_DELAY_AFTER'),
+    delayMs: parseRateLimitInteger(process.env.GLOBAL_DELAY_MS, 500, 'GLOBAL_DELAY_MS'),
+    maxDelayMs: parseRateLimitInteger(process.env.GLOBAL_MAX_DELAY_MS, 2000, 'GLOBAL_MAX_DELAY_MS'),
+    skipSuccessfulRequests: false,
+    skipFailedRequests: false,
+  },
+
   /** Authentication Endpoint Limiter Configuration */
   authLimiterConfig: {
     windowMs: parseRateLimitInteger(process.env.AUTH_WINDOW_MS, FIFTEEN_MINS_MS, 'AUTH_WINDOW_MS'),
@@ -141,6 +151,16 @@ const rateLimitRaw = {
     standardHeaders: true,
     legacyHeaders: false,
     message: defaultMessage,
+    skipSuccessfulRequests: false,
+    skipFailedRequests: false,
+  },
+
+  /** Authentication Endpoint Slowdown Configuration */
+  authSlowdownConfig: {
+    windowMs: parseRateLimitInteger(process.env.AUTH_WINDOW_MS, FIFTEEN_MINS_MS, 'AUTH_WINDOW_MS'),
+    delayAfter: parseRateLimitInteger(process.env.AUTH_DELAY_AFTER, 5, 'AUTH_DELAY_AFTER'),
+    delayMs: parseRateLimitInteger(process.env.AUTH_DELAY_MS, 1000, 'AUTH_DELAY_MS'),
+    maxDelayMs: parseRateLimitInteger(process.env.AUTH_MAX_DELAY_MS, 5000, 'AUTH_MAX_DELAY_MS'),
     skipSuccessfulRequests: false,
     skipFailedRequests: false,
   },
@@ -156,6 +176,16 @@ const rateLimitRaw = {
     skipFailedRequests: false,
   },
 
+  /** Search Endpoint Slowdown Configuration */
+  searchSlowdownConfig: {
+    windowMs: parseRateLimitInteger(process.env.SEARCH_WINDOW_MS, ONE_MIN_MS, 'SEARCH_WINDOW_MS'),
+    delayAfter: parseRateLimitInteger(process.env.SEARCH_DELAY_AFTER, 15, 'SEARCH_DELAY_AFTER'),
+    delayMs: parseRateLimitInteger(process.env.SEARCH_DELAY_MS, 200, 'SEARCH_DELAY_MS'),
+    maxDelayMs: parseRateLimitInteger(process.env.SEARCH_MAX_DELAY_MS, 2000, 'SEARCH_MAX_DELAY_MS'),
+    skipSuccessfulRequests: false,
+    skipFailedRequests: false,
+  },
+
   /** Report Endpoint Limiter Configuration */
   reportLimiterConfig: {
     windowMs: parseRateLimitInteger(process.env.REPORT_WINDOW_MS, FIFTEEN_MINS_MS, 'REPORT_WINDOW_MS'),
@@ -167,6 +197,16 @@ const rateLimitRaw = {
     skipFailedRequests: false,
   },
 
+  /** Report Endpoint Slowdown Configuration */
+  reportSlowdownConfig: {
+    windowMs: parseRateLimitInteger(process.env.REPORT_WINDOW_MS, FIFTEEN_MINS_MS, 'REPORT_WINDOW_MS'),
+    delayAfter: parseRateLimitInteger(process.env.REPORT_DELAY_AFTER, 10, 'REPORT_DELAY_AFTER'),
+    delayMs: parseRateLimitInteger(process.env.REPORT_DELAY_MS, 500, 'REPORT_DELAY_MS'),
+    maxDelayMs: parseRateLimitInteger(process.env.REPORT_MAX_DELAY_MS, 3000, 'REPORT_MAX_DELAY_MS'),
+    skipSuccessfulRequests: false,
+    skipFailedRequests: false,
+  },
+
   /** Export Endpoint Limiter Configuration */
   exportLimiterConfig: {
     windowMs: parseRateLimitInteger(process.env.EXPORT_WINDOW_MS, ONE_HOUR_MS, 'EXPORT_WINDOW_MS'),
@@ -174,6 +214,16 @@ const rateLimitRaw = {
     standardHeaders: true,
     legacyHeaders: false,
     message: defaultMessage,
+    skipSuccessfulRequests: false,
+    skipFailedRequests: false,
+  },
+
+  /** Export Endpoint Slowdown Configuration */
+  exportSlowdownConfig: {
+    windowMs: parseRateLimitInteger(process.env.EXPORT_WINDOW_MS, ONE_HOUR_MS, 'EXPORT_WINDOW_MS'),
+    delayAfter: parseRateLimitInteger(process.env.EXPORT_DELAY_AFTER, 2, 'EXPORT_DELAY_AFTER'),
+    delayMs: parseRateLimitInteger(process.env.EXPORT_DELAY_MS, 2000, 'EXPORT_DELAY_MS'),
+    maxDelayMs: parseRateLimitInteger(process.env.EXPORT_MAX_DELAY_MS, 10000, 'EXPORT_MAX_DELAY_MS'),
     skipSuccessfulRequests: false,
     skipFailedRequests: false,
   },

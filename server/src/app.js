@@ -71,6 +71,14 @@ import { globalRateLimiter } from './middleware/rate-limit.middleware.js';
 app.use(globalRateLimiter);
 
 // ---------------------------------------------------------------------------
+// Global Request Slowdown Middleware
+// ---------------------------------------------------------------------------
+import { globalSlowdown } from './middleware/slowdown.middleware.js';
+if (rateLimitConfig.ENABLE_SLOWDOWN) {
+  app.use(globalSlowdown);
+}
+
+// ---------------------------------------------------------------------------
 // Request Logging
 // ---------------------------------------------------------------------------
 
