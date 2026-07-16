@@ -39,11 +39,34 @@ const validateEnv = () => {
     );
   }
 
-  // Validate JWT_SECRET length (must be at least 32 characters)
+  // Validate JWT_SECRET length (must be at least 32 characters) and check not whitespace-only
   if (process.env.JWT_SECRET.length < 32) {
     throw new Error(
       'JWT_SECRET must be at least 32 characters long for security purposes.'
     );
+  }
+
+  if (process.env.JWT_SECRET.trim().length === 0) {
+    throw new Error(
+      'JWT_SECRET must not consist solely of whitespace.'
+    );
+  }
+
+  // Validate JWT_EXPIRES_IN format (e.g. "2h", "7d", or a positive number)
+  const expiresPattern = /^(\d+)(ms|s|m|h|d|w|y)?$/i;
+  if (!expiresPattern.test(process.env.JWT_EXPIRES_IN || '7d')) {
+    throw new Error(
+      'Invalid JWT_EXPIRES_IN format. Examples: "7d", "24h", "30m", or a numeric string.'
+    );
+  }
+
+  // Validate optional variables format if present
+  if (process.env.JWT_ISSUER && typeof process.env.JWT_ISSUER !== 'string') {
+    throw new Error('JWT_ISSUER must be a valid string.');
+  }
+
+  if (process.env.JWT_AUDIENCE && typeof process.env.JWT_AUDIENCE !== 'string') {
+    throw new Error('JWT_AUDIENCE must be a valid string.');
   }
 };
 

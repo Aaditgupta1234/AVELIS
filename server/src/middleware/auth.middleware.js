@@ -2,7 +2,8 @@
  * @fileoverview Authentication middleware.
  *
  * Extracts the JWT from the Authorization header (Bearer token format),
- * verifies it using the JWT utility, and attaches the decoded payload to req.user.
+ * verifies it using the hardened JWT utility, and attaches the decoded payload to req.user.
+ * Sanitizes all authentication errors to prevent implementation details leakage.
  *
  * @module middleware/auth.middleware
  */
@@ -14,28 +15,23 @@ import { ApiError } from '../utils/ApiError.js';
  * Middleware to authenticate requests via JWT.
  *
  * Expects Authorization header in format: Bearer <token>
+ * Returns standardized client-facing errors for all authentication failures.
  *
  * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
+ * @param {import('import').Response} res - Express response object
  * @param {import('express').NextFunction} next - Express next function
  */
 export const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-      return next(new ApiError(401, 'Authorization header is missing'));
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next(new ApiError(401, 'Invalid or expired authentication token'));
     }
 
-    if (!authHeader.startsWith('Bearer ')) {
-      return next(
-        new ApiError(401, 'Invalid Authorization format. Expected "Bearer <token>"')
-      );
-    }
-
-    const token = authHeader.slice(7);
+    const token = authHeader.slice(7).trim();
     if (!token) {
-      return next(new ApiError(401, 'Token is missing'));
+      return next(new ApiError(401, 'Invalid or expired authentication token'));
     }
 
     try {
@@ -43,9 +39,10 @@ export const authMiddleware = (req, res, next) => {
       req.user = decoded;
       next();
     } catch (err) {
-      return next(new ApiError(401, err.message || 'Invalid or expired token'));
+      // Sanitize all token verification errors to return a unified message
+      return next(new ApiError(401, 'Invalid or expired authentication token'));
     }
   } catch (err) {
-    next(err);
+    next(new ApiError(401, 'Invalid or expired authentication token'));
   }
 };
