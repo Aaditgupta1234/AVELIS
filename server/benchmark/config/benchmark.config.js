@@ -22,6 +22,10 @@
  *                                               (default: true)
  * @env {boolean} BENCHMARK_COLLECT_CPU         Capture CPU usage samples
  *                                               (default: true)
+ * @env {number}  BENCHMARK_READ_ITERATIONS     Iterations for read-only endpoint benchmarks
+ *                                               (default: 50)
+ * @env {number}  BENCHMARK_WRITE_ITERATIONS    Iterations for write endpoint benchmarks
+ *                                               (default: 10)
  *
  * @module benchmark/config/benchmark.config
  */
@@ -96,4 +100,18 @@ export const benchmarkConfig = Object.freeze({
 
   collectCpu:
     process.env.BENCHMARK_COLLECT_CPU !== 'false',
+
+  /**
+   * Endpoint-specific iteration counts for Phase 13.5.6.2+.
+   * Kept as a sub-object to distinguish from the generic `iterations` field
+   * and to signal these values are specific to API endpoint benchmarking.
+   *
+   * The runner selects `endpointIterations.read` or `endpointIterations.write`
+   * based on `endpoint.readOnly`. The outer `iterations` field remains intact
+   * for backward compatibility with the Phase 13.5.6.1 smoke scenario.
+   */
+  endpointIterations: Object.freeze({
+    read:  Number(process.env.BENCHMARK_READ_ITERATIONS)  || 50,
+    write: Number(process.env.BENCHMARK_WRITE_ITERATIONS) || 10,
+  }),
 });

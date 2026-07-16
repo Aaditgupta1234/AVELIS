@@ -1,0 +1,18 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "auth-register",
+  "date": "2026-07-16T08:52:07.909Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "raw": [
+    {
+      "durationMs": 97.3504,
+      "status": 201,
+      "success": true,
+      "timestamp": 1784191928193
+    }
+  ]
+}

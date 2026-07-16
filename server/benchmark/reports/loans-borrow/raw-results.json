@@ -1,0 +1,18 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "loans-borrow",
+  "date": "2026-07-16T08:52:10.425Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "raw": [
+    {
+      "durationMs": 15.8104,
+      "status": 201,
+      "success": true,
+      "timestamp": 1784191930455
+    }
+  ]
+}

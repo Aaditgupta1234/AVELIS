@@ -1,0 +1,61 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "reviews-book",
+  "date": "2026-07-16T08:52:10.752Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "config": {
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:5000/api/v1",
+    "warmupIterations": 1,
+    "iterations": 1,
+    "concurrencyLevels": [
+      1,
+      5,
+      10,
+      25,
+      50
+    ],
+    "timeoutMs": 5000,
+    "collectMemory": true,
+    "collectCpu": true
+  },
+  "warmup": {
+    "iterationsRun": 1,
+    "elapsedMs": 7.4646
+  },
+  "metrics": {
+    "totalRequests": 1,
+    "successCount": 1,
+    "failureCount": 0,
+    "successRate": 100,
+    "failureRate": 0,
+    "durationMs": {
+      "avg": 6.8879,
+      "median": 6.8879,
+      "min": 6.8879,
+      "max": 6.8879,
+      "p50": 6.8879,
+      "p90": 6.8879,
+      "p95": 6.8879,
+      "p99": 6.8879,
+      "stddev": 0
+    },
+    "rps": 139.36311058462826,
+    "system": {
+      "memory": {
+        "heapUsedMb": 20.30242156982422,
+        "rssMb": 82.890625
+      },
+      "cpu": {
+        "userMs": 1593,
+        "systemMs": 796
+      },
+      "uptime": 4.578463
+    },
+    "elapsedMs": 7.1755
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "reviews-get",
+  "date": "2026-07-16T08:52:10.791Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "raw": [
+    {
+      "durationMs": 6.1703,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784191930798
+    }
+  ]
+}

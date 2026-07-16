@@ -1,0 +1,61 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "reservations-cancel",
+  "date": "2026-07-16T08:52:10.712Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "config": {
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:5000/api/v1",
+    "warmupIterations": 1,
+    "iterations": 1,
+    "concurrencyLevels": [
+      1,
+      5,
+      10,
+      25,
+      50
+    ],
+    "timeoutMs": 5000,
+    "collectMemory": true,
+    "collectCpu": true
+  },
+  "warmup": {
+    "iterationsRun": 1,
+    "elapsedMs": 17.6781
+  },
+  "metrics": {
+    "totalRequests": 1,
+    "successCount": 1,
+    "failureCount": 0,
+    "successRate": 100,
+    "failureRate": 0,
+    "durationMs": {
+      "avg": 11.4089,
+      "median": 11.4089,
+      "min": 11.4089,
+      "max": 11.4089,
+      "p50": 11.4089,
+      "p90": 11.4089,
+      "p95": 11.4089,
+      "p99": 11.4089,
+      "stddev": 0
+    },
+    "rps": 65.846222731433,
+    "system": {
+      "memory": {
+        "heapUsedMb": 19.820785522460938,
+        "rssMb": 82.390625
+      },
+      "cpu": {
+        "userMs": 1562,
+        "systemMs": 796
+      },
+      "uptime": 4.5480427
+    },
+    "elapsedMs": 15.1869
+  }
+}

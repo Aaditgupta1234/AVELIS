@@ -1,0 +1,18 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "books-list",
+  "date": "2026-07-16T08:52:08.507Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "raw": [
+    {
+      "durationMs": 9.277,
+      "status": 200,
+      "success": true,
+      "timestamp": 1784191930106
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "analytics-timeseries",
+  "date": "2026-07-16T08:52:11.073Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "config": {
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:5000/api/v1",
+    "warmupIterations": 1,
+    "iterations": 1,
+    "concurrencyLevels": [
+      1,
+      5,
+      10,
+      25,
+      50
+    ],
+    "timeoutMs": 5000,
+    "collectMemory": true,
+    "collectCpu": true
+  },
+  "warmup": {
+    "iterationsRun": 1,
+    "elapsedMs": 7.8811
+  },
+  "metrics": {
+    "totalRequests": 1,
+    "successCount": 1,
+    "failureCount": 0,
+    "successRate": 100,
+    "failureRate": 0,
+    "durationMs": {
+      "avg": 4.1743,
+      "median": 4.1743,
+      "min": 4.1743,
+      "max": 4.1743,
+      "p50": 4.1743,
+      "p90": 4.1743,
+      "p95": 4.1743,
+      "p99": 4.1743,
+      "stddev": 0
+    },
+    "rps": 230.09664058904738,
+    "system": {
+      "memory": {
+        "heapUsedMb": 19.753623962402344,
+        "rssMb": 88.4296875
+      },
+      "cpu": {
+        "userMs": 1703,
+        "systemMs": 828
+      },
+      "uptime": 4.9000507
+    },
+    "elapsedMs": 4.346
+  }
+}

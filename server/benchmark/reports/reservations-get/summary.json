@@ -1,0 +1,61 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "reservations-get",
+  "date": "2026-07-16T08:52:10.632Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "config": {
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:5000/api/v1",
+    "warmupIterations": 1,
+    "iterations": 1,
+    "concurrencyLevels": [
+      1,
+      5,
+      10,
+      25,
+      50
+    ],
+    "timeoutMs": 5000,
+    "collectMemory": true,
+    "collectCpu": true
+  },
+  "warmup": {
+    "iterationsRun": 1,
+    "elapsedMs": 6.378
+  },
+  "metrics": {
+    "totalRequests": 1,
+    "successCount": 1,
+    "failureCount": 0,
+    "successRate": 100,
+    "failureRate": 0,
+    "durationMs": {
+      "avg": 3.3568,
+      "median": 3.3568,
+      "min": 3.3568,
+      "max": 3.3568,
+      "p50": 3.3568,
+      "p90": 3.3568,
+      "p95": 3.3568,
+      "p99": 3.3568,
+      "stddev": 0
+    },
+    "rps": 282.46193825382034,
+    "system": {
+      "memory": {
+        "heapUsedMb": 18.539382934570312,
+        "rssMb": 81.578125
+      },
+      "cpu": {
+        "userMs": 1500,
+        "systemMs": 781
+      },
+      "uptime": 4.456834
+    },
+    "elapsedMs": 3.5403
+  }
+}

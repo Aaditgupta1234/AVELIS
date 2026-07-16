@@ -1,0 +1,61 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "loans-active",
+  "date": "2026-07-16T08:52:10.356Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "config": {
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:5000/api/v1",
+    "warmupIterations": 1,
+    "iterations": 1,
+    "concurrencyLevels": [
+      1,
+      5,
+      10,
+      25,
+      50
+    ],
+    "timeoutMs": 5000,
+    "collectMemory": true,
+    "collectCpu": true
+  },
+  "warmup": {
+    "iterationsRun": 1,
+    "elapsedMs": 12.7346
+  },
+  "metrics": {
+    "totalRequests": 1,
+    "successCount": 1,
+    "failureCount": 0,
+    "successRate": 100,
+    "failureRate": 0,
+    "durationMs": {
+      "avg": 6.4347,
+      "median": 6.4347,
+      "min": 6.4347,
+      "max": 6.4347,
+      "p50": 6.4347,
+      "p90": 6.4347,
+      "p95": 6.4347,
+      "p99": 6.4347,
+      "stddev": 0
+    },
+    "rps": 148.94250819183793,
+    "system": {
+      "memory": {
+        "heapUsedMb": 19.663070678710938,
+        "rssMb": 78.015625
+      },
+      "cpu": {
+        "userMs": 1328,
+        "systemMs": 734
+      },
+      "uptime": 4.1873592
+    },
+    "elapsedMs": 6.714
+  }
+}

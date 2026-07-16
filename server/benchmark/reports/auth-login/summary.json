@@ -1,0 +1,61 @@
+{
+  "benchmarkVersion": "1.0.0",
+  "scenario": "auth-login",
+  "date": "2026-07-16T08:52:08.322Z",
+  "metadata": {
+    "nodeVersion": "v25.1.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "config": {
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:5000/api/v1",
+    "warmupIterations": 1,
+    "iterations": 1,
+    "concurrencyLevels": [
+      1,
+      5,
+      10,
+      25,
+      50
+    ],
+    "timeoutMs": 5000,
+    "collectMemory": true,
+    "collectCpu": true
+  },
+  "warmup": {
+    "iterationsRun": 1,
+    "elapsedMs": 101.2234
+  },
+  "metrics": {
+    "totalRequests": 1,
+    "successCount": 1,
+    "failureCount": 0,
+    "successRate": 100,
+    "failureRate": 0,
+    "durationMs": {
+      "avg": 80.3807,
+      "median": 80.3807,
+      "min": 80.3807,
+      "max": 80.3807,
+      "p50": 80.3807,
+      "p90": 80.3807,
+      "p95": 80.3807,
+      "p99": 80.3807,
+      "stddev": 0
+    },
+    "rps": 12.4067939603727,
+    "system": {
+      "memory": {
+        "heapUsedMb": 16.255104064941406,
+        "rssMb": 76.56640625
+      },
+      "cpu": {
+        "userMs": 1125,
+        "systemMs": 703
+      },
+      "uptime": 2.2416147
+    },
+    "elapsedMs": 80.601
+  }
+}
