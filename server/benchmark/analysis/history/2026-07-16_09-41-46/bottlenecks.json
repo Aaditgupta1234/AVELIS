@@ -1,0 +1,226 @@
+[
+  {
+    "id": "BTL-001",
+    "component": "Prisma: BookCopy.findMany",
+    "category": "Database",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "confidenceReason": "Flagged by slow query anomaly detector: Potential Full Table Scan.",
+    "supportingMetrics": {
+      "type": "Potential Full Table Scan",
+      "duration": 2.4692999999999756,
+      "resultSize": "N/A"
+    },
+    "source": {
+      "phase": "13.5.6.3",
+      "artifact": "slow-queries.json",
+      "metric": "BookCopy.findMany"
+    }
+  },
+  {
+    "id": "BTL-002",
+    "component": "Prisma: loan.findMany",
+    "category": "Database",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "confidenceReason": "Flagged by slow query anomaly detector: Potential Full Table Scan.",
+    "supportingMetrics": {
+      "type": "Potential Full Table Scan",
+      "duration": 5,
+      "resultSize": "N/A"
+    },
+    "source": {
+      "phase": "13.5.6.3",
+      "artifact": "slow-queries.json",
+      "metric": "loan.findMany"
+    }
+  },
+  {
+    "id": "BTL-003",
+    "component": "Prisma: bookCopy.findMany",
+    "category": "Database",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "confidenceReason": "Flagged by slow query anomaly detector: Potential Full Table Scan.",
+    "supportingMetrics": {
+      "type": "Potential Full Table Scan",
+      "duration": 10,
+      "resultSize": "N/A"
+    },
+    "source": {
+      "phase": "13.5.6.3",
+      "artifact": "slow-queries.json",
+      "metric": "bookCopy.findMany"
+    }
+  },
+  {
+    "id": "BTL-004",
+    "component": "Prisma: bookCopy.findMany",
+    "category": "Database",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "confidenceReason": "Flagged by slow query anomaly detector: Expensive Nested Joins.",
+    "supportingMetrics": {
+      "type": "Expensive Nested Joins",
+      "duration": 10,
+      "resultSize": "N/A"
+    },
+    "source": {
+      "phase": "13.5.6.3",
+      "artifact": "slow-queries.json",
+      "metric": "bookCopy.findMany"
+    }
+  },
+  {
+    "id": "BTL-005",
+    "component": "Backend Concurrency: 50 Users",
+    "category": "Network",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "confidenceReason": "High HTTP connection failure rate observed during concurrent load tests.",
+    "supportingMetrics": {
+      "concurrency": 50,
+      "errorRatePercent": 33.575581395348834
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "summary.json",
+      "metric": "50 users failure rate"
+    }
+  },
+  {
+    "id": "BTL-006",
+    "component": "Backend Concurrency: 100 Users",
+    "category": "Network",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "confidenceReason": "High HTTP connection failure rate observed during concurrent load tests.",
+    "supportingMetrics": {
+      "concurrency": 100,
+      "errorRatePercent": 35.05338078291815
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "summary.json",
+      "metric": "100 users failure rate"
+    }
+  },
+  {
+    "id": "BTL-007",
+    "component": "Backend Concurrency: 250 Users",
+    "category": "Network",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "confidenceReason": "High HTTP connection failure rate observed during concurrent load tests.",
+    "supportingMetrics": {
+      "concurrency": 250,
+      "errorRatePercent": 72.77108433734941
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "summary.json",
+      "metric": "250 users failure rate"
+    }
+  },
+  {
+    "id": "BTL-008",
+    "component": "Backend Concurrency: 250 Users",
+    "category": "Network",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "confidenceReason": "Request timeouts exceeded limit under heavy concurrent user stress.",
+    "supportingMetrics": {
+      "concurrency": 250,
+      "timeoutRatePercent": 45.30120481927711
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "summary.json",
+      "metric": "250 users timeout rate"
+    }
+  },
+  {
+    "id": "BTL-009",
+    "component": "Backend Concurrency: 500 Users",
+    "category": "Network",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "confidenceReason": "High HTTP connection failure rate observed during concurrent load tests.",
+    "supportingMetrics": {
+      "concurrency": 500,
+      "errorRatePercent": 94.01709401709401
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "summary.json",
+      "metric": "500 users failure rate"
+    }
+  },
+  {
+    "id": "BTL-010",
+    "component": "Backend Concurrency: 500 Users",
+    "category": "Network",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "confidenceReason": "Request timeouts exceeded limit under heavy concurrent user stress.",
+    "supportingMetrics": {
+      "concurrency": 500,
+      "timeoutRatePercent": 67.44366744366744
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "summary.json",
+      "metric": "500 users timeout rate"
+    }
+  },
+  {
+    "id": "BTL-011",
+    "component": "Node Event Loop",
+    "category": "CPU-bound",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "confidenceReason": "Event loop delays indicate potential single-threaded blockages under load.",
+    "supportingMetrics": {
+      "concurrency": 500,
+      "eventLoopDelayMs": 25.299699999999575
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "stability.json",
+      "metric": "eventLoopDelayMs"
+    }
+  },
+  {
+    "id": "BTL-012",
+    "component": "Database Connection Pool",
+    "category": "Connection Pool",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "confidenceReason": "Active Postgres database connections approaching pool limit under stress.",
+    "supportingMetrics": {
+      "activeConnections": 9
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "stability.json",
+      "metric": "connectionAnalysis"
+    }
+  },
+  {
+    "id": "BTL-013",
+    "component": "Heap Memory Allocations",
+    "category": "Memory-bound",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "confidenceReason": "Unbounded heap memory growth observed during long-running soak test.",
+    "supportingMetrics": {
+      "heapGrowthBytes": 58692592,
+      "rssGrowthBytes": -7966720
+    },
+    "source": {
+      "phase": "13.5.6.4",
+      "artifact": "soak-test.json",
+      "metric": "heapGrowth"
+    }
+  }
+]

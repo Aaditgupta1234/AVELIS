@@ -1,0 +1,49 @@
+[
+  {
+    "title": "Optimize index configuration and query filters",
+    "description": "Define Postgres indexes for frequently queried columns like isDeleted and barcode, and ensure all read queries utilize WHERE constraints.",
+    "expectedBenefit": "Avoids expensive full table scans, lowering CPU consumption and read latencies under load.",
+    "estimatedImplementationEffort": "LOW",
+    "estimatedPerformanceImpact": "HIGH",
+    "riskLevel": "LOW",
+    "relatedBottlenecks": [
+      "BTL-001",
+      "BTL-002",
+      "BTL-003",
+      "BTL-004"
+    ]
+  },
+  {
+    "title": "Enable horizontal scaling and resolve loop blocks",
+    "description": "Spawn multiple Node.js workers using the Cluster module or scale container replicas in Kubernetes.",
+    "expectedBenefit": "Spreads heavy computational loads across multiple CPU cores, lowering latency drift.",
+    "estimatedImplementationEffort": "MEDIUM",
+    "estimatedPerformanceImpact": "HIGH",
+    "riskLevel": "LOW",
+    "relatedBottlenecks": [
+      "BTL-011"
+    ]
+  },
+  {
+    "title": "Tune Prisma connection pool size",
+    "description": "Increase connection_limit parameter in DATABASE_URL or implement database proxies like PgBouncer.",
+    "expectedBenefit": "Prevents connection saturation and handshake delays under concurrent load.",
+    "estimatedImplementationEffort": "LOW",
+    "estimatedPerformanceImpact": "HIGH",
+    "riskLevel": "LOW",
+    "relatedBottlenecks": [
+      "BTL-012"
+    ]
+  },
+  {
+    "title": "Profile heap allocations and fix handle leaks",
+    "description": "Analyze active handle leaks (unclosed sockets/timers) and profile heap snapshots to find memory retention paths.",
+    "expectedBenefit": "Stabilizes memory usage during long running processes, preventing out-of-memory crashes.",
+    "estimatedImplementationEffort": "HIGH",
+    "estimatedPerformanceImpact": "HIGH",
+    "riskLevel": "LOW",
+    "relatedBottlenecks": [
+      "BTL-013"
+    ]
+  }
+]

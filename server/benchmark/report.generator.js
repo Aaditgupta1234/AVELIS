@@ -1,200 +1,247 @@
 /**
- * @fileoverview Report generator for Phase 13.5.6.4 — Load Testing.
+ * @fileoverview Report generator for Phase 13.5.6.5 — Bottleneck Analysis.
  *
- * Compiles concurrent user comparison, stability metrics, connection analysis,
- * soak test trends, and optimization recommendations.
+ * Compiles detected bottlenecks, priorities, risk assessments, and matrices
+ * into a production-ready engineering Markdown report.
  *
  * @module benchmark/report.generator
  */
 
-import { loadConfig } from './load.config.js';
-
 const fms = (ms) => (typeof ms === 'number' ? `${ms.toFixed(2)} ms` : 'N/A');
-const frps = (rps) => (typeof rps === 'number' ? `${rps.toFixed(2)} RPS` : 'N/A');
 const fpct = (pct) => (typeof pct === 'number' ? `${pct.toFixed(2)}%` : 'N/A');
 const fmb = (bytes) => (typeof bytes === 'number' ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : 'N/A');
 
 /**
- * Generate a Markdown report string for load testing execution.
+ * Generate report.md contents.
  *
- * @param {Object} summary - Contents of summary.json
- * @param {Object} stability - Contents of stability.json
- * @param {Object} soakTest - Contents of soak-test.json
+ * @param {Object} summary - Bottleneck summary.json
+ * @param {Array} bottlenecks - List of bottlenecks
+ * @param {Array} recommendations - List of ranked recommendations
  * @returns {string} Compiled report.md contents
  */
-export function generateMarkdownReport(summary, stability, soakTest) {
-  const meta = summary.metadata || {};
+export function generateMarkdownReport(summary, bottlenecks, recommendations) {
   const env = summary.environment || {};
+  const meta = summary.metadata || {};
 
   const lines = [
-    '# AVELIS Load Testing Report',
+    '# AVELIS Performance Bottleneck Analysis Report',
     '',
     `> **Run ID**: \`${summary.runId || 'N/A'}\` | **Generated**: ${summary.generatedAt || new Date().toISOString()}`,
-    `> **Schema Version**: ${summary.schemaVersion || '1.0'} | **Phase**: ${summary.phase || '13.5.6.4'}`,
+    `> **Schema Version**: ${summary.schemaVersion || '1.0'} | **Phase**: ${summary.phase || '13.5.6.5'}`,
     '',
     '## 1. Executive Summary',
     '',
     '| Parameter | Value |',
     '| --- | --- |',
-    `| **Start Time** | ${summary.startedAt || 'N/A'} |`,
-    `| **Finish Time** | ${summary.finishedAt || 'N/A'} |`,
-    `| **Overall Suite Duration** | ${fms(summary.durationMs)} |`,
-    `| **Random Seed (LCG PRNG)** | ${summary.config?.randomSeed || 'Unseeded (Random)'} |`,
-    `| **Benchmark Status** | **${summary.benchmarkStatus || 'PASS'}** |`,
-    `| **Performance Status** | **${summary.performanceStatus || '✓ Within recommendation'}** |`,
-    `| **Node.js Version** | ${env.nodeVersion || 'N/A'} |`,
-    `| **Prisma version** | ${env.prismaVersion || 'N/A'} |`,
-    `| **PostgreSQL version** | ${env.postgresVersion || 'N/A'} |`,
-    `| **Platform / Arch** | ${meta.platform || 'N/A'} / ${meta.arch || 'N/A'} (CPUs: ${meta.cpus || 'N/A'}) |`,
+    `| **Analysis Status** | **${summary.analysisStatus || 'PASS'}** |`,
+    `| **Overall Performance Health Score** | **${summary.performanceHealthScore || 100} / 100** |`,
+    `| **Overall Scalability Rating** | **${summary.performanceHealthScore >= 85 ? 'A (Excellent)' : summary.performanceHealthScore >= 70 ? 'B (Acceptable)' : 'C (Congested)'}** |`,
+    `| **Total Bottlenecks Detected** | ${summary.totalBottlenecks || 0} |`,
+    `| **Critical Issues** | ${summary.criticalIssues || 0} |`,
+    `| **High Priority Recommendations** | ${summary.highPriorityRecommendations || 0} |`,
+    `| **Analysis Duration** | ${fms(summary.durationMs)} |`,
     '',
   ];
 
-  // ── 2. Concurrent User Comparison ──────────────────────────────────────────
-  lines.push('## 2. Concurrent User Comparison');
+  // ── 2. Benchmark Sources ──────────────────────────────────────────────────
+  lines.push('## 2. Benchmark Sources');
   lines.push('');
-  lines.push('| Concurrency | Benchmark | Performance | Total Requests | Success Rate | Throughput | Avg Latency | P95 | P99 | Node Process CPU | Heap Growth |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('The following performance artifacts were parsed and analyzed during this run:');
+  lines.push('');
+  for (const art of summary.analyzedArtifacts || []) {
+    lines.push(`* \`${art}\``);
+  }
+  lines.push('');
 
-  for (const scen of summary.scenarios || []) {
-    const metrics = scen.metrics || {};
-    const lat = metrics.durationMs || {};
-    const mem = metrics.memory || {};
+  // ── 3. Environment Information ─────────────────────────────────────────────
+  lines.push('## 3. Environment Information');
+  lines.push('');
+  lines.push('| Environment Key | Configured Target / Version |');
+  lines.push('| --- | --- |');
+  lines.push(`| **Node.js version** | ${env.nodeVersion || 'N/A'} |`);
+  lines.push(`| **Prisma version** | ${env.prismaVersion || 'N/A'} |`);
+  lines.push(`| **PostgreSQL version** | ${env.postgresVersion || 'N/A'} |`);
+  lines.push(`| **Platform / Arch** | ${meta.platform || 'N/A'} / ${meta.arch || 'N/A'} |`);
+  lines.push('');
 
-    const errorRate = metrics.failures / (metrics.totalRequests || 1);
-    const timeoutRate = (metrics.errors?.timeout || 0) / (metrics.totalRequests || 1);
+  // ── 4. Top Bottlenecks ────────────────────────────────────────────────────
+  lines.push('## 4. Top Bottlenecks');
+  lines.push('');
+  lines.push('| ID | Component | Category | Severity | Confidence | Confidence Reason | Trace Source |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
 
-    const isPerfPass =
-      lat.avg < loadConfig.LATENCY_AVG_LIMIT &&
-      lat.p95 < loadConfig.LATENCY_P95_LIMIT &&
-      errorRate < loadConfig.ERROR_RATE_LIMIT &&
-      timeoutRate < loadConfig.TIMEOUT_RATE_LIMIT;
+  const criticalAndHigh = bottlenecks.filter(b => ['CRITICAL', 'HIGH'].includes(b.severity));
+  const otherBottles = bottlenecks.filter(b => !['CRITICAL', 'HIGH'].includes(b.severity));
+  const sortedBottlenecks = [...criticalAndHigh, ...otherBottles];
 
-    const perfStatus = isPerfPass ? '✓ Within recommendation' : '⚠ Exceeded latency limit';
-    const benchStatus = scen.status === 'PASS' ? 'PASS' : 'FAIL';
-
+  for (const b of sortedBottlenecks) {
+    const srcRef = b.source ? `Phase ${b.source.phase} (${b.source.artifact}: ${b.source.metric})` : 'N/A';
     lines.push(
-      `| **${scen.concurrency} Users** | ${benchStatus} | ${perfStatus} | ${metrics.totalRequests} | ${fpct(metrics.successRate)} | ${frps(metrics.rps)} | ${fms(lat.avg)} | ${fms(lat.p95)} | ${fms(lat.p99)} | ${fpct(metrics.cpuFraction * 100)} | ${fmb(mem.heapGrowthBytes)} |`
+      `| \`${b.id}\` | **${b.component}** | ${b.category} | \`${b.severity}\` | ${b.confidence} | ${b.confidenceReason || ''} | ${srcRef} |`
     );
   }
   lines.push('');
 
-  // ── 3. Stability Metrics Trace ──────────────────────────────────────────────
-  lines.push('## 3. Stability Metrics Trace');
+  // Categorized Bottlenecks
+  const readBottles = bottlenecks.filter(b => b.category === 'Read');
+  const writeBottles = bottlenecks.filter(b => b.category === 'Write');
+  const dbBottles = bottlenecks.filter(b => b.category === 'Database');
+  const txBottles = bottlenecks.filter(b => b.category === 'Transaction');
+
+  lines.push('### Read Bottlenecks');
+  if (readBottles.length > 0) {
+    for (const b of readBottles) {
+      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): Average latency recorded at \`${b.supportingMetrics?.averageLatencyMs?.toFixed(2)} ms\`.`);
+    }
+  } else {
+    lines.push('_No read latency bottlenecks detected._');
+  }
   lines.push('');
-  lines.push('| Interval / Concurrency | Avg Process CPU | Heap Memory | RSS Memory | Event Loop Delay |');
+
+  lines.push('### Write Bottlenecks');
+  if (writeBottles.length > 0) {
+    for (const b of writeBottles) {
+      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): Average latency recorded at \`${b.supportingMetrics?.averageLatencyMs?.toFixed(2)} ms\`.`);
+    }
+  } else {
+    lines.push('_No write latency bottlenecks detected._');
+  }
+  lines.push('');
+
+  lines.push('### Database Bottlenecks');
+  if (dbBottles.length > 0) {
+    for (const b of dbBottles) {
+      const detail = b.supportingMetrics?.averageQueryMs
+        ? `Avg query duration: \`${b.supportingMetrics.averageQueryMs.toFixed(2)} ms\``
+        : b.supportingMetrics?.type
+        ? `Anomaly Type: \`${b.supportingMetrics.type}\``
+        : `Duplicate count: \`${b.supportingMetrics?.duplicateQueriesCount}\``;
+      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): ${detail}.`);
+    }
+  } else {
+    lines.push('_No database query bottlenecks detected._');
+  }
+  lines.push('');
+
+  lines.push('### Transaction Bottlenecks');
+  if (txBottles.length > 0) {
+    for (const b of txBottles) {
+      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): Avg commit duration: \`${b.supportingMetrics?.averageCommitMs?.toFixed(2)} ms\` (Success: \`${b.supportingMetrics?.successRatePercent}%\`).`);
+    }
+  } else {
+    lines.push('_No transaction bottlenecks detected._');
+  }
+  lines.push('');
+
+  // ── 5. System Resources Analysis ──────────────────────────────────────────
+  lines.push('## 5. System Resources Analysis');
+  lines.push('');
+
+  const cpuBottles = bottlenecks.filter(b => b.category === 'CPU-bound');
+  const memBottles = bottlenecks.filter(b => b.category === 'Memory-bound');
+  const poolBottles = bottlenecks.filter(b => b.category === 'Connection Pool');
+  const netBottles = bottlenecks.filter(b => b.category === 'Network');
+
+  lines.push('### CPU Analysis');
+  if (cpuBottles.length > 0) {
+    for (const b of cpuBottles) {
+      lines.push(`* ⚠ **${b.component}**: Exceeded target limit. Peak CPU Fraction: \`${b.supportingMetrics?.cpuPercent?.toFixed(2)}%\`.`);
+    }
+  } else {
+    lines.push('_Node Process CPU usage remained stable and within safety limits under load._');
+  }
+  lines.push('');
+
+  lines.push('### Memory Analysis');
+  if (memBottles.length > 0) {
+    for (const b of memBottles) {
+      const detail = b.supportingMetrics?.heapGrowthBytes
+        ? `Heap growth recorded: \`${fmb(b.supportingMetrics.heapGrowthBytes)}\``
+        : `Handle leak count growth: \`${b.supportingMetrics?.growth}\``;
+      lines.push(`* ⚠ **${b.component}**: ${detail}.`);
+    }
+  } else {
+    lines.push('_No critical memory leaks or handle accumulation detected during soak testing._');
+  }
+  lines.push('');
+
+  lines.push('### Connection Pool Analysis');
+  if (poolBottles.length > 0) {
+    for (const b of poolBottles) {
+      lines.push(`* ⚠ **${b.component}**: Saturation warning. Active database connections count: \`${b.supportingMetrics?.activeConnections}\`.`);
+    }
+  } else {
+    lines.push('_Database connection pool capacity remained within safe parameters._');
+  }
+  lines.push('');
+
+  lines.push('### Event Loop Analysis');
+  const loopDelay = bottlenecks.find(b => b.component === 'Node Event Loop');
+  if (loopDelay) {
+    lines.push(`* ⚠ **Node Event Loop Delay**: Event loop delay spikes recorded up to \`${fms(loopDelay.supportingMetrics?.eventLoopDelayMs)}\`, suggesting single-threaded blockages.`);
+  } else {
+    lines.push('_Event loop delay remained low, ensuring quick asynchronous task processing._');
+  }
+  lines.push('');
+
+  // ── 6. Recommendation Matrix ──────────────────────────────────────────────
+  lines.push('## 6. Recommendation Matrix');
+  lines.push('');
+  lines.push('| Recommendation | Expected Benefit | Effort | Impact | Risk | Related Bottlenecks |');
+  lines.push('| --- | --- | --- | --- | --- | --- |');
+
+  for (const rec of recommendations) {
+    const botsStr = rec.relatedBottlenecks.map(id => `\`${id}\``).join(', ') || 'N/A';
+    lines.push(
+      `| **${rec.title}**<br>_${rec.description}_ | ${rec.expectedBenefit} | ${rec.estimatedImplementationEffort} | ${rec.estimatedPerformanceImpact} | ${rec.riskLevel} | ${botsStr} |`
+    );
+  }
+  lines.push('');
+
+  // ── 7. Priority Matrix ────────────────────────────────────────────────────
+  lines.push('## 7. Priority Matrix');
+  lines.push('');
+  lines.push('| Rank | Score | Recommendation | Expected Benefit | Risk |');
   lines.push('| --- | --- | --- | --- | --- |');
 
-  for (const entry of stability.trace || []) {
+  for (const rec of recommendations) {
     lines.push(
-      `| ${entry.concurrency || 'Steady'} | ${fpct(entry.cpuFraction * 100)} | ${fmb(entry.memory?.heapUsed)} | ${fmb(entry.memory?.rss)} | ${fms(entry.eventLoopDelayMs)} |`
+      `| \`${rec.priorityRank}\` | \`${rec.score.toFixed(2)}\` | **${rec.title}** | ${rec.expectedBenefit} | ${rec.riskLevel} |`
     );
   }
   lines.push('');
 
-  // ── 4. Connection Pool Analysis ────────────────────────────────────────────
-  lines.push('## 4. Connection Pool Analysis');
+  // ── 8. Risk Assessment ────────────────────────────────────────────────────
+  lines.push('## 8. Risk Assessment');
   lines.push('');
-  const conn = stability.connectionAnalysis || {};
-  lines.push(`* **PostgreSQL Connection Count**: \`${conn.postgresConnections}\``);
-  lines.push(`* **Prisma Connection Status**: \`${conn.status === 'PASS' ? 'Stable' : 'Unstable'}\``);
+  lines.push('Analyzing optimization safety and refactoring risks:');
   lines.push('');
-  if (conn.recommendations?.length > 0) {
-    lines.push('#### Connection Recommendations:');
-    for (const rec of conn.recommendations) {
-      lines.push(`* ⚠ ${rec}`);
+  const highRiskRecs = recommendations.filter(r => r.riskLevel === 'HIGH');
+  const medRiskRecs = recommendations.filter(r => r.riskLevel === 'MEDIUM');
+
+  if (highRiskRecs.length > 0) {
+    lines.push('### High Risk Optimizations');
+    for (const r of highRiskRecs) {
+      lines.push(`* **${r.title}**: Refactoring carries high risk of logical regression. Ensure exhaustive unit testing.`);
     }
-  } else {
-    lines.push('_No connection pool anomalies or saturation detected._');
+  }
+  if (medRiskRecs.length > 0) {
+    lines.push('### Medium Risk Optimizations');
+    for (const r of medRiskRecs) {
+      lines.push(`* **${r.title}**: Modifying data fetch paths requires regression testing of active borrowing queues.`);
+    }
+  }
+  if (highRiskRecs.length === 0 && medRiskRecs.length === 0) {
+    lines.push('_All suggested recommendations are Low Risk and safe to configure._');
   }
   lines.push('');
 
-  // ── 5. Soak Test Results ──────────────────────────────────────────────────
-  lines.push('## 5. Soak Test Results');
+  // ── 9. Future Optimization Opportunities ──────────────────────────────────
+  lines.push('## 9. Future Optimization Opportunities');
   lines.push('');
-  if (soakTest) {
-    const sm = soakTest.metrics || {};
-    const smem = sm.memory || {};
-    const scpu = sm.cpu || {};
-    const strend = sm.trends || {};
-    const serr = soakTest.errors || {};
-
-    lines.push('### Core Soak Test Metrics');
-    lines.push('');
-    lines.push(`* **Soak Duration**: \`${soakTest.durationMs} ms\``);
-    lines.push(`* **Total Requests**: \`${soakTest.success + soakTest.failures}\``);
-    lines.push(`* **Success Rate**: \`${fpct(soakTest.successRate)}\``);
-    lines.push(`* **First Half Avg Latency**: \`${fms(strend.firstHalfAvgLatencyMs)}\` | **Second Half Avg Latency**: \`${fms(strend.secondHalfAvgLatencyMs)}\``);
-    lines.push(`* **Latency Drift**: \`${fms(strend.latencyDriftMs)}\``);
-    lines.push(`* **Throughput Degradation**: \`${fpct(strend.throughputDegradationPercent)}\``);
-    lines.push(`* **Event Loop Delay**: \`${fms(sm.eventLoopDelayMs)}\``);
-    lines.push('');
-
-    lines.push('### Resource Usage Trends during Soak');
-    lines.push('');
-    lines.push(`* **Heap Memory**: Started at \`${fmb(smem.heapUsedStart)}\` | Finished at \`${fmb(smem.heapUsedEnd)}\` (Growth: \`${fmb(smem.heapGrowthBytes)}\`)`);
-    lines.push(`* **RSS Memory**: Started at \`${fmb(smem.rssStart)}\` | Finished at \`${fmb(smem.rssEnd)}\` (Growth: \`${fmb(smem.rssGrowthBytes)}\`)`);
-    lines.push(`* **Node CPU Usage**: Started at \`${fpct(scpu.cpuStartFraction * 100)}\` | Finished at \`${fpct(scpu.cpuEndFraction * 100)}\``);
-    if (sm.activeHandles) {
-      lines.push(`* **Active Event Loop Handles**: Started at \`${sm.activeHandles.start}\` | Finished at \`${sm.activeHandles.end}\` (Growth: \`${sm.activeHandles.growth}\`)`);
-    }
-    lines.push('');
-
-    lines.push('### Errors Breakdown');
-    lines.push('');
-    lines.push(`* **Timeouts**: \`${serr.timeout || 0}\``);
-    lines.push(`* **Network Errors**: \`${serr.network_error || 0}\``);
-    lines.push(`* **Unexpected Exceptions**: \`${serr.unexpected_exception || 0}\``);
-    if (Object.keys(serr.http_error || {}).length > 0) {
-      lines.push('* **HTTP Error Codes**:');
-      for (const [code, count] of Object.entries(serr.http_error)) {
-        lines.push(`  - Status \`${code}\`: \`${count}\` occurrences`);
-      }
-    }
-    lines.push('');
-
-    lines.push('### Soak Test Anomalies');
-    lines.push('');
-    const anomalies = soakTest.anomalies || {};
-    let anomalyCount = 0;
-    if (anomalies.potentialMemoryLeak) {
-      lines.push('* ⚠ **Potential Memory Leak**: Significant heap memory growth detected during run.');
-      anomalyCount++;
-    }
-    if (anomalies.throughputDegradation) {
-      lines.push('* ⚠ **Throughput Degradation**: Throughput dropped by > 15% in the second half of the soak.');
-      anomalyCount++;
-    }
-    if (anomalies.latencyDrift) {
-      lines.push('* ⚠ **Latency Drift**: Average latency drifted upwards by > 50ms in the second half.');
-      anomalyCount++;
-    }
-    if (anomalies.handleLeak) {
-      lines.push('* ⚠ **Active Handle Growth**: Persistent growth in active event loop handles indicates potential socket or timer leaks.');
-      anomalyCount++;
-    }
-    if (anomalyCount === 0) {
-      lines.push('_No critical soak anomalies detected. System remained stable._');
-    }
-    lines.push('');
-  }
-
-  // ── 6. Performance Recommendations & Scalability Assessment ───────────────
-  lines.push('## 6. Performance Recommendations & Scalability Assessment');
-  lines.push('');
-  lines.push('### Scalability Rating:');
-  const maxAvgLatency = Math.max(...summary.scenarios.map(s => s.metrics?.durationMs?.avg || 0));
-  if (maxAvgLatency < loadConfig.LATENCY_AVG_LIMIT) {
-    lines.push('**EXCELLENT (A)** — The backend easily scales up to 500 concurrent users with minimal latency degradation.');
-  } else if (maxAvgLatency < loadConfig.LATENCY_P95_LIMIT) {
-    lines.push('**ACCEPTABLE (B)** — The system supports concurrency up to 250 users stably. Latency drifts above recommended targets at 500 concurrent users.');
-  } else {
-    lines.push('**CONGESTED (C)** — Scalability limits reached. System latency increases significantly under high concurrent load, indicating potential thread or connection blocks.');
-  }
-  lines.push('');
-  lines.push('### Strategic Recommendations:');
-  lines.push('1. **Connection Pooling**: Use PgBouncer or scale connection pools to mitigate database handshake latency under high user numbers.');
-  lines.push('2. **Horizontal Scaling**: If Node Process CPU is saturated (>80%), spawn multiple instances using Node.js cluster module or Kubernetes replicas.');
-  lines.push('3. **Memory Optimization**: Monitor and flush transient caches to prevent Heap/RSS accumulation observed during soak testing.');
+  lines.push('1. **Connection Pooling Proxy**: Set up PgBouncer to manage high PostgreSQL client connections efficiently.');
+  lines.push('2. **GraphQL or Restructured Schemas**: Reduce join overhead by restructuring large relation lists.');
+  lines.push('3. **Query Batching Utilities**: Integrate dataloader patterns in GraphQL/Prisma middleware to completely isolate N+1 lookups.');
   lines.push('');
 
   return lines.join('\n');
