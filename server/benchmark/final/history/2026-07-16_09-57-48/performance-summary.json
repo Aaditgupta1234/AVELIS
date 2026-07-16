@@ -1,0 +1,2362 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0",
+    "reportVersion": "1.0.0",
+    "phase": "13.5.6.6",
+    "runId": "2026-07-16T09-23-08-578Z",
+    "generatedAt": "2026-07-16T09:57:48.978Z",
+    "startedAt": "2026-07-16T09:57:48.828Z",
+    "finishedAt": "2026-07-16T09:57:48.978Z",
+    "durationMs": 134.16850000000002,
+    "benchmarkStatus": "PASS",
+    "reportStatus": "PASS_WITH_WARNINGS",
+    "warnings": {
+      "count": 1,
+      "items": [
+        {
+          "code": "MISSING_BASELINE",
+          "severity": "INFO",
+          "message": "No previous performance-summary.json found in history. Historical delta comparisons are disabled.",
+          "context": {
+            "comparisonEnabled": false
+          }
+        }
+      ]
+    },
+    "sources": {
+      "api": {
+        "phase": "13.5.6.2",
+        "artifact": "benchmark/reports/",
+        "schemaVersion": "1.0",
+        "runId": "2026-07-16T09-23-08-578Z"
+      },
+      "database": {
+        "phase": "13.5.6.3",
+        "artifact": "benchmark/database/query-summary.json",
+        "schemaVersion": "1.0",
+        "runId": "2026-07-16T09-23-08-578Z"
+      },
+      "load": {
+        "phase": "13.5.6.4",
+        "artifact": "benchmark/load/summary.json",
+        "schemaVersion": "1.0",
+        "runId": "2026-07-16T09-23-08-578Z"
+      },
+      "analysis": {
+        "phase": "13.5.6.5",
+        "artifact": "benchmark/analysis/summary.json",
+        "schemaVersion": "1.0",
+        "runId": "2026-07-16T09-23-08-578Z"
+      }
+    }
+  },
+  "apiSummaries": [
+    {
+      "name": "analytics-borrowing",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 16.683,
+          "median": 16.683,
+          "min": 16.683,
+          "max": 16.683,
+          "p50": 16.683,
+          "p90": 16.683,
+          "p95": 16.683,
+          "p99": 16.683,
+          "stddev": 0
+        },
+        "rps": 59.4124112527107,
+        "system": {
+          "memory": {
+            "heapUsedMb": 18.152725219726562,
+            "rssMb": 87.58984375
+          },
+          "cpu": {
+            "userMs": 1671,
+            "systemMs": 828
+          },
+          "uptime": 4.8300771
+        },
+        "elapsedMs": 16.8315
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "analytics-members",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 4.1153,
+          "median": 4.1153,
+          "min": 4.1153,
+          "max": 4.1153,
+          "p50": 4.1153,
+          "p90": 4.1153,
+          "p95": 4.1153,
+          "p99": 4.1153,
+          "stddev": 0
+        },
+        "rps": 233.5139174294788,
+        "system": {
+          "memory": {
+            "heapUsedMb": 18.691574096679688,
+            "rssMb": 87.80078125
+          },
+          "cpu": {
+            "userMs": 1687,
+            "systemMs": 828
+          },
+          "uptime": 4.8613497
+        },
+        "elapsedMs": 4.2824
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "analytics-ratings",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.2564,
+          "median": 6.2564,
+          "min": 6.2564,
+          "max": 6.2564,
+          "p50": 6.2564,
+          "p90": 6.2564,
+          "p95": 6.2564,
+          "p99": 6.2564,
+          "stddev": 0
+        },
+        "rps": 154.56667233411133,
+        "system": {
+          "memory": {
+            "heapUsedMb": 19.242713928222656,
+            "rssMb": 88.23046875
+          },
+          "cpu": {
+            "userMs": 1703,
+            "systemMs": 828
+          },
+          "uptime": 4.8803686
+        },
+        "elapsedMs": 6.4697
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "analytics-timeseries",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 4.1743,
+          "median": 4.1743,
+          "min": 4.1743,
+          "max": 4.1743,
+          "p50": 4.1743,
+          "p90": 4.1743,
+          "p95": 4.1743,
+          "p99": 4.1743,
+          "stddev": 0
+        },
+        "rps": 230.09664058904738,
+        "system": {
+          "memory": {
+            "heapUsedMb": 19.753623962402344,
+            "rssMb": 88.4296875
+          },
+          "cpu": {
+            "userMs": 1703,
+            "systemMs": 828
+          },
+          "uptime": 4.9000507
+        },
+        "elapsedMs": 4.346
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "auth-login",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 80.3807,
+          "median": 80.3807,
+          "min": 80.3807,
+          "max": 80.3807,
+          "p50": 80.3807,
+          "p90": 80.3807,
+          "p95": 80.3807,
+          "p99": 80.3807,
+          "stddev": 0
+        },
+        "rps": 12.4067939603727,
+        "system": {
+          "memory": {
+            "heapUsedMb": 16.255104064941406,
+            "rssMb": 76.56640625
+          },
+          "cpu": {
+            "userMs": 1125,
+            "systemMs": 703
+          },
+          "uptime": 2.2416147
+        },
+        "elapsedMs": 80.601
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "auth-register",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 97.3504,
+          "median": 97.3504,
+          "min": 97.3504,
+          "max": 97.3504,
+          "p50": 97.3504,
+          "p90": 97.3504,
+          "p95": 97.3504,
+          "p99": 97.3504,
+          "stddev": 0
+        },
+        "rps": 10.08193589300243,
+        "system": {
+          "memory": {
+            "heapUsedMb": 15.633682250976562,
+            "rssMb": 76.23046875
+          },
+          "cpu": {
+            "userMs": 953,
+            "systemMs": 703
+          },
+          "uptime": 2.011878
+        },
+        "elapsedMs": 99.1873
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "books-get",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 7.381,
+          "median": 7.381,
+          "min": 7.381,
+          "max": 7.381,
+          "p50": 7.381,
+          "p90": 7.381,
+          "p95": 7.381,
+          "p99": 7.381,
+          "stddev": 0
+        },
+        "rps": 129.20731313392338,
+        "system": {
+          "memory": {
+            "heapUsedMb": 17.287246704101562,
+            "rssMb": 77.19140625
+          },
+          "cpu": {
+            "userMs": 1250,
+            "systemMs": 734
+          },
+          "uptime": 3.9639056
+        },
+        "elapsedMs": 7.7395
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "books-list",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 9.277,
+          "median": 9.277,
+          "min": 9.277,
+          "max": 9.277,
+          "p50": 9.277,
+          "p90": 9.277,
+          "p95": 9.277,
+          "p99": 9.277,
+          "stddev": 0
+        },
+        "rps": 103.75166002656042,
+        "system": {
+          "memory": {
+            "heapUsedMb": 16.842086791992188,
+            "rssMb": 77.08203125
+          },
+          "cpu": {
+            "userMs": 1234,
+            "systemMs": 718
+          },
+          "uptime": 3.9245889
+        },
+        "elapsedMs": 9.6384
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "books-rating",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 10.8001,
+          "median": 10.8001,
+          "min": 10.8001,
+          "max": 10.8001,
+          "p50": 10.8001,
+          "p90": 10.8001,
+          "p95": 10.8001,
+          "p99": 10.8001,
+          "stddev": 0
+        },
+        "rps": 90.04952723998198,
+        "system": {
+          "memory": {
+            "heapUsedMb": 18.29363250732422,
+            "rssMb": 77.55859375
+          },
+          "cpu": {
+            "userMs": 1296,
+            "systemMs": 734
+          },
+          "uptime": 4.0270697
+        },
+        "elapsedMs": 11.105
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "books-search",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 11.5273,
+          "median": 11.5273,
+          "min": 11.5273,
+          "max": 11.5273,
+          "p50": 11.5273,
+          "p90": 11.5273,
+          "p95": 11.5273,
+          "p99": 11.5273,
+          "stddev": 0
+        },
+        "rps": 80.15646542050081,
+        "system": {
+          "memory": {
+            "heapUsedMb": 17.927162170410156,
+            "rssMb": 77.1640625
+          },
+          "cpu": {
+            "userMs": 1265,
+            "systemMs": 734
+          },
+          "uptime": 3.990875
+        },
+        "elapsedMs": 12.4756
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "dashboard-analytics",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 0,
+        "failureCount": 1,
+        "successRate": 0,
+        "failureRate": 100,
+        "durationMs": {
+          "avg": 1.3431,
+          "median": 1.3431,
+          "min": 1.3431,
+          "max": 1.3431,
+          "p50": 1.3431,
+          "p90": 1.3431,
+          "p95": 1.3431,
+          "p99": 1.3431,
+          "stddev": 0
+        },
+        "rps": 677.2314777190844,
+        "system": {
+          "memory": {
+            "heapUsedMb": 17.68669891357422,
+            "rssMb": 86.0859375
+          },
+          "cpu": {
+            "userMs": 1671,
+            "systemMs": 828
+          },
+          "uptime": 4.7905943
+        },
+        "elapsedMs": 1.4766
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "dashboard-summary",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 7.8877,
+          "median": 7.8877,
+          "min": 7.8877,
+          "max": 7.8877,
+          "p50": 7.8877,
+          "p90": 7.8877,
+          "p95": 7.8877,
+          "p99": 7.8877,
+          "stddev": 0
+        },
+        "rps": 124.5733363230934,
+        "system": {
+          "memory": {
+            "heapUsedMb": 22.310943603515625,
+            "rssMb": 85.3671875
+          },
+          "cpu": {
+            "userMs": 1656,
+            "systemMs": 828
+          },
+          "uptime": 4.7756828
+        },
+        "elapsedMs": 8.0274
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-active",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.4347,
+          "median": 6.4347,
+          "min": 6.4347,
+          "max": 6.4347,
+          "p50": 6.4347,
+          "p90": 6.4347,
+          "p95": 6.4347,
+          "p99": 6.4347,
+          "stddev": 0
+        },
+        "rps": 148.94250819183793,
+        "system": {
+          "memory": {
+            "heapUsedMb": 19.663070678710938,
+            "rssMb": 78.015625
+          },
+          "cpu": {
+            "userMs": 1328,
+            "systemMs": 734
+          },
+          "uptime": 4.1873592
+        },
+        "elapsedMs": 6.714
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-borrow",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 15.8104,
+          "median": 15.8104,
+          "min": 15.8104,
+          "max": 15.8104,
+          "p50": 15.8104,
+          "p90": 15.8104,
+          "p95": 15.8104,
+          "p99": 15.8104,
+          "stddev": 0
+        },
+        "rps": 44.58652684331849,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.979248046875,
+            "rssMb": 80.07421875
+          },
+          "cpu": {
+            "userMs": 1359,
+            "systemMs": 765
+          },
+          "uptime": 4.2736102
+        },
+        "elapsedMs": 22.4283
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-get-by-id",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.13,
+          "median": 6.13,
+          "min": 6.13,
+          "max": 6.13,
+          "p50": 6.13,
+          "p90": 6.13,
+          "p95": 6.13,
+          "p99": 6.13,
+          "stddev": 0
+        },
+        "rps": 154.3019380323417,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.26813507080078,
+            "rssMb": 79.046875
+          },
+          "cpu": {
+            "userMs": 1343,
+            "systemMs": 750
+          },
+          "uptime": 4.2319832
+        },
+        "elapsedMs": 6.4808
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-history",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 7.6822,
+          "median": 7.6822,
+          "min": 7.6822,
+          "max": 7.6822,
+          "p50": 7.6822,
+          "p90": 7.6822,
+          "p95": 7.6822,
+          "p99": 7.6822,
+          "stddev": 0
+        },
+        "rps": 121.8130656694237,
+        "system": {
+          "memory": {
+            "heapUsedMb": 19.780349731445312,
+            "rssMb": 78.60546875
+          },
+          "cpu": {
+            "userMs": 1343,
+            "systemMs": 734
+          },
+          "uptime": 4.2122978
+        },
+        "elapsedMs": 8.2093
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-list",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 9.6475,
+          "median": 9.6475,
+          "min": 9.6475,
+          "max": 9.6475,
+          "p50": 9.6475,
+          "p90": 9.6475,
+          "p95": 9.6475,
+          "p99": 9.6475,
+          "stddev": 0
+        },
+        "rps": 97.3340211604162,
+        "system": {
+          "memory": {
+            "heapUsedMb": 18.82311248779297,
+            "rssMb": 77.79296875
+          },
+          "cpu": {
+            "userMs": 1312,
+            "systemMs": 734
+          },
+          "uptime": 4.1550779
+        },
+        "elapsedMs": 10.2739
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-renew",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 15.3463,
+          "median": 15.3463,
+          "min": 15.3463,
+          "max": 15.3463,
+          "p50": 15.3463,
+          "p90": 15.3463,
+          "p95": 15.3463,
+          "p99": 15.3463,
+          "stddev": 0
+        },
+        "rps": 44.70112825647719,
+        "system": {
+          "memory": {
+            "heapUsedMb": 17.238136291503906,
+            "rssMb": 81.5390625
+          },
+          "cpu": {
+            "userMs": 1453,
+            "systemMs": 765
+          },
+          "uptime": 4.3761069
+        },
+        "elapsedMs": 22.3708
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "loans-return",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 13.3297,
+          "median": 13.3297,
+          "min": 13.3297,
+          "max": 13.3297,
+          "p50": 13.3297,
+          "p90": 13.3297,
+          "p95": 13.3297,
+          "p99": 13.3297,
+          "stddev": 0
+        },
+        "rps": 54.885645757065156,
+        "system": {
+          "memory": {
+            "heapUsedMb": 21.891944885253906,
+            "rssMb": 81.1875
+          },
+          "cpu": {
+            "userMs": 1421,
+            "systemMs": 765
+          },
+          "uptime": 4.3253258
+        },
+        "elapsedMs": 18.2197
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reports-inventory",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.1192,
+          "median": 6.1192,
+          "min": 6.1192,
+          "max": 6.1192,
+          "p50": 6.1192,
+          "p90": 6.1192,
+          "p95": 6.1192,
+          "p99": 6.1192,
+          "stddev": 0
+        },
+        "rps": 159.2534199671938,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.58245849609375,
+            "rssMb": 88.5390625
+          },
+          "cpu": {
+            "userMs": 1718,
+            "systemMs": 828
+          },
+          "uptime": 4.9332607
+        },
+        "elapsedMs": 6.2793
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reports-member",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 11.1093,
+          "median": 11.1093,
+          "min": 11.1093,
+          "max": 11.1093,
+          "p50": 11.1093,
+          "p90": 11.1093,
+          "p95": 11.1093,
+          "p99": 11.1093,
+          "stddev": 0
+        },
+        "rps": 88.03359361932515,
+        "system": {
+          "memory": {
+            "heapUsedMb": 21.14051055908203,
+            "rssMb": 89.03515625
+          },
+          "cpu": {
+            "userMs": 1765,
+            "systemMs": 859
+          },
+          "uptime": 4.961739
+        },
+        "elapsedMs": 11.3593
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reports-overdue",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 3.5655,
+          "median": 3.5655,
+          "min": 3.5655,
+          "max": 3.5655,
+          "p50": 3.5655,
+          "p90": 3.5655,
+          "p95": 3.5655,
+          "p99": 3.5655,
+          "stddev": 0
+        },
+        "rps": 269.7963037906381,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.185699462890625,
+            "rssMb": 88.54296875
+          },
+          "cpu": {
+            "userMs": 1703,
+            "systemMs": 828
+          },
+          "uptime": 4.9133634
+        },
+        "elapsedMs": 3.7065
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reports-search-books",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 4.3776,
+          "median": 4.3776,
+          "min": 4.3776,
+          "max": 4.3776,
+          "p50": 4.3776,
+          "p90": 4.3776,
+          "p95": 4.3776,
+          "p99": 4.3776,
+          "stddev": 0
+        },
+        "rps": 218.7465820846549,
+        "system": {
+          "memory": {
+            "heapUsedMb": 21.70653533935547,
+            "rssMb": 89.2265625
+          },
+          "cpu": {
+            "userMs": 1781,
+            "systemMs": 875
+          },
+          "uptime": 4.9895834
+        },
+        "elapsedMs": 4.5715
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reservations-cancel",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 11.4089,
+          "median": 11.4089,
+          "min": 11.4089,
+          "max": 11.4089,
+          "p50": 11.4089,
+          "p90": 11.4089,
+          "p95": 11.4089,
+          "p99": 11.4089,
+          "stddev": 0
+        },
+        "rps": 65.846222731433,
+        "system": {
+          "memory": {
+            "heapUsedMb": 19.820785522460938,
+            "rssMb": 82.390625
+          },
+          "cpu": {
+            "userMs": 1562,
+            "systemMs": 796
+          },
+          "uptime": 4.5480427
+        },
+        "elapsedMs": 15.1869
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reservations-create",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 18.5462,
+          "median": 18.5462,
+          "min": 18.5462,
+          "max": 18.5462,
+          "p50": 18.5462,
+          "p90": 18.5462,
+          "p95": 18.5462,
+          "p99": 18.5462,
+          "stddev": 0
+        },
+        "rps": 40.89695195017116,
+        "system": {
+          "memory": {
+            "heapUsedMb": 19.121437072753906,
+            "rssMb": 81.734375
+          },
+          "cpu": {
+            "userMs": 1531,
+            "systemMs": 796
+          },
+          "uptime": 4.4973504
+        },
+        "elapsedMs": 24.4517
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reservations-get",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 3.3568,
+          "median": 3.3568,
+          "min": 3.3568,
+          "max": 3.3568,
+          "p50": 3.3568,
+          "p90": 3.3568,
+          "p95": 3.3568,
+          "p99": 3.3568,
+          "stddev": 0
+        },
+        "rps": 282.46193825382034,
+        "system": {
+          "memory": {
+            "heapUsedMb": 18.539382934570312,
+            "rssMb": 81.578125
+          },
+          "cpu": {
+            "userMs": 1500,
+            "systemMs": 781
+          },
+          "uptime": 4.456834
+        },
+        "elapsedMs": 3.5403
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reservations-list",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.7517,
+          "median": 6.7517,
+          "min": 6.7517,
+          "max": 6.7517,
+          "p50": 6.7517,
+          "p90": 6.7517,
+          "p95": 6.7517,
+          "p99": 6.7517,
+          "stddev": 0
+        },
+        "rps": 143.57295659789523,
+        "system": {
+          "memory": {
+            "heapUsedMb": 17.834022521972656,
+            "rssMb": 81.44140625
+          },
+          "cpu": {
+            "userMs": 1468,
+            "systemMs": 781
+          },
+          "uptime": 4.4200425
+        },
+        "elapsedMs": 6.9651
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reservations-mine",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 5.7507,
+          "median": 5.7507,
+          "min": 5.7507,
+          "max": 5.7507,
+          "p50": 5.7507,
+          "p90": 5.7507,
+          "p95": 5.7507,
+          "p99": 5.7507,
+          "stddev": 0
+        },
+        "rps": 164.64428602005367,
+        "system": {
+          "memory": {
+            "heapUsedMb": 18.206809997558594,
+            "rssMb": 81.55859375
+          },
+          "cpu": {
+            "userMs": 1484,
+            "systemMs": 781
+          },
+          "uptime": 4.4400348
+        },
+        "elapsedMs": 6.0737
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reviews-book",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.8879,
+          "median": 6.8879,
+          "min": 6.8879,
+          "max": 6.8879,
+          "p50": 6.8879,
+          "p90": 6.8879,
+          "p95": 6.8879,
+          "p99": 6.8879,
+          "stddev": 0
+        },
+        "rps": 139.36311058462826,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.30242156982422,
+            "rssMb": 82.890625
+          },
+          "cpu": {
+            "userMs": 1593,
+            "systemMs": 796
+          },
+          "uptime": 4.578463
+        },
+        "elapsedMs": 7.1755
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reviews-create",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 8.8831,
+          "median": 8.8831,
+          "min": 8.8831,
+          "max": 8.8831,
+          "p50": 8.8831,
+          "p90": 8.8831,
+          "p95": 8.8831,
+          "p99": 8.8831,
+          "stddev": 0
+        },
+        "rps": 83.33194446759221,
+        "system": {
+          "memory": {
+            "heapUsedMb": 21.400497436523438,
+            "rssMb": 84.0546875
+          },
+          "cpu": {
+            "userMs": 1625,
+            "systemMs": 812
+          },
+          "uptime": 4.6420981
+        },
+        "elapsedMs": 12.0002
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reviews-get",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 6.1703,
+          "median": 6.1703,
+          "min": 6.1703,
+          "max": 6.1703,
+          "p50": 6.1703,
+          "p90": 6.1703,
+          "p95": 6.1703,
+          "p99": 6.1703,
+          "stddev": 0
+        },
+        "rps": 155.4702196794204,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.969573974609375,
+            "rssMb": 83.58984375
+          },
+          "cpu": {
+            "userMs": 1609,
+            "systemMs": 796
+          },
+          "uptime": 4.6162461
+        },
+        "elapsedMs": 6.4321
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reviews-mine",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 8.012,
+          "median": 8.012,
+          "min": 8.012,
+          "max": 8.012,
+          "p50": 8.012,
+          "p90": 8.012,
+          "p95": 8.012,
+          "p99": 8.012,
+          "stddev": 0
+        },
+        "rps": 121.04925494183583,
+        "system": {
+          "memory": {
+            "heapUsedMb": 20.644935607910156,
+            "rssMb": 83.22265625
+          },
+          "cpu": {
+            "userMs": 1609,
+            "systemMs": 796
+          },
+          "uptime": 4.5966533
+        },
+        "elapsedMs": 8.2611
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "reviews-rating",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 8.1629,
+          "median": 8.1629,
+          "min": 8.1629,
+          "max": 8.1629,
+          "p50": 8.1629,
+          "p90": 8.1629,
+          "p95": 8.1629,
+          "p99": 8.1629,
+          "stddev": 0
+        },
+        "rps": 119.55287225775601,
+        "system": {
+          "memory": {
+            "heapUsedMb": 21.848243713378906,
+            "rssMb": 84.4921875
+          },
+          "cpu": {
+            "userMs": 1640,
+            "systemMs": 812
+          },
+          "uptime": 4.66579
+        },
+        "elapsedMs": 8.3645
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "smoke",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 50,
+        "successCount": 50,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 0.02,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "p50": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 1,
+          "stddev": 0.13999999999999985
+        },
+        "rps": 29815.146094215863,
+        "system": {
+          "memory": {
+            "heapUsedMb": 4.803062438964844,
+            "rssMb": 49.75
+          },
+          "cpu": {
+            "userMs": 93,
+            "systemMs": 0
+          },
+          "uptime": 0.0721176
+        },
+        "elapsedMs": 1.677
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    },
+    {
+      "name": "verify-report-test",
+      "schemaVersion": "1.0.0",
+      "phase": "13.5.6.2",
+      "metrics": {
+        "totalRequests": 10,
+        "successCount": 10,
+        "failureCount": 0,
+        "successRate": 100,
+        "failureRate": 0,
+        "durationMs": {
+          "avg": 5,
+          "median": 5,
+          "min": 5,
+          "max": 5,
+          "p50": 5,
+          "p90": 5,
+          "p95": 5,
+          "p99": 5,
+          "stddev": 0
+        },
+        "rps": 39698.29297340214,
+        "system": {
+          "memory": {
+            "heapUsedMb": 8.642593383789062,
+            "rssMb": 57.85546875
+          },
+          "cpu": {
+            "userMs": 93,
+            "systemMs": 156
+          },
+          "uptime": 0.3082676
+        },
+        "elapsedMs": 0.2519
+      },
+      "metadata": {
+        "nodeVersion": "v25.1.0",
+        "platform": "win32",
+        "arch": "x64"
+      }
+    }
+  ],
+  "databaseMetrics": {
+    "queries": [
+      {
+        "name": "User Lookup",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 0.9985179999999986,
+            "min": 0.6295999999999822,
+            "max": 2.1965000000000146,
+            "p50": 0.9436999999999784,
+            "p95": 1.6410999999999945,
+            "p99": 1.8077000000000112,
+            "stddev": 0.2845973047588449
+          },
+          "totalTimeMs": 99.85179999999986
+        },
+        "queryAnalysis": {
+          "totalQueries": 1,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "User",
+            "operation": "findUnique",
+            "fingerprint": "User.findUnique({\"where\":{\"id\":\"?\"},\"select\":{\"id\":\"?\",\"email\":\"?\",\"username\":\"?\",\"role\":\"?\",\"isActive\":\"?\"}})"
+          }
+        ]
+      },
+      {
+        "name": "Book Listing",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 2.054128000000004,
+            "min": 1.5224000000000615,
+            "max": 4.315899999999942,
+            "p50": 1.9640999999999167,
+            "p95": 2.697200000000066,
+            "p99": 3.004599999999982,
+            "stddev": 0.41549605752160823
+          },
+          "totalTimeMs": 205.4128000000004
+        },
+        "queryAnalysis": {
+          "totalQueries": 1,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "Book",
+            "operation": "findMany",
+            "fingerprint": "Book.findMany({\"skip\":\"?\",\"take\":\"?\",\"where\":{\"isDeleted\":\"?\"},\"include\":{\"copies\":\"?\"}})"
+          }
+        ]
+      },
+      {
+        "name": "Book Search",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 1.5774719999999933,
+            "min": 0.9701000000000022,
+            "max": 3.3592000000001008,
+            "p50": 1.4921000000000504,
+            "p95": 2.2420000000000755,
+            "p99": 2.5926999999999225,
+            "stddev": 0.4042353718021268
+          },
+          "totalTimeMs": 157.74719999999934
+        },
+        "queryAnalysis": {
+          "totalQueries": 1,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "Book",
+            "operation": "findMany",
+            "fingerprint": "Book.findMany({\"where\":{\"OR\":[{\"title\":{\"contains\":\"?\"}},{\"isbn\":{\"contains\":\"?\"}}],\"isDeleted\":\"?\"}})"
+          }
+        ]
+      },
+      {
+        "name": "Loan Queries",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 2.446663000000011,
+            "min": 1.459400000000187,
+            "max": 5.41560000000004,
+            "p50": 2.314100000000053,
+            "p95": 3.6358999999999924,
+            "p99": 4.39610000000016,
+            "stddev": 0.7341027397653583
+          },
+          "totalTimeMs": 244.66630000000112
+        },
+        "queryAnalysis": {
+          "totalQueries": 1,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "Loan",
+            "operation": "findMany",
+            "fingerprint": "Loan.findMany({\"where\":{\"userId\":\"?\"},\"include\":{\"bookCopy\":{\"include\":{\"book\":\"?\"}}}})"
+          }
+        ]
+      },
+      {
+        "name": "Reservation Queries",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 1.6786680000000092,
+            "min": 1.1382000000000971,
+            "max": 3.4087999999999283,
+            "p50": 1.5962999999999283,
+            "p95": 2.426200000000108,
+            "p99": 2.7883999999999105,
+            "stddev": 0.4294405704821031
+          },
+          "totalTimeMs": 167.86680000000092
+        },
+        "queryAnalysis": {
+          "totalQueries": 1,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "Reservation",
+            "operation": "findMany",
+            "fingerprint": "Reservation.findMany({\"where\":{\"userId\":\"?\"},\"include\":{\"book\":\"?\"}})"
+          }
+        ]
+      },
+      {
+        "name": "Dashboard Aggregation",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 1.9728709999999956,
+            "min": 1.109499999999798,
+            "max": 8.442700000000059,
+            "p50": 1.5460000000000491,
+            "p95": 5.805799999999863,
+            "p99": 7.643899999999803,
+            "stddev": 1.3950143238902433
+          },
+          "totalTimeMs": 197.28709999999955
+        },
+        "queryAnalysis": {
+          "totalQueries": 6,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": true
+        },
+        "rawQueries": [
+          {
+            "model": "Reservation",
+            "operation": "groupBy",
+            "fingerprint": "Reservation.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+          },
+          {
+            "model": "Book",
+            "operation": "count",
+            "fingerprint": "Book.count({\"where\":{\"isDeleted\":\"?\"}})"
+          },
+          {
+            "model": "Loan",
+            "operation": "groupBy",
+            "fingerprint": "Loan.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+          },
+          {
+            "model": "User",
+            "operation": "groupBy",
+            "fingerprint": "User.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+          },
+          {
+            "model": "BookCopy",
+            "operation": "groupBy",
+            "fingerprint": "BookCopy.groupBy({\"by\":[\"?\"],\"where\":{\"book\":{\"isDeleted\":\"?\"}},\"_count\":{\"id\":\"?\"}})"
+          },
+          {
+            "model": "Order",
+            "operation": "groupBy",
+            "fingerprint": "Order.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+          }
+        ]
+      },
+      {
+        "name": "Analytics Aggregation",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 1.1481080000000043,
+            "min": 0.6981000000000677,
+            "max": 4.604199999999992,
+            "p50": 1.0111000000001695,
+            "p95": 1.7705000000000837,
+            "p99": 4.601499999999987,
+            "stddev": 0.5649003715134141
+          },
+          "totalTimeMs": 114.81080000000043
+        },
+        "queryAnalysis": {
+          "totalQueries": 4,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "Loan",
+            "operation": "groupBy",
+            "fingerprint": "Loan.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+          },
+          {
+            "model": "Review",
+            "operation": "aggregate",
+            "fingerprint": "Review.aggregate({\"_avg\":{\"rating\":\"?\"},\"_count\":{\"id\":\"?\"}})"
+          },
+          {
+            "model": "Loan",
+            "operation": "findMany",
+            "fingerprint": "Loan.findMany({\"select\":{\"createdAt\":\"?\",\"status\":\"?\"}})"
+          },
+          {
+            "model": "User",
+            "operation": "groupBy",
+            "fingerprint": "User.groupBy({\"by\":[\"?\"],\"_count\":{\"id\":\"?\"}})"
+          }
+        ]
+      },
+      {
+        "name": "Reporting Queries",
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 100,
+          "durationMs": {
+            "avg": 4.497717000000002,
+            "min": 2.945699999999988,
+            "max": 34.328700000000026,
+            "p50": 3.923699999999826,
+            "p95": 6.035399999999754,
+            "p99": 8.755300000000261,
+            "stddev": 3.167402224475296
+          },
+          "totalTimeMs": 449.77170000000024
+        },
+        "queryAnalysis": {
+          "totalQueries": 4,
+          "duplicateQueries": [],
+          "redundantLookups": [],
+          "potentialNPlusOne": false,
+          "excessiveRoundTrips": false
+        },
+        "rawQueries": [
+          {
+            "model": "Book",
+            "operation": "findMany",
+            "fingerprint": "Book.findMany({\"where\":{\"title\":{\"contains\":\"?\"},\"isDeleted\":\"?\"}})"
+          },
+          {
+            "model": "BookCopy",
+            "operation": "findMany",
+            "fingerprint": "BookCopy.findMany({\"include\":{\"book\":\"?\",\"loans\":{\"where\":{\"status\":\"?\"}}}})"
+          },
+          {
+            "model": "Loan",
+            "operation": "findMany",
+            "fingerprint": "Loan.findMany({\"where\":{\"status\":\"?\"},\"include\":{\"user\":\"?\",\"bookCopy\":{\"include\":{\"book\":\"?\"}}}})"
+          },
+          {
+            "model": "User",
+            "operation": "findUnique",
+            "fingerprint": "User.findUnique({\"where\":{\"id\":\"?\"},\"include\":{\"loans\":{\"include\":{\"bookCopy\":{\"include\":{\"book\":\"?\"}}}},\"reservations\":{\"include\":{\"book\":\"?\"}}}})"
+          }
+        ]
+      }
+    ],
+    "transactions": [
+      {
+        "name": "Borrow Book",
+        "status": "PASS",
+        "metrics": {
+          "success": 200,
+          "failures": 0,
+          "retries": 0,
+          "successRate": 100,
+          "commitDurationMs": {
+            "avg": 4.879671000000007,
+            "min": 3.509299999999712,
+            "max": 7.456500000000233,
+            "p50": 4.629500000000007,
+            "p95": 6.541299999999865,
+            "p99": 7.43100000000004,
+            "stddev": 0.9428650015028964
+          },
+          "rollbackDurationMs": {
+            "avg": 1.5993990000000031,
+            "min": 0.9475000000002183,
+            "max": 3.2319000000002234,
+            "p50": 1.5731000000000677,
+            "p95": 2.4064000000003034,
+            "p99": 3.0733000000000175,
+            "stddev": 0.4520348476600165
+          }
+        }
+      },
+      {
+        "name": "Return Book",
+        "status": "PASS",
+        "metrics": {
+          "success": 200,
+          "failures": 0,
+          "retries": 0,
+          "successRate": 100,
+          "commitDurationMs": {
+            "avg": 4.775408000000016,
+            "min": 2.8109000000004016,
+            "max": 9.518500000000131,
+            "p50": 4.691100000000006,
+            "p95": 6.209799999999632,
+            "p99": 7.0945999999999,
+            "stddev": 1.005806934523654
+          },
+          "rollbackDurationMs": {
+            "avg": 1.9185879999999906,
+            "min": 1.3666999999995824,
+            "max": 2.78020000000015,
+            "p50": 1.8130000000001019,
+            "p95": 2.561399999999594,
+            "p99": 2.71979999999985,
+            "stddev": 0.3035433485616109
+          }
+        }
+      },
+      {
+        "name": "Renew Loan",
+        "status": "PASS",
+        "metrics": {
+          "success": 200,
+          "failures": 0,
+          "retries": 0,
+          "successRate": 100,
+          "commitDurationMs": {
+            "avg": 3.7022739999999796,
+            "min": 2.7276999999994587,
+            "max": 7.02390000000014,
+            "p50": 3.622200000000703,
+            "p95": 5.031399999999849,
+            "p99": 5.29700000000048,
+            "stddev": 0.6944182704423106
+          },
+          "rollbackDurationMs": {
+            "avg": 1.8536030000000392,
+            "min": 1.1335999999992055,
+            "max": 4.540600000000268,
+            "p50": 1.829899999999725,
+            "p95": 2.503700000000208,
+            "p99": 2.886700000000019,
+            "stddev": 0.4936316177991843
+          }
+        }
+      },
+      {
+        "name": "Reservation Creation",
+        "status": "PASS",
+        "metrics": {
+          "success": 200,
+          "failures": 0,
+          "retries": 0,
+          "successRate": 100,
+          "commitDurationMs": {
+            "avg": 3.7498809999999594,
+            "min": 2,
+            "max": 19.590300000000752,
+            "p50": 3.139900000000125,
+            "p95": 6.51929999999993,
+            "p99": 10.88339999999971,
+            "stddev": 2.136191972023906
+          },
+          "rollbackDurationMs": {
+            "avg": 1.8106840000000466,
+            "min": 1.1966999999995096,
+            "max": 3.2661000000007334,
+            "p50": 1.6772000000000844,
+            "p95": 2.7900999999992564,
+            "p99": 3.1702000000004773,
+            "stddev": 0.4610530010140542
+          }
+        }
+      },
+      {
+        "name": "Reservation Cancellation",
+        "status": "PASS",
+        "metrics": {
+          "success": 200,
+          "failures": 0,
+          "retries": 0,
+          "successRate": 100,
+          "commitDurationMs": {
+            "avg": 3.6275890000000346,
+            "min": 2.4063999999998487,
+            "max": 7.56630000000041,
+            "p50": 3.489400000000387,
+            "p95": 4.853499999999258,
+            "p99": 5.757799999999406,
+            "stddev": 0.726151442867802
+          },
+          "rollbackDurationMs": {
+            "avg": 1.937132000000056,
+            "min": 1.3328000000001339,
+            "max": 4.792199999999866,
+            "p50": 1.7974000000003798,
+            "p95": 2.8153000000002066,
+            "p99": 3.11200000000008,
+            "stddev": 0.486883295026661
+          }
+        }
+      },
+      {
+        "name": "Review Creation",
+        "status": "PASS",
+        "metrics": {
+          "success": 100,
+          "failures": 100,
+          "retries": 0,
+          "successRate": 50,
+          "commitDurationMs": {
+            "avg": 5.740291000000052,
+            "min": 2.9390000000003056,
+            "max": 64.65429999999924,
+            "p50": 4.714399999999841,
+            "p95": 7.64049999999952,
+            "p99": 26.11499999999978,
+            "stddev": 6.403539121440423
+          },
+          "rollbackDurationMs": {
+            "avg": 0,
+            "min": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "stddev": 0
+          }
+        }
+      }
+    ],
+    "slowQueries": [
+      {
+        "queryName": "BookCopy.findMany",
+        "type": "Potential Full Table Scan",
+        "duration": 2.4692999999999756,
+        "severity": "HIGH",
+        "recommendation": "Avoid full table scans by adding a WHERE clause filtering on indexed columns.",
+        "fingerprint": "BookCopy.findMany({\"include\":{\"book\":\"?\",\"loans\":{\"where\":{\"status\":\"?\"}}}})"
+      },
+      {
+        "queryName": "mock_book.findMany",
+        "type": "Slow Query",
+        "duration": 150,
+        "threshold": 100,
+        "severity": "MEDIUM",
+        "recommendation": "Optimize database indexes, analyze query execution plan, or cache the result.",
+        "fingerprint": "mock_book.findMany({\"where\":{\"title\":\"?\"}})"
+      },
+      {
+        "queryName": "mock_book.findMany",
+        "type": "Large Result Set",
+        "duration": 150,
+        "resultSize": 120,
+        "threshold": 100,
+        "severity": "MEDIUM",
+        "recommendation": "Implement pagination (use skip and take) or select only necessary fields.",
+        "fingerprint": "mock_book.findMany({\"where\":{\"title\":\"?\"}})"
+      },
+      {
+        "queryName": "loan.findMany",
+        "type": "Potential Full Table Scan",
+        "duration": 5,
+        "severity": "HIGH",
+        "recommendation": "Avoid full table scans by adding a WHERE clause filtering on indexed columns.",
+        "fingerprint": "loan.findMany({})"
+      },
+      {
+        "queryName": "bookCopy.findMany",
+        "type": "Potential Full Table Scan",
+        "duration": 10,
+        "severity": "HIGH",
+        "recommendation": "Avoid full table scans by adding a WHERE clause filtering on indexed columns.",
+        "fingerprint": "bookCopy.findMany({\"include\":{\"book\":{\"include\":{\"authors\":{\"include\":{\"author\":{\"include\":{\"books\":\"?\"}}}}}}}})"
+      },
+      {
+        "queryName": "bookCopy.findMany",
+        "type": "Expensive Nested Joins",
+        "duration": 10,
+        "depth": 3,
+        "severity": "MEDIUM",
+        "recommendation": "Flatten nested inclusions or execute split queries instead of loading multiple deep relations concurrently.",
+        "fingerprint": "bookCopy.findMany({\"include\":{\"book\":{\"include\":{\"authors\":{\"include\":{\"author\":{\"include\":{\"books\":\"?\"}}}}}}}})"
+      }
+    ],
+    "queryMemoryUsage": {
+      "heapUsedBefore": 8531600,
+      "heapUsedAfter": 11120096
+    },
+    "txMemoryUsage": {
+      "heapUsedBefore": 11131168,
+      "heapUsedAfter": 34684256
+    }
+  },
+  "loadMetrics": {
+    "scenarios": [
+      {
+        "concurrency": 50,
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 688,
+          "success": 457,
+          "failures": 231,
+          "successRate": 66.42441860465115,
+          "rps": 129.03431022308834,
+          "durationMs": {
+            "avg": 421.11049671772446,
+            "min": 16.395700000000033,
+            "max": 1352.3788000000004,
+            "p50": 293.1819999999998,
+            "p95": 1058.2711,
+            "p99": 1348.4358000000002,
+            "stddev": 317.43086683209236
+          },
+          "cpuFraction": 0.341821614230884,
+          "memory": {
+            "heapUsedStart": 33351232,
+            "heapUsedEnd": 54554384,
+            "heapGrowthBytes": 21203152,
+            "rssStart": 123273216,
+            "rssEnd": 182034432,
+            "rssGrowthBytes": 58761216
+          },
+          "errors": {
+            "timeout": 0,
+            "http_error": {
+              "400": 99,
+              "409": 132
+            },
+            "network_error": 0,
+            "unexpected_exception": 0
+          }
+        }
+      },
+      {
+        "concurrency": 100,
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 562,
+          "success": 365,
+          "failures": 197,
+          "successRate": 64.94661921708185,
+          "rps": 105.06900360072595,
+          "durationMs": {
+            "avg": 991.3571704109592,
+            "min": 224.40800000000127,
+            "max": 1825.3559999999998,
+            "p50": 915.4104000000007,
+            "p95": 1730.2278999999999,
+            "p99": 1818.057200000001,
+            "stddev": 487.38536481857113
+          },
+          "cpuFraction": 0.34333377733596515,
+          "memory": {
+            "heapUsedStart": 54697112,
+            "heapUsedEnd": 91748808,
+            "heapGrowthBytes": 37051696,
+            "rssStart": 182145024,
+            "rssEnd": 251469824,
+            "rssGrowthBytes": 69324800
+          },
+          "errors": {
+            "timeout": 0,
+            "http_error": {
+              "400": 85,
+              "409": 112
+            },
+            "network_error": 0,
+            "unexpected_exception": 0
+          }
+        }
+      },
+      {
+        "concurrency": 250,
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 830,
+          "success": 226,
+          "failures": 604,
+          "successRate": 27.228915662650603,
+          "rps": 123.80861985743185,
+          "durationMs": {
+            "avg": 1334.667121238939,
+            "min": 461.121799999999,
+            "max": 2024.7422000000006,
+            "p50": 1267.9276000000027,
+            "p95": 1957.2667000000001,
+            "p99": 2016.4442999999992,
+            "stddev": 415.7915102076427
+          },
+          "cpuFraction": 0.5757621711181211,
+          "memory": {
+            "heapUsedStart": 91834360,
+            "heapUsedEnd": 49477864,
+            "heapGrowthBytes": -42356496,
+            "rssStart": 251469824,
+            "rssEnd": 300974080,
+            "rssGrowthBytes": 49504256
+          },
+          "errors": {
+            "timeout": 376,
+            "http_error": {
+              "400": 86,
+              "409": 142
+            },
+            "network_error": 0,
+            "unexpected_exception": 0
+          }
+        }
+      },
+      {
+        "concurrency": 500,
+        "status": "PASS",
+        "metrics": {
+          "totalRequests": 1287,
+          "success": 77,
+          "failures": 1210,
+          "successRate": 5.982905982905983,
+          "rps": 210.58312578269184,
+          "durationMs": {
+            "avg": 1717.247406493506,
+            "min": 1467.4433000000026,
+            "max": 2650.1365000000005,
+            "p50": 1595.0121,
+            "p95": 2641.0285000000003,
+            "p99": 2650.1365000000005,
+            "stddev": 376.82110598627133
+          },
+          "cpuFraction": 0.4082315721735415,
+          "memory": {
+            "heapUsedStart": 49543032,
+            "heapUsedEnd": 52580240,
+            "heapGrowthBytes": 3037208,
+            "rssStart": 300974080,
+            "rssEnd": 317460480,
+            "rssGrowthBytes": 16486400
+          },
+          "errors": {
+            "timeout": 868,
+            "http_error": {
+              "400": 20
+            },
+            "network_error": 322,
+            "unexpected_exception": 0
+          }
+        }
+      }
+    ],
+    "stabilityTrace": [
+      {
+        "concurrency": 50,
+        "cpuFraction": 0.341821614230884,
+        "memory": {
+          "heapUsed": 54554384,
+          "rss": 182034432
+        },
+        "eventLoopDelayMs": 9.029599999999846
+      },
+      {
+        "concurrency": 100,
+        "cpuFraction": 0.34333377733596515,
+        "memory": {
+          "heapUsed": 91748808,
+          "rss": 251469824
+        },
+        "eventLoopDelayMs": 9.414600000000064
+      },
+      {
+        "concurrency": 250,
+        "cpuFraction": 0.5757621711181211,
+        "memory": {
+          "heapUsed": 49477864,
+          "rss": 300974080
+        },
+        "eventLoopDelayMs": 7.228100000000268
+      },
+      {
+        "concurrency": 500,
+        "cpuFraction": 0.4082315721735415,
+        "memory": {
+          "heapUsed": 52580240,
+          "rss": 317460480
+        },
+        "eventLoopDelayMs": 25.299699999999575
+      }
+    ],
+    "connectionAnalysis": {
+      "status": "PASS",
+      "postgresConnections": 9,
+      "recommendations": [
+        "Active database connections are approaching pool capacity limit. Consider increasing the Prisma connection_limit in your DATABASE_URL."
+      ]
+    },
+    "soakTest": {
+      "schemaVersion": "1.0",
+      "phase": "13.5.6.4",
+      "runId": "2026-07-16T09-23-08-578Z",
+      "generatedAt": "2026-07-16T09:23:44.601Z",
+      "startedAt": "2026-07-16T09:23:08.580Z",
+      "finishedAt": "2026-07-16T09:23:44.601Z",
+      "durationMs": 10000,
+      "status": "PASS",
+      "success": 1793,
+      "failures": 967,
+      "successRate": 64.96376811594203,
+      "errors": {
+        "timeout": 0,
+        "http_error": {
+          "400": 400,
+          "409": 547
+        },
+        "network_error": 20,
+        "unexpected_exception": 0
+      },
+      "metrics": {
+        "memory": {
+          "heapUsedStart": 52607120,
+          "heapUsedEnd": 111299712,
+          "heapGrowthBytes": 58692592,
+          "rssStart": 317460480,
+          "rssEnd": 309493760,
+          "rssGrowthBytes": -7966720
+        },
+        "cpu": {
+          "cpuStartFraction": 0,
+          "cpuEndFraction": 0.5873830613069632
+        },
+        "activeHandles": {
+          "start": 496,
+          "end": 31,
+          "growth": -465
+        },
+        "trends": {
+          "firstHalfAvgLatencyMs": 84.00448693134807,
+          "secondHalfAvgLatencyMs": 63.76098226950365,
+          "latencyDriftMs": -20.24350466184442,
+          "firstHalfRps": 241.8,
+          "secondHalfRps": 310.2,
+          "throughputDegradationPercent": 0
+        },
+        "eventLoopDelayMs": 9.614399999998568
+      },
+      "anomalies": {
+        "potentialMemoryLeak": true,
+        "throughputDegradation": false,
+        "latencyDrift": false,
+        "handleLeak": false
+      }
+    }
+  },
+  "analysisSummary": {
+    "schemaVersion": "1.0",
+    "phase": "13.5.6.5",
+    "runId": "2026-07-16T09-23-08-578Z",
+    "benchmarkStatus": "PASS",
+    "analysisStatus": "PASS",
+    "performanceHealthScore": 0,
+    "totalBottlenecks": 13,
+    "criticalIssues": 6,
+    "highPriorityRecommendations": 4,
+    "generatedRecommendations": 4,
+    "analyzedArtifacts": [
+      "benchmark\\reports\\analytics-borrowing\\summary.json",
+      "benchmark\\reports\\analytics-members\\summary.json",
+      "benchmark\\reports\\analytics-ratings\\summary.json",
+      "benchmark\\reports\\analytics-timeseries\\summary.json",
+      "benchmark\\reports\\auth-login\\summary.json",
+      "benchmark\\reports\\auth-register\\summary.json",
+      "benchmark\\reports\\books-get\\summary.json",
+      "benchmark\\reports\\books-list\\summary.json",
+      "benchmark\\reports\\books-rating\\summary.json",
+      "benchmark\\reports\\books-search\\summary.json",
+      "benchmark\\reports\\dashboard-analytics\\summary.json",
+      "benchmark\\reports\\dashboard-summary\\summary.json",
+      "benchmark\\reports\\loans-active\\summary.json",
+      "benchmark\\reports\\loans-borrow\\summary.json",
+      "benchmark\\reports\\loans-get-by-id\\summary.json",
+      "benchmark\\reports\\loans-history\\summary.json",
+      "benchmark\\reports\\loans-list\\summary.json",
+      "benchmark\\reports\\loans-renew\\summary.json",
+      "benchmark\\reports\\loans-return\\summary.json",
+      "benchmark\\reports\\reports-inventory\\summary.json",
+      "benchmark\\reports\\reports-member\\summary.json",
+      "benchmark\\reports\\reports-overdue\\summary.json",
+      "benchmark\\reports\\reports-search-books\\summary.json",
+      "benchmark\\reports\\reservations-cancel\\summary.json",
+      "benchmark\\reports\\reservations-create\\summary.json",
+      "benchmark\\reports\\reservations-get\\summary.json",
+      "benchmark\\reports\\reservations-list\\summary.json",
+      "benchmark\\reports\\reservations-mine\\summary.json",
+      "benchmark\\reports\\reviews-book\\summary.json",
+      "benchmark\\reports\\reviews-create\\summary.json",
+      "benchmark\\reports\\reviews-get\\summary.json",
+      "benchmark\\reports\\reviews-mine\\summary.json",
+      "benchmark\\reports\\reviews-rating\\summary.json",
+      "benchmark\\reports\\smoke\\summary.json",
+      "benchmark\\reports\\verify-report-test\\summary.json",
+      "benchmark\\database\\query-summary.json",
+      "benchmark\\database\\transactions.json",
+      "benchmark\\database\\slow-queries.json",
+      "benchmark\\load\\summary.json",
+      "benchmark\\load\\stability.json",
+      "benchmark\\load\\soak-test.json"
+    ],
+    "startedAt": "2026-07-16T09:41:46.502Z",
+    "finishedAt": "2026-07-16T09:41:46.648Z",
+    "durationMs": 131.6017,
+    "environment": {
+      "nodeVersion": "v25.1.0",
+      "prismaVersion": "6.19.3",
+      "postgresVersion": "PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35225, 64-bit"
+    },
+    "metadata": {
+      "platform": "win32",
+      "arch": "x64",
+      "cpus": 8,
+      "freeMem": 410394624,
+      "totalMem": 8299257856
+    }
+  },
+  "comparison": {
+    "status": "baseline_unavailable",
+    "message": "Historical comparisons are not possible because no previous run baseline was found.",
+    "improvements": [],
+    "regressions": [],
+    "stable": []
+  }
+}

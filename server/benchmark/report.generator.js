@@ -1,247 +1,329 @@
 /**
- * @fileoverview Report generator for Phase 13.5.6.5 — Bottleneck Analysis.
+ * @fileoverview Final report markdown generators.
  *
- * Compiles detected bottlenecks, priorities, risk assessments, and matrices
- * into a production-ready engineering Markdown report.
+ * Compiles performance-summary.md and before-after.md for deployment readiness.
  *
  * @module benchmark/report.generator
  */
 
 const fms = (ms) => (typeof ms === 'number' ? `${ms.toFixed(2)} ms` : 'N/A');
+const frps = (rps) => (typeof rps === 'number' ? `${rps.toFixed(2)} RPS` : 'N/A');
 const fpct = (pct) => (typeof pct === 'number' ? `${pct.toFixed(2)}%` : 'N/A');
 const fmb = (bytes) => (typeof bytes === 'number' ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : 'N/A');
 
 /**
- * Generate report.md contents.
+ * Generate performance-summary.md content.
  *
- * @param {Object} summary - Bottleneck summary.json
- * @param {Array} bottlenecks - List of bottlenecks
- * @param {Array} recommendations - List of ranked recommendations
- * @returns {string} Compiled report.md contents
+ * @param {Object} aggregated - Aggregated benchmark data
+ * @param {Object} execSummary - Executive summary details
+ * @param {Object} comparison - Delta comparison metrics
+ * @param {Object} metadata - Consolidated report metadata
+ * @returns {string} Markdown content
  */
-export function generateMarkdownReport(summary, bottlenecks, recommendations) {
-  const env = summary.environment || {};
-  const meta = summary.metadata || {};
+export function generatePerformanceSummary(aggregated, execSummary, comparison, metadata) {
+  const env = aggregated.environment || {};
+  const meta = aggregated.metadata || {};
 
   const lines = [
-    '# AVELIS Performance Bottleneck Analysis Report',
+    '# AVELIS Final Performance Assessment Summary',
     '',
-    `> **Run ID**: \`${summary.runId || 'N/A'}\` | **Generated**: ${summary.generatedAt || new Date().toISOString()}`,
-    `> **Schema Version**: ${summary.schemaVersion || '1.0'} | **Phase**: ${summary.phase || '13.5.6.5'}`,
+    `> **Run ID**: \`${metadata.runId}\` | **Generated**: ${metadata.generatedAt}`,
+    `> **Schema Version**: ${metadata.schemaVersion} | **Report Version**: ${metadata.reportVersion} | **Phase**: ${metadata.phase}`,
     '',
     '## 1. Executive Summary',
     '',
     '| Parameter | Value |',
     '| --- | --- |',
-    `| **Analysis Status** | **${summary.analysisStatus || 'PASS'}** |`,
-    `| **Overall Performance Health Score** | **${summary.performanceHealthScore || 100} / 100** |`,
-    `| **Overall Scalability Rating** | **${summary.performanceHealthScore >= 85 ? 'A (Excellent)' : summary.performanceHealthScore >= 70 ? 'B (Acceptable)' : 'C (Congested)'}** |`,
-    `| **Total Bottlenecks Detected** | ${summary.totalBottlenecks || 0} |`,
-    `| **Critical Issues** | ${summary.criticalIssues || 0} |`,
-    `| **High Priority Recommendations** | ${summary.highPriorityRecommendations || 0} |`,
-    `| **Analysis Duration** | ${fms(summary.durationMs)} |`,
+    `| **Production Readiness Score** | **${execSummary.productionReadinessScore} / 100** |`,
+    `| **Performance Health Score** | **${execSummary.performanceHealthScore} / 100** |`,
+    `| **Overall Scalability Rating** | **${execSummary.scalabilityRating}** |`,
+    `| **Benchmark Completion Status** | **${execSummary.benchmarkCompletionStatus}** |`,
+    `| **Report Status** | **${metadata.reportStatus}** |`,
+    `| **Total Bottlenecks Detected** | ${aggregated.analysisMetrics?.summary?.totalBottlenecks || 0} |`,
+    `| **Critical Issues** | ${aggregated.analysisMetrics?.summary?.criticalIssues || 0} |`,
+    `| **Historical Baseline Status** | ${comparison.status === 'comparison_completed' ? '✓ Baseline compared' : '⚠ Baseline missing'} |`,
     '',
+    '### Executive Conclusion:',
+    `> **${execSummary.conclusion}**`,
+    '',
+    '### Top Strengths:',
   ];
+
+  for (const s of execSummary.topStrengths) {
+    lines.push(`* ✓ ${s}`);
+  }
+  lines.push('');
+
+  lines.push('### Top Performance Risks:');
+  for (const r of execSummary.topRisks) {
+    lines.push(`* ⚠ ${r}`);
+  }
+  lines.push('');
 
   // ── 2. Benchmark Sources ──────────────────────────────────────────────────
   lines.push('## 2. Benchmark Sources');
   lines.push('');
-  lines.push('The following performance artifacts were parsed and analyzed during this run:');
-  lines.push('');
-  for (const art of summary.analyzedArtifacts || []) {
-    lines.push(`* \`${art}\``);
+  lines.push('| File Name / Location | Source Phase | Schema | Run ID |');
+  lines.push('| --- | --- | --- | --- |');
+
+  for (const [key, src] of Object.entries(metadata.sources || {})) {
+    lines.push(
+      `| \`server/${src.artifact}\` | Phase ${src.phase} | Version ${src.schemaVersion} | \`${src.runId}\` |`
+    );
   }
   lines.push('');
 
-  // ── 3. Environment Information ─────────────────────────────────────────────
-  lines.push('## 3. Environment Information');
+  // ── 3. Environment Metadata ────────────────────────────────────────────────
+  lines.push('## 3. Environment Metadata');
   lines.push('');
-  lines.push('| Environment Key | Configured Target / Version |');
+  lines.push('| Metric | Target |');
   lines.push('| --- | --- |');
-  lines.push(`| **Node.js version** | ${env.nodeVersion || 'N/A'} |`);
+  lines.push(`| **Node.js Version** | ${env.nodeVersion || 'N/A'} |`);
   lines.push(`| **Prisma version** | ${env.prismaVersion || 'N/A'} |`);
   lines.push(`| **PostgreSQL version** | ${env.postgresVersion || 'N/A'} |`);
-  lines.push(`| **Platform / Arch** | ${meta.platform || 'N/A'} / ${meta.arch || 'N/A'} |`);
+  lines.push(`| **Platform / Arch** | ${meta.platform || 'N/A'} / ${meta.arch || 'N/A'} (CPUs: ${meta.cpus || 'N/A'}) |`);
   lines.push('');
 
-  // ── 4. Top Bottlenecks ────────────────────────────────────────────────────
-  lines.push('## 4. Top Bottlenecks');
+  // ── 4. API Benchmark Summary (Phase 13.5.6.2) ─────────────────────────────
+  lines.push('## 4. API Benchmark Summary');
   lines.push('');
-  lines.push('| ID | Component | Category | Severity | Confidence | Confidence Reason | Trace Source |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
-
-  const criticalAndHigh = bottlenecks.filter(b => ['CRITICAL', 'HIGH'].includes(b.severity));
-  const otherBottles = bottlenecks.filter(b => !['CRITICAL', 'HIGH'].includes(b.severity));
-  const sortedBottlenecks = [...criticalAndHigh, ...otherBottles];
-
-  for (const b of sortedBottlenecks) {
-    const srcRef = b.source ? `Phase ${b.source.phase} (${b.source.artifact}: ${b.source.metric})` : 'N/A';
+  lines.push('| API Route | RPS | Avg Latency | P95 | Success Rate |');
+  lines.push('| --- | --- | --- | --- | --- |');
+  for (const api of aggregated.apiSummaries || []) {
     lines.push(
-      `| \`${b.id}\` | **${b.component}** | ${b.category} | \`${b.severity}\` | ${b.confidence} | ${b.confidenceReason || ''} | ${srcRef} |`
+      `| **${api.name}** | ${frps(api.metrics?.rps)} | ${fms(api.metrics?.durationMs?.avg)} | ${fms(api.metrics?.durationMs?.p95)} | ${fpct(api.metrics?.successRate * 100)} |`
     );
   }
   lines.push('');
 
-  // Categorized Bottlenecks
-  const readBottles = bottlenecks.filter(b => b.category === 'Read');
-  const writeBottles = bottlenecks.filter(b => b.category === 'Write');
-  const dbBottles = bottlenecks.filter(b => b.category === 'Database');
-  const txBottles = bottlenecks.filter(b => b.category === 'Transaction');
-
-  lines.push('### Read Bottlenecks');
-  if (readBottles.length > 0) {
-    for (const b of readBottles) {
-      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): Average latency recorded at \`${b.supportingMetrics?.averageLatencyMs?.toFixed(2)} ms\`.`);
-    }
-  } else {
-    lines.push('_No read latency bottlenecks detected._');
-  }
+  // ── 5. Database Benchmark Summary (Phase 13.5.6.3) ──────────────────────────
+  lines.push('## 5. Database Benchmark Summary');
   lines.push('');
-
-  lines.push('### Write Bottlenecks');
-  if (writeBottles.length > 0) {
-    for (const b of writeBottles) {
-      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): Average latency recorded at \`${b.supportingMetrics?.averageLatencyMs?.toFixed(2)} ms\`.`);
-    }
-  } else {
-    lines.push('_No write latency bottlenecks detected._');
-  }
+  lines.push('### Core Database Queries');
   lines.push('');
-
-  lines.push('### Database Bottlenecks');
-  if (dbBottles.length > 0) {
-    for (const b of dbBottles) {
-      const detail = b.supportingMetrics?.averageQueryMs
-        ? `Avg query duration: \`${b.supportingMetrics.averageQueryMs.toFixed(2)} ms\``
-        : b.supportingMetrics?.type
-        ? `Anomaly Type: \`${b.supportingMetrics.type}\``
-        : `Duplicate count: \`${b.supportingMetrics?.duplicateQueriesCount}\``;
-      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): ${detail}.`);
-    }
-  } else {
-    lines.push('_No database query bottlenecks detected._');
-  }
-  lines.push('');
-
-  lines.push('### Transaction Bottlenecks');
-  if (txBottles.length > 0) {
-    for (const b of txBottles) {
-      lines.push(`* **${b.component}** (Severity: \`${b.severity}\`): Avg commit duration: \`${b.supportingMetrics?.averageCommitMs?.toFixed(2)} ms\` (Success: \`${b.supportingMetrics?.successRatePercent}%\`).`);
-    }
-  } else {
-    lines.push('_No transaction bottlenecks detected._');
-  }
-  lines.push('');
-
-  // ── 5. System Resources Analysis ──────────────────────────────────────────
-  lines.push('## 5. System Resources Analysis');
-  lines.push('');
-
-  const cpuBottles = bottlenecks.filter(b => b.category === 'CPU-bound');
-  const memBottles = bottlenecks.filter(b => b.category === 'Memory-bound');
-  const poolBottles = bottlenecks.filter(b => b.category === 'Connection Pool');
-  const netBottles = bottlenecks.filter(b => b.category === 'Network');
-
-  lines.push('### CPU Analysis');
-  if (cpuBottles.length > 0) {
-    for (const b of cpuBottles) {
-      lines.push(`* ⚠ **${b.component}**: Exceeded target limit. Peak CPU Fraction: \`${b.supportingMetrics?.cpuPercent?.toFixed(2)}%\`.`);
-    }
-  } else {
-    lines.push('_Node Process CPU usage remained stable and within safety limits under load._');
-  }
-  lines.push('');
-
-  lines.push('### Memory Analysis');
-  if (memBottles.length > 0) {
-    for (const b of memBottles) {
-      const detail = b.supportingMetrics?.heapGrowthBytes
-        ? `Heap growth recorded: \`${fmb(b.supportingMetrics.heapGrowthBytes)}\``
-        : `Handle leak count growth: \`${b.supportingMetrics?.growth}\``;
-      lines.push(`* ⚠ **${b.component}**: ${detail}.`);
-    }
-  } else {
-    lines.push('_No critical memory leaks or handle accumulation detected during soak testing._');
-  }
-  lines.push('');
-
-  lines.push('### Connection Pool Analysis');
-  if (poolBottles.length > 0) {
-    for (const b of poolBottles) {
-      lines.push(`* ⚠ **${b.component}**: Saturation warning. Active database connections count: \`${b.supportingMetrics?.activeConnections}\`.`);
-    }
-  } else {
-    lines.push('_Database connection pool capacity remained within safe parameters._');
-  }
-  lines.push('');
-
-  lines.push('### Event Loop Analysis');
-  const loopDelay = bottlenecks.find(b => b.component === 'Node Event Loop');
-  if (loopDelay) {
-    lines.push(`* ⚠ **Node Event Loop Delay**: Event loop delay spikes recorded up to \`${fms(loopDelay.supportingMetrics?.eventLoopDelayMs)}\`, suggesting single-threaded blockages.`);
-  } else {
-    lines.push('_Event loop delay remained low, ensuring quick asynchronous task processing._');
-  }
-  lines.push('');
-
-  // ── 6. Recommendation Matrix ──────────────────────────────────────────────
-  lines.push('## 6. Recommendation Matrix');
-  lines.push('');
-  lines.push('| Recommendation | Expected Benefit | Effort | Impact | Risk | Related Bottlenecks |');
+  lines.push('| Prisma Operation | Total Queries | Avg Latency | P95 | N+1 Pattern? | Duplicate? |');
   lines.push('| --- | --- | --- | --- | --- | --- |');
+  for (const q of aggregated.databaseMetrics?.queries || []) {
+    const isN1 = q.queryAnalysis?.potentialNPlusOne ? '⚠ YES' : '✓ NO';
+    const hasDup = (q.queryAnalysis?.duplicateQueries?.length || 0) > 0 ? '⚠ YES' : '✓ NO';
+    lines.push(
+      `| **${q.name}** | ${q.metrics?.count || 0} | ${fms(q.metrics?.durationMs?.avg)} | ${fms(q.metrics?.durationMs?.p95)} | ${isN1} | ${hasDup} |`
+    );
+  }
+  lines.push('');
 
-  for (const rec of recommendations) {
+  lines.push('### Isolated Transactions');
+  lines.push('');
+  lines.push('| Transaction | Success Rate | Avg Commit | P95 Commit |');
+  lines.push('| --- | --- | --- | --- |');
+  for (const tx of aggregated.databaseMetrics?.transactions || []) {
+    lines.push(
+      `| **${tx.name}** | ${fpct(tx.metrics?.successRate)} | ${fms(tx.metrics?.commitDurationMs?.avg)} | ${fms(tx.metrics?.commitDurationMs?.p95)} |`
+    );
+  }
+  lines.push('');
+
+  // ── 6. Load Test Summary (Phase 13.5.6.4) ──────────────────────────────────
+  lines.push('## 6. Load Test Summary');
+  lines.push('');
+  lines.push('### Concurrency Load Scenarios');
+  lines.push('');
+  lines.push('| Concurrency | Total Requests | RPS | Avg Latency | P95 | Error Rate | Timeout Rate | Peak Process CPU |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const scen of aggregated.loadMetrics?.scenarios || []) {
+    const total = scen.metrics?.totalRequests || 1;
+    const errRate = (scen.metrics?.failures || 0) / total;
+    const timeoutRate = (scen.metrics?.errors?.timeout || 0) / total;
+    lines.push(
+      `| **${scen.concurrency} Users** | ${scen.metrics?.totalRequests} | ${frps(scen.metrics?.rps)} | ${fms(scen.metrics?.durationMs?.avg)} | ${fms(scen.metrics?.durationMs?.p95)} | ${fpct(errRate * 100)} | ${fpct(timeoutRate * 100)} | ${fpct(scen.metrics?.cpuFraction * 100)} |`
+    );
+  }
+  lines.push('');
+
+  const soak = aggregated.loadMetrics?.soakTest;
+  if (soak) {
+    lines.push('### Soak Test Stability Analysis');
+    lines.push('');
+    lines.push(`* **Duration**: \`${soak.durationMs} ms\``);
+    lines.push(`* **Heap Growth**: \`${fmb(soak.metrics?.memory?.heapGrowthBytes)}\` (Start: \`${fmb(soak.metrics?.memory?.heapUsedStart)}\` | End: \`${fmb(soak.metrics?.memory?.heapUsedEnd)}\`)`);
+    lines.push(`* **RSS Growth**: \`${fmb(soak.metrics?.memory?.rssGrowthBytes)}\` (Start: \`${fmb(soak.metrics?.memory?.rssStart)}\` | End: \`${fmb(soak.metrics?.memory?.rssEnd)}\`)`);
+    if (soak.metrics?.activeHandles) {
+      lines.push(`* **Active Event Loop Handles**: \`${soak.metrics.activeHandles.start} -> ${soak.metrics.activeHandles.end}\` (Growth: \`${soak.metrics.activeHandles.growth}\`)`);
+    }
+    lines.push(`* **Throughput Degradation**: \`${fpct(soak.metrics?.trends?.throughputDegradationPercent)}\` (First Half: \`${soak.metrics?.trends?.firstHalfRps.toFixed(2)} RPS\` | Second Half: \`${soak.metrics?.trends?.secondHalfRps.toFixed(2)} RPS\`)`);
+    lines.push(`* **Latency Drift**: \`${fms(soak.metrics?.trends?.latencyDriftMs)}\``);
+    lines.push('');
+  }
+
+  // ── 7. Bottleneck Analysis Summary (Phase 13.5.6.5) ────────────────────────
+  lines.push('## 7. Bottleneck Analysis Summary');
+  lines.push('');
+  lines.push('| ID | Component | Category | Severity | Confidence | Confidence Reason |');
+  lines.push('| --- | --- | --- | --- | --- | --- |');
+  for (const b of aggregated.analysisMetrics?.bottlenecks || []) {
+    lines.push(
+      `| \`${b.id}\` | **${b.component}** | ${b.category} | \`${b.severity}\` | ${b.confidence} | ${b.confidenceReason || ''} |`
+    );
+  }
+  lines.push('');
+
+  // ── 8. Comparative Analysis ───────────────────────────────────────────────
+  lines.push('## 8. Comparative Analysis');
+  lines.push('');
+  if (comparison.status === 'baseline_unavailable') {
+    lines.push('_Comparative analysis with historical baseline is unavailable for this run._');
+  } else {
+    lines.push('### Core Performance Improvements');
+    if (comparison.improvements?.length > 0) {
+      lines.push('| Metric | Current | Baseline | Delta |');
+      lines.push('| --- | --- | --- | --- |');
+      for (const imp of comparison.improvements) {
+        lines.push(`| ${imp.metric} | \`${imp.current.toFixed(2)}\` | \`${imp.baseline.toFixed(2)}\` | \`${imp.changePercent.toFixed(2)}%\` |`);
+      }
+    } else {
+      lines.push('_No metric improvements detected relative to historical baseline._');
+    }
+    lines.push('');
+
+    lines.push('### Performance Regressions');
+    if (comparison.regressions?.length > 0) {
+      lines.push('| Metric | Current | Baseline | Delta |');
+      lines.push('| --- | --- | --- | --- |');
+      for (const reg of comparison.regressions) {
+        lines.push(`| ⚠ ${reg.metric} | \`${reg.current.toFixed(2)}\` | \`${reg.baseline.toFixed(2)}\` | \`+${reg.changePercent.toFixed(2)}%\` |`);
+      }
+    } else {
+      lines.push('_No metric regressions detected relative to historical baseline._');
+    }
+    lines.push('');
+
+    lines.push('### Stable Metrics');
+    if (comparison.stable?.length > 0) {
+      lines.push('| Metric | Current | Baseline | Delta |');
+      lines.push('| --- | --- | --- | --- |');
+      for (const stb of comparison.stable) {
+        lines.push(`| ${stb.metric} | \`${stb.current.toFixed(2)}\` | \`${stb.baseline.toFixed(2)}\` | \`${stb.changePercent.toFixed(2)}%\` |`);
+      }
+    } else {
+      lines.push('_No stable metrics recorded._');
+    }
+  }
+  lines.push('');
+
+  // ── 9/10/11. Health, Readiness, and Recommendation Matrices ───────────────
+  lines.push('## 9. Performance Health Assessment');
+  lines.push('');
+  lines.push(`The overall performance health of the system is scored at **${execSummary.performanceHealthScore} / 100** based on the severity of active bottlenecks.`);
+  lines.push('');
+
+  lines.push('## 10. Production Readiness Assessment');
+  lines.push('');
+  lines.push(`Deployability readiness is calculated at **${execSummary.productionReadinessScore} / 100**.`);
+  if (execSummary.productionReadinessScore >= 85) {
+    lines.push('**RECOMMENDED FOR PRODUCTION RELEASE**: The system meets all stability and resource constraints.');
+  } else if (execSummary.productionReadinessScore >= 70) {
+    lines.push('**CONDITIONAL RELEASE**: Suitable for testing/staging environments. Address critical risks prior to final production release.');
+  } else {
+    lines.push('**DEPLOYMENT BLOCKED**: The backend has critical database N+1 loop structures or memory leaks.');
+  }
+  lines.push('');
+
+  lines.push('## 11. Recommendation Matrix');
+  lines.push('');
+  lines.push('| Priority Rank | Score | Recommendation | Performance Impact | Effort | Risk | relatedBottlenecks |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+  for (const rec of aggregated.analysisMetrics?.priority || []) {
     const botsStr = rec.relatedBottlenecks.map(id => `\`${id}\``).join(', ') || 'N/A';
     lines.push(
-      `| **${rec.title}**<br>_${rec.description}_ | ${rec.expectedBenefit} | ${rec.estimatedImplementationEffort} | ${rec.estimatedPerformanceImpact} | ${rec.riskLevel} | ${botsStr} |`
+      `| \`${rec.priorityRank}\` | \`${rec.score.toFixed(2)}\` | **${rec.title}**<br>_${rec.description}_ | ${rec.estimatedPerformanceImpact} | ${rec.estimatedImplementationEffort} | ${rec.riskLevel} | ${botsStr} |`
     );
   }
   lines.push('');
 
-  // ── 7. Priority Matrix ────────────────────────────────────────────────────
-  lines.push('## 7. Priority Matrix');
+  // ── 12. Future Optimization Opportunities ──────────────────────────────────
+  lines.push('## 12. Future Optimization Opportunities');
   lines.push('');
-  lines.push('| Rank | Score | Recommendation | Expected Benefit | Risk |');
-  lines.push('| --- | --- | --- | --- | --- |');
+  lines.push('1. **Dataloader Batching**: Implement Dataloader utility layers in the Node service tier to coalesce isolated child reads.');
+  lines.push('2. **Redis Distributed Caching**: Offload catalog book search queries to Redis cluster setups.');
+  lines.push('3. **PgBouncer Scaling**: Implement connection proxies to scale past connection limits under load.');
+  lines.push('');
 
-  for (const rec of recommendations) {
-    lines.push(
-      `| \`${rec.priorityRank}\` | \`${rec.score.toFixed(2)}\` | **${rec.title}** | ${rec.expectedBenefit} | ${rec.riskLevel} |`
-    );
+  // ── 13. Final Conclusion ──────────────────────────────────────────────────
+  lines.push('## 13. Final Conclusion');
+  lines.push('');
+  lines.push(`Deployability readiness assessment complete. **Conclusion: ${execSummary.conclusion}**`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate before-after.md content.
+ *
+ * @param {Object} comparison - Delta comparison metrics
+ * @returns {string} Markdown content
+ */
+export function generateBeforeAfterReport(comparison) {
+  const lines = [
+    '# AVELIS Performance Before/After Assessment Report',
+    '',
+  ];
+
+  if (comparison.status === 'baseline_unavailable') {
+    lines.push('## Historical Baseline Unavailable');
+    lines.push('');
+    lines.push('Historical before/after comparisons are not possible because no previous benchmark runs exist in history.');
+    lines.push('To run comparisons, ensure at least one historical final report summary is archived under `benchmark/final/history/.`');
+    return lines.join('\n');
   }
+
+  lines.push('## 1. Summary of Changes');
+  lines.push('');
+  lines.push(`* **Improvements**: \`${comparison.improvements.length}\` metrics improved.`);
+  lines.push(`* **Regressions**: \`${comparison.regressions.length}\` metrics regressed.`);
+  lines.push(`* **Stable Metrics**: \`${comparison.stable.length}\` metrics stayed stable.`);
   lines.push('');
 
-  // ── 8. Risk Assessment ────────────────────────────────────────────────────
-  lines.push('## 8. Risk Assessment');
+  // Improvements
+  lines.push('## 2. Core Improvements');
   lines.push('');
-  lines.push('Analyzing optimization safety and refactoring risks:');
-  lines.push('');
-  const highRiskRecs = recommendations.filter(r => r.riskLevel === 'HIGH');
-  const medRiskRecs = recommendations.filter(r => r.riskLevel === 'MEDIUM');
-
-  if (highRiskRecs.length > 0) {
-    lines.push('### High Risk Optimizations');
-    for (const r of highRiskRecs) {
-      lines.push(`* **${r.title}**: Refactoring carries high risk of logical regression. Ensure exhaustive unit testing.`);
+  if (comparison.improvements.length > 0) {
+    lines.push('| Metric Name | Baseline Value | Current Value | Delta Percent |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const r of comparison.improvements) {
+      lines.push(`| **${r.metric}** | \`${r.baseline.toFixed(2)}\` | \`${r.current.toFixed(2)}\` | \`${r.changePercent.toFixed(2)}%\` |`);
     }
-  }
-  if (medRiskRecs.length > 0) {
-    lines.push('### Medium Risk Optimizations');
-    for (const r of medRiskRecs) {
-      lines.push(`* **${r.title}**: Modifying data fetch paths requires regression testing of active borrowing queues.`);
-    }
-  }
-  if (highRiskRecs.length === 0 && medRiskRecs.length === 0) {
-    lines.push('_All suggested recommendations are Low Risk and safe to configure._');
+  } else {
+    lines.push('_No metric improvements detected relative to historical baseline._');
   }
   lines.push('');
 
-  // ── 9. Future Optimization Opportunities ──────────────────────────────────
-  lines.push('## 9. Future Optimization Opportunities');
+  // Regressions
+  lines.push('## 3. Performance Regressions');
   lines.push('');
-  lines.push('1. **Connection Pooling Proxy**: Set up PgBouncer to manage high PostgreSQL client connections efficiently.');
-  lines.push('2. **GraphQL or Restructured Schemas**: Reduce join overhead by restructuring large relation lists.');
-  lines.push('3. **Query Batching Utilities**: Integrate dataloader patterns in GraphQL/Prisma middleware to completely isolate N+1 lookups.');
+  if (comparison.regressions.length > 0) {
+    lines.push('| Metric Name | Baseline Value | Current Value | Delta Percent |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const r of comparison.regressions) {
+      lines.push(`| ⚠ **${r.metric}** | \`${r.baseline.toFixed(2)}\` | \`${r.current.toFixed(2)}\` | \`+${r.changePercent.toFixed(2)}%\` |`);
+    }
+  } else {
+    lines.push('_No regressions detected relative to historical baseline._');
+  }
+  lines.push('');
+
+  // Stable
+  lines.push('## 4. Stable Metrics');
+  lines.push('');
+  if (comparison.stable.length > 0) {
+    lines.push('| Metric Name | Baseline Value | Current Value | Delta Percent |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const r of comparison.stable) {
+      lines.push(`| **${r.metric}** | \`${r.baseline.toFixed(2)}\` | \`${r.current.toFixed(2)}\` | \`${r.changePercent.toFixed(2)}%\` |`);
+    }
+  } else {
+    lines.push('_No stable metrics recorded._');
+  }
   lines.push('');
 
   return lines.join('\n');
