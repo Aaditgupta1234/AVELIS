@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0",
+  "phase": "13.5.6.4",
+  "runId": "2026-07-16T09-23-08-578Z",
+  "generatedAt": "2026-07-16T09:23:44.601Z",
+  "startedAt": "2026-07-16T09:23:08.580Z",
+  "finishedAt": "2026-07-16T09:23:44.601Z",
+  "durationMs": 10000,
+  "status": "PASS",
+  "success": 1793,
+  "failures": 967,
+  "successRate": 64.96376811594203,
+  "errors": {
+    "timeout": 0,
+    "http_error": {
+      "400": 400,
+      "409": 547
+    },
+    "network_error": 20,
+    "unexpected_exception": 0
+  },
+  "metrics": {
+    "memory": {
+      "heapUsedStart": 52607120,
+      "heapUsedEnd": 111299712,
+      "heapGrowthBytes": 58692592,
+      "rssStart": 317460480,
+      "rssEnd": 309493760,
+      "rssGrowthBytes": -7966720
+    },
+    "cpu": {
+      "cpuStartFraction": 0,
+      "cpuEndFraction": 0.5873830613069632
+    },
+    "activeHandles": {
+      "start": 496,
+      "end": 31,
+      "growth": -465
+    },
+    "trends": {
+      "firstHalfAvgLatencyMs": 84.00448693134807,
+      "secondHalfAvgLatencyMs": 63.76098226950365,
+      "latencyDriftMs": -20.24350466184442,
+      "firstHalfRps": 241.8,
+      "secondHalfRps": 310.2,
+      "throughputDegradationPercent": 0
+    },
+    "eventLoopDelayMs": 9.614399999998568
+  },
+  "anomalies": {
+    "potentialMemoryLeak": true,
+    "throughputDegradation": false,
+    "latencyDrift": false,
+    "handleLeak": false
+  }
+}

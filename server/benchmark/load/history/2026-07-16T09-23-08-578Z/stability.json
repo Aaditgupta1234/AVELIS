@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "phase": "13.5.6.4",
+  "runId": "2026-07-16T09-23-08-578Z",
+  "generatedAt": "2026-07-16T09:23:44.601Z",
+  "trace": [
+    {
+      "concurrency": 50,
+      "cpuFraction": 0.341821614230884,
+      "memory": {
+        "heapUsed": 54554384,
+        "rss": 182034432
+      },
+      "eventLoopDelayMs": 9.029599999999846
+    },
+    {
+      "concurrency": 100,
+      "cpuFraction": 0.34333377733596515,
+      "memory": {
+        "heapUsed": 91748808,
+        "rss": 251469824
+      },
+      "eventLoopDelayMs": 9.414600000000064
+    },
+    {
+      "concurrency": 250,
+      "cpuFraction": 0.5757621711181211,
+      "memory": {
+        "heapUsed": 49477864,
+        "rss": 300974080
+      },
+      "eventLoopDelayMs": 7.228100000000268
+    },
+    {
+      "concurrency": 500,
+      "cpuFraction": 0.4082315721735415,
+      "memory": {
+        "heapUsed": 52580240,
+        "rss": 317460480
+      },
+      "eventLoopDelayMs": 25.299699999999575
+    }
+  ],
+  "connectionAnalysis": {
+    "status": "PASS",
+    "postgresConnections": 9,
+    "recommendations": [
+      "Active database connections are approaching pool capacity limit. Consider increasing the Prisma connection_limit in your DATABASE_URL."
+    ]
+  }
+}

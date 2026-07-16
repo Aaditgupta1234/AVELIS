@@ -1,0 +1,182 @@
+{
+  "schemaVersion": "1.0",
+  "phase": "13.5.6.4",
+  "runId": "2026-07-16T09-23-08-578Z",
+  "benchmarkStatus": "PASS",
+  "performanceStatus": "WARNING",
+  "generatedAt": "2026-07-16T09:23:44.601Z",
+  "startedAt": "2026-07-16T09:23:08.580Z",
+  "finishedAt": "2026-07-16T09:23:44.601Z",
+  "durationMs": 36021.267100000005,
+  "config": {
+    "warmupDurationMs": 2000,
+    "testDurationMs": 5000,
+    "soakDurationMs": 10000,
+    "randomSeed": null
+  },
+  "environment": {
+    "nodeVersion": "v25.1.0",
+    "prismaVersion": "6.19.3",
+    "postgresVersion": "PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35225, 64-bit"
+  },
+  "metadata": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpus": 8,
+    "freeMem": 410394624,
+    "totalMem": 8299257856
+  },
+  "scenarios": [
+    {
+      "concurrency": 50,
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 688,
+        "success": 457,
+        "failures": 231,
+        "successRate": 66.42441860465115,
+        "rps": 129.03431022308834,
+        "durationMs": {
+          "avg": 421.11049671772446,
+          "min": 16.395700000000033,
+          "max": 1352.3788000000004,
+          "p50": 293.1819999999998,
+          "p95": 1058.2711,
+          "p99": 1348.4358000000002,
+          "stddev": 317.43086683209236
+        },
+        "cpuFraction": 0.341821614230884,
+        "memory": {
+          "heapUsedStart": 33351232,
+          "heapUsedEnd": 54554384,
+          "heapGrowthBytes": 21203152,
+          "rssStart": 123273216,
+          "rssEnd": 182034432,
+          "rssGrowthBytes": 58761216
+        },
+        "errors": {
+          "timeout": 0,
+          "http_error": {
+            "400": 99,
+            "409": 132
+          },
+          "network_error": 0,
+          "unexpected_exception": 0
+        }
+      }
+    },
+    {
+      "concurrency": 100,
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 562,
+        "success": 365,
+        "failures": 197,
+        "successRate": 64.94661921708185,
+        "rps": 105.06900360072595,
+        "durationMs": {
+          "avg": 991.3571704109592,
+          "min": 224.40800000000127,
+          "max": 1825.3559999999998,
+          "p50": 915.4104000000007,
+          "p95": 1730.2278999999999,
+          "p99": 1818.057200000001,
+          "stddev": 487.38536481857113
+        },
+        "cpuFraction": 0.34333377733596515,
+        "memory": {
+          "heapUsedStart": 54697112,
+          "heapUsedEnd": 91748808,
+          "heapGrowthBytes": 37051696,
+          "rssStart": 182145024,
+          "rssEnd": 251469824,
+          "rssGrowthBytes": 69324800
+        },
+        "errors": {
+          "timeout": 0,
+          "http_error": {
+            "400": 85,
+            "409": 112
+          },
+          "network_error": 0,
+          "unexpected_exception": 0
+        }
+      }
+    },
+    {
+      "concurrency": 250,
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 830,
+        "success": 226,
+        "failures": 604,
+        "successRate": 27.228915662650603,
+        "rps": 123.80861985743185,
+        "durationMs": {
+          "avg": 1334.667121238939,
+          "min": 461.121799999999,
+          "max": 2024.7422000000006,
+          "p50": 1267.9276000000027,
+          "p95": 1957.2667000000001,
+          "p99": 2016.4442999999992,
+          "stddev": 415.7915102076427
+        },
+        "cpuFraction": 0.5757621711181211,
+        "memory": {
+          "heapUsedStart": 91834360,
+          "heapUsedEnd": 49477864,
+          "heapGrowthBytes": -42356496,
+          "rssStart": 251469824,
+          "rssEnd": 300974080,
+          "rssGrowthBytes": 49504256
+        },
+        "errors": {
+          "timeout": 376,
+          "http_error": {
+            "400": 86,
+            "409": 142
+          },
+          "network_error": 0,
+          "unexpected_exception": 0
+        }
+      }
+    },
+    {
+      "concurrency": 500,
+      "status": "PASS",
+      "metrics": {
+        "totalRequests": 1287,
+        "success": 77,
+        "failures": 1210,
+        "successRate": 5.982905982905983,
+        "rps": 210.58312578269184,
+        "durationMs": {
+          "avg": 1717.247406493506,
+          "min": 1467.4433000000026,
+          "max": 2650.1365000000005,
+          "p50": 1595.0121,
+          "p95": 2641.0285000000003,
+          "p99": 2650.1365000000005,
+          "stddev": 376.82110598627133
+        },
+        "cpuFraction": 0.4082315721735415,
+        "memory": {
+          "heapUsedStart": 49543032,
+          "heapUsedEnd": 52580240,
+          "heapGrowthBytes": 3037208,
+          "rssStart": 300974080,
+          "rssEnd": 317460480,
+          "rssGrowthBytes": 16486400
+        },
+        "errors": {
+          "timeout": 868,
+          "http_error": {
+            "400": 20
+          },
+          "network_error": 322,
+          "unexpected_exception": 0
+        }
+      }
+    }
+  ]
+}
