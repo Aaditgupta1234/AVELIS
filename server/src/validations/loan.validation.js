@@ -7,11 +7,8 @@
  * @module validations/loan
  */
 
-import { sendError } from '../utils/index.js';
-
+import { sendError, validateUUID, validatePagination, validateSort } from '../utils/index.js';
 import { LoanStatus } from '@prisma/client';
-
-import { UUID_REGEX } from '../helpers/validation.helper.js';
 const ALLOWED_LOAN_STATUSES = Object.freeze(Object.values(LoanStatus));
 
 /** Module-level constant: hoisted to avoid per-request array allocation in queryLoansValidator. */
@@ -40,13 +37,13 @@ export const borrowValidator = (req, res, next) => {
   const errors = [];
   const { userId, copyId } = req.body;
 
-  if (userId === undefined || userId === null || typeof userId !== 'string' || !UUID_REGEX.test(userId.trim())) {
+  if (userId === undefined || userId === null || !validateUUID(userId)) {
     errors.push({ field: 'userId', message: 'userId is required and must be a valid UUID.' });
   } else {
     req.body.userId = userId.trim();
   }
 
-  if (copyId === undefined || copyId === null || typeof copyId !== 'string' || !UUID_REGEX.test(copyId.trim())) {
+  if (copyId === undefined || copyId === null || !validateUUID(copyId)) {
     errors.push({ field: 'copyId', message: 'copyId is required and must be a valid UUID.' });
   } else {
     req.body.copyId = copyId.trim();
@@ -99,51 +96,19 @@ export const returnValidator = loanIdParamValidator;
  * @param {import('express').NextFunction} next - Express next function
  */
 export const queryLoansValidator = (req, res, next) => {
-  const errors = [];
   const { page, limit, sortBy, sortOrder, status, userId, copyId } = req.query;
 
-  // 1. Pagination Validation & Casting
-  if (page !== undefined && page !== null) {
-    const pageNum = Number(page);
-    if (!Number.isInteger(pageNum) || pageNum <= 0) {
-      errors.push({ field: 'page', message: 'Page must be a positive integer.' });
-    } else {
-      req.query.page = pageNum;
-    }
-  } else {
-    req.query.page = 1;
-  }
-
-  if (limit !== undefined && limit !== null) {
-    const limitNum = Number(limit);
-    if (!Number.isInteger(limitNum) || limitNum <= 0 || limitNum > 100) {
-      errors.push({ field: 'limit', message: 'Limit must be a positive integer not exceeding 100.' });
-    } else {
-      req.query.limit = limitNum;
-    }
-  } else {
-    req.query.limit = 10;
-  }
+  // 1. Pagination Validation & Normalization
+  const pageRes = validatePagination(page, limit);
+  const errors = pageRes.errors;
+  req.query.page = pageRes.pageVal;
+  req.query.limit = pageRes.limitVal;
 
   // 2. Sorting Parameter Validation & Normalization
-  if (sortBy !== undefined && sortBy !== null) {
-    if (!ALLOWED_QUERY_SORT_FIELDS.includes(sortBy)) {
-      errors.push({ field: 'sortBy', message: `sortBy must be one of: ${ALLOWED_QUERY_SORT_FIELDS.join(', ')}.` });
-    }
-  } else {
-    req.query.sortBy = 'createdAt';
-  }
-
-  if (sortOrder !== undefined && sortOrder !== null) {
-    const normalizedOrder = String(sortOrder).toLowerCase();
-    if (normalizedOrder !== 'asc' && normalizedOrder !== 'desc') {
-      errors.push({ field: 'sortOrder', message: "sortOrder must be 'asc' or 'desc'." });
-    } else {
-      req.query.sortOrder = normalizedOrder;
-    }
-  } else {
-    req.query.sortOrder = 'desc';
-  }
+  const sortRes = validateSort(sortBy, sortOrder, ALLOWED_QUERY_SORT_FIELDS);
+  errors.push(...sortRes.errors);
+  req.query.sortBy = sortBy !== undefined && sortBy !== null ? String(sortBy).trim() : 'createdAt';
+  req.query.sortOrder = sortRes.sortOrderNormalized;
 
   // 3. Filters Validation & Normalization
   if (status !== undefined && status !== null) {
@@ -153,18 +118,18 @@ export const queryLoansValidator = (req, res, next) => {
   }
 
   if (userId !== undefined && userId !== null) {
-    if (typeof userId !== 'string' || !UUID_REGEX.test(userId.trim())) {
+    if (!validateUUID(userId)) {
       errors.push({ field: 'userId', message: 'userId must be a valid UUID.' });
     } else {
-      req.query.userId = userId.trim();
+      req.query.userId = String(userId).trim();
     }
   }
 
   if (copyId !== undefined && copyId !== null) {
-    if (typeof copyId !== 'string' || !UUID_REGEX.test(copyId.trim())) {
+    if (!validateUUID(copyId)) {
       errors.push({ field: 'copyId', message: 'copyId must be a valid UUID.' });
     } else {
-      req.query.copyId = copyId.trim();
+      req.query.copyId = String(copyId).trim();
     }
   }
 

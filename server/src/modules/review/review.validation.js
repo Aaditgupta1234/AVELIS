@@ -1,15 +1,13 @@
 /**
  * @fileoverview Review module validation middleware.
  *
- * Contains validation middleware for Review module endpoints.
- * Each validator validates incoming request data before it reaches
- * the controller layer.
+ * Contains validation middleware for Review module endpoints, leveraging
+ * centralized validation helpers.
  *
  * @module modules/review/review.validation
  */
 
-import { sendError } from '../../utils/index.js';
-import { UUID_REGEX } from '../../helpers/validation.helper.js';
+import { sendError, validateUUID, validatePositiveInteger } from '../../utils/index.js';
 
 /**
  * Validator middleware for creating a review.
@@ -23,7 +21,7 @@ export const createReviewValidator = (req, res, next) => {
   const { bookId, rating, comment } = req.body;
 
   // 1. bookId Validation
-  if (bookId === undefined || bookId === null || typeof bookId !== 'string' || !UUID_REGEX.test(bookId.trim())) {
+  if (bookId === undefined || bookId === null || !validateUUID(bookId)) {
     errors.push({ field: 'bookId', message: 'bookId is required and must be a valid UUID.' });
   } else {
     req.body.bookId = bookId.trim();
@@ -71,7 +69,7 @@ export const getReviewByIdValidator = (req, res, next) => {
   const errors = [];
   const { reviewId } = req.params;
 
-  if (reviewId === undefined || reviewId === null || typeof reviewId !== 'string' || !UUID_REGEX.test(reviewId.trim())) {
+  if (reviewId === undefined || reviewId === null || !validateUUID(reviewId)) {
     errors.push({ field: 'reviewId', message: 'reviewId is required and must be a valid UUID.' });
   } else {
     req.params.reviewId = reviewId.trim();
@@ -95,7 +93,7 @@ export const getBookReviewsValidator = (req, res, next) => {
   const errors = [];
   const { bookId } = req.params;
 
-  if (bookId === undefined || bookId === null || typeof bookId !== 'string' || !UUID_REGEX.test(bookId.trim())) {
+  if (bookId === undefined || bookId === null || !validateUUID(bookId)) {
     errors.push({ field: 'bookId', message: 'bookId is required and must be a valid UUID.' });
   } else {
     req.params.bookId = bookId.trim();
@@ -121,7 +119,7 @@ export const updateReviewValidator = (req, res, next) => {
   const { rating, comment } = req.body;
 
   // 1. reviewId Validation
-  if (reviewId === undefined || reviewId === null || typeof reviewId !== 'string' || !UUID_REGEX.test(reviewId.trim())) {
+  if (reviewId === undefined || reviewId === null || !validateUUID(reviewId)) {
     errors.push({ field: 'reviewId', message: 'reviewId is required and must be a valid UUID.' });
   } else {
     req.params.reviewId = reviewId.trim();
@@ -169,7 +167,7 @@ export const deleteReviewValidator = (req, res, next) => {
   const errors = [];
   const { reviewId } = req.params;
 
-  if (reviewId === undefined || reviewId === null || typeof reviewId !== 'string' || !UUID_REGEX.test(reviewId.trim())) {
+  if (reviewId === undefined || reviewId === null || !validateUUID(reviewId)) {
     errors.push({ field: 'reviewId', message: 'reviewId is required and must be a valid UUID.' });
   } else {
     req.params.reviewId = reviewId.trim();
@@ -193,7 +191,7 @@ export const adminDeleteReviewValidator = (req, res, next) => {
   const errors = [];
   const { reviewId } = req.params;
 
-  if (reviewId === undefined || reviewId === null || typeof reviewId !== 'string' || !UUID_REGEX.test(reviewId.trim())) {
+  if (reviewId === undefined || reviewId === null || !validateUUID(reviewId)) {
     errors.push({ field: 'reviewId', message: 'reviewId is required and must be a valid UUID.' });
   } else {
     req.params.reviewId = reviewId.trim();
@@ -205,8 +203,3 @@ export const adminDeleteReviewValidator = (req, res, next) => {
 
   next();
 };
-
-
-
-
-
