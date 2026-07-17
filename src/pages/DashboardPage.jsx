@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import { BookCard } from "../components/ui/BookCard";
+import { useLocation, Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth.js";
+import { BookCard } from "../components/ui/BookCard.jsx";
 import { BookMarked, FileText, Clock, Compass, LogOut, ArrowRight, CheckCircle2 } from "lucide-react";
-import { Navbar } from "../components/layout/Navbar";
-import { ProfileView } from "../components/dashboard/ProfileView";
-import { SettingsView } from "../components/dashboard/SettingsView";
+import { Navbar } from "../components/layout/Navbar.jsx";
+import { ProfileView } from "../components/dashboard/ProfileView.jsx";
+import { SettingsView } from "../components/dashboard/SettingsView.jsx";
+import { CatalogManager } from "../components/dashboard/CatalogManager.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 export const DashboardPage = () => {
     const { user, logout } = useAuth();
-    const { hash } = useLocation();
+    const { hash, pathname } = useLocation();
     const [toastMessage, setToastMessage] = useState("");
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -73,10 +74,12 @@ export const DashboardPage = () => {
         <div className="paper-grain opacity-5 pointer-events-none"/>
         <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#C9A227]/3 rounded-full blur-[130px] pointer-events-none"/>
         <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[600px] h-[600px] bg-[#1A2E57]/10 rounded-full blur-[150px] pointer-events-none"/>
-
+ 
         <div className="max-w-[1280px] mx-auto px-6 sm:px-12 relative z-10">
           <AnimatePresence mode="wait">
-            {hash === "#profile" ? (<motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4, ease: "easeOut" }}>
+            {pathname === "/dashboard/catalog" ? (<motion.div key="catalog" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4, ease: "easeOut" }}>
+                <CatalogManager />
+              </motion.div>) : hash === "#profile" ? (<motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4, ease: "easeOut" }}>
                 <ProfileView showToast={showToast}/>
               </motion.div>) : hash === "#settings" ? (<motion.div key="settings" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4, ease: "easeOut" }}>
                 <SettingsView showToast={showToast}/>
@@ -92,10 +95,21 @@ export const DashboardPage = () => {
                       Welcome back, <span className="italic text-[#C9A227]">{user?.name}</span>.
                     </h1>
                   </div>
-                  <button onClick={logout} className="flex items-center gap-2 border border-red-500/20 hover:border-red-500/50 text-red-400 hover:text-red-300 px-5 py-2.5 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all focus:outline-none focus:ring-1 focus:ring-red-500/50 bg-red-950/10 cursor-pointer">
-                    <LogOut className="w-3.5 h-3.5"/>
-                    <span>Sign Out</span>
-                  </button>
+                  <div className="flex gap-4">
+                    {pathname === "/dashboard/catalog" ? (
+                      <Link to="/dashboard" className="flex items-center gap-2 border border-[#C9A227]/20 hover:border-[#C9A227]/50 text-[#C9A227] hover:text-[#F7F5EE] px-5 py-2.5 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all bg-[#C9A227]/5 cursor-pointer">
+                        <span>Back to Study</span>
+                      </Link>
+                    ) : user?.role === "ADMIN" ? (
+                      <Link to="/dashboard/catalog" className="flex items-center gap-2 border border-[#C9A227]/20 hover:border-[#C9A227]/50 text-[#C9A227] hover:text-[#F7F5EE] px-5 py-2.5 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all bg-[#C9A227]/5 cursor-pointer">
+                        <span>Manage Catalog</span>
+                      </Link>
+                    ) : null}
+                    <button onClick={logout} className="flex items-center gap-2 border border-red-500/20 hover:border-red-500/50 text-red-400 hover:text-red-300 px-5 py-2.5 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all focus:outline-none focus:ring-1 focus:ring-red-500/50 bg-red-950/10 cursor-pointer">
+                      <LogOut className="w-3.5 h-3.5"/>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Hero Study Panel & Continue Reading */}

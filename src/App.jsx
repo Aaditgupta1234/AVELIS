@@ -27,6 +27,11 @@ const AnimatedRoutes = () => {
                 <DashboardPage />
               </PageWrapper>
             </ProtectedRoute>}/>
+        <Route path="/dashboard/catalog" element={<ProtectedRoute allowedRoles={['ADMIN']}>
+              <PageWrapper>
+                <DashboardPage />
+              </PageWrapper>
+            </ProtectedRoute>}/>
         <Route path="/authors" element={<PageWrapper><LandingPage /></PageWrapper>}/>
         <Route path="/about" element={<PageWrapper><LandingPage /></PageWrapper>}/>
       </Routes>
