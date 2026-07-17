@@ -15,9 +15,9 @@ import { revealVariants } from "../../utils/motion.js";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const BookDetailsPage = () => {
-  const { id } = useParams();
+  const id = useParams().id;
   const navigate = useNavigate();
-  const { getCachedBook, cacheBookDetails } = useBooks();
+  const { getCachedBook, cacheBookDetails, books } = useBooks();
 
   const isValidUuid = UUID_REGEX.test(id || "");
 
@@ -26,6 +26,16 @@ export const BookDetailsPage = () => {
   const [error, setError] = useState(null);
   const [isBorrowing, setIsBorrowing] = useState(false);
   const [borrowSuccess, setBorrowSuccess] = useState(false);
+
+  // If the book is deleted from the catalog context, redirect to library
+  useEffect(() => {
+    if (isValidUuid && books.length > 0) {
+      const isStillAvailable = books.some((b) => b.id === id);
+      if (!isStillAvailable) {
+        navigate("/library", { replace: true });
+      }
+    }
+  }, [books, id, isValidUuid, navigate]);
 
   useEffect(() => {
     if (!isValidUuid) {
