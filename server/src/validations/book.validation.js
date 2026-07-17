@@ -10,6 +10,8 @@
 import { sendError, validateUUID, validatePagination, validateSort, validateSearch } from '../utils/index.js';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER } from '../constants/book.constants.js';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const validatePublicationYear = (publicationYear, errors) => {
   if (publicationYear !== undefined && publicationYear !== null) {
     if (!Number.isInteger(publicationYear)) {

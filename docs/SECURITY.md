@@ -85,6 +85,28 @@ graph TD
 
 ---
 
+## Security Verification Matrix
+
+AVELIS undergoes automated penetration testing and validation to confirm that all security controls behave correctly under simulated attacks.
+
+| Security Layer | Tested Attack Scenario | Observable Outcomes | Test Result |
+| :--- | :--- | :--- | :--- |
+| **Authentication** | Missing token, expired token, signature tampering, malformed JWT headers, Basic scheme injection | Returns generic `401 Unauthorized` client response; prints `JWT_FAILURE` log; does not leak stack traces | **PASS** |
+| **Authorization** | Member accessing admin controls (`/admin/loans`); privilege escalation attempts | Returns generic `403 Forbidden` client response; prints `AUTHZ_FAILURE` log; access is strictly blocked | **PASS** |
+| **Input Validation** | Malformed JSON payloads; invalid UUID strings on parameters | Rejected with `400 Bad Request` before controller execution; prints `VALIDATION_FAILURE` log | **PASS** |
+| **Injection Protection** | SQL injection strings (`' OR '1'='1`); Cross-Site Scripting scripts (`<script>`) | Processed safely or rejected; server remains fully stable; no database errors or scripts are executed | **PASS** |
+| **Payload Size Limits** | JSON payloads exceeding configured sizes (e.g., > `MAX_JSON_SIZE`) | Rejected with `413 Payload Too Large`; server does not crash | **PASS** |
+| **Abuse Protection** | Client request bursts exceeding thresholds | Throttled with progressive delays; blocked with `429 Too Many Requests`; prints `RATE_LIMIT_EXCEEDED` log | **PASS** |
+| **HTTP Hardening** | Header scanning; sensitive caching probes; preflight OPTIONS audits | All Helmet/Permissions headers present; `X-Powered-By`/`X-XSS-Protection` absent; sensitive routes set `no-store` caching | **PASS** |
+| **Graceful Recovery** | Benign request execution (`GET /books`) after simulated attacks | The server is verified stable and fully operational; returns `200 OK` with valid data | **PASS** |
+| **Process Termination**| SIGTERM signal dispatch to the running application | Terminates cleanly; releases resources within 3 seconds; zero uncaught exit exceptions | **PASS** |
+
+### Verification Assumptions & Limitations
+- **Trust Proxy Resolution**: Tests assume trust proxy hop settings are configured correctly to prevent IP spoofing in multi-proxy production environments.
+- **Client-Side Storage**: The backend enforces strict `no-store` headers for sensitive data, but client applications must still follow local storage best practices.
+
+---
+
 ## Vulnerability Reports
 
 To report security vulnerabilities, please do not open public GitHub issues. Instead, contact the maintainers directly at their development email.

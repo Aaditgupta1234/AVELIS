@@ -16,7 +16,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 
-import { config, securityConfig, permissionsPolicyMiddleware, rateLimitConfig } from './config/index.js';
+import { config, securityConfig, permissionsPolicyMiddleware, rateLimitConfig, requestLimitConfig } from './config/index.js';
 import { logger } from './config/logger.js';
 
 /**
@@ -49,10 +49,10 @@ app.use(cors(securityConfig.corsOptions));
 // ---------------------------------------------------------------------------
 
 /** Parse JSON request bodies */
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: requestLimitConfig.jsonLimit }));
 
 /** Parse URL-encoded request bodies */
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: requestLimitConfig.urlEncodedLimit }));
 
 // ---------------------------------------------------------------------------
 // Request Normalization Middleware

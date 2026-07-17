@@ -9,6 +9,9 @@
 
 import { sendError, validateUUID, validatePagination, validateSort } from '../utils/index.js';
 import { LoanStatus } from '@prisma/client';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const ALLOWED_LOAN_STATUSES = Object.freeze(Object.values(LoanStatus));
 
 /** Module-level constant: hoisted to avoid per-request array allocation in queryLoansValidator. */
