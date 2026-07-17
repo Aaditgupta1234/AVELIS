@@ -11,7 +11,7 @@ Rate limits are configured under [rate-limit.config.js](file:///f:/Vscode/Anveli
 1. **Global API Rate Limiter (`globalRateLimiter`)**:
    - Time window: `15 minutes`
    - Maximum requests: `100`
-   - Bypasses requests destined for Auth endpoints (`/api/v1/auth`), Search queries (`GET /api/v1/books`), and Reports (`/api/v1/admin/dashboard/reports`) to maintain independent request buckets.
+   - Bypasses requests destined for Auth endpoints (`/api/v1/auth`), Search queries (`GET /api/v1/books` or `GET /api/v1/books/search`), and Reports/Exports (`/api/v1/admin/dashboard/reports`) to maintain independent request buckets.
 2. **Authentication Rate Limiter (`authRateLimiter`)**:
    - Time window: `15 minutes`
    - Maximum requests: `10`

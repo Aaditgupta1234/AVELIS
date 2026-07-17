@@ -28,8 +28,28 @@ This document specifies the rate limiting, request size limits, startup validati
 | `REPORT_RATE_LIMIT`| Report endpoint limit | `20` | $\ge 1$ |
 | `EXPORT_WINDOW_MS` | Export endpoint time window (ms) | `3600000` (1h) | $\ge 1$ |
 | `EXPORT_RATE_LIMIT`| Export endpoint limit | `5` | $\ge 1$ |
-| `ENABLE_SLOWDOWN`  | Enable request delay throttling | `true` | Boolean (`true`/`false`) |
 | `TRUST_PROXY`      | Express proxy trust setting | `false` | Boolean, Int, or reserved keyword |
+
+### Request Slowdown Variables
+
+| Environment Override | Purpose | Secure Default | Acceptable Bounds |
+| --- | --- | --- | --- |
+| `ENABLE_SLOWDOWN` | Enable request delay throttling | `true` | Boolean (`true`/`false`) |
+| `GLOBAL_DELAY_AFTER` | Global API slowdown request threshold | `50` | $\ge 1$ |
+| `GLOBAL_DELAY_MS` | Global API delay added per request (ms) | `500` | $\ge 1$ |
+| `GLOBAL_MAX_DELAY_MS` | Global API maximum delay ceiling (ms) | `2000` | $\ge 1$ |
+| `AUTH_DELAY_AFTER` | Auth endpoint slowdown request threshold | `5` | $\ge 1$ |
+| `AUTH_DELAY_MS` | Auth endpoint delay added per request (ms) | `1000` | $\ge 1$ |
+| `AUTH_MAX_DELAY_MS` | Auth endpoint maximum delay ceiling (ms) | `5000` | $\ge 1$ |
+| `SEARCH_DELAY_AFTER` | Search endpoint slowdown request threshold | `15` | $\ge 1$ |
+| `SEARCH_DELAY_MS` | Search endpoint delay added per request (ms) | `200` | $\ge 1$ |
+| `SEARCH_MAX_DELAY_MS`| Search endpoint maximum delay ceiling (ms) | `2000` | $\ge 1$ |
+| `REPORT_DELAY_AFTER` | Report endpoint slowdown request threshold | `10` | $\ge 1$ |
+| `REPORT_DELAY_MS` | Report endpoint delay added per request (ms) | `500` | $\ge 1$ |
+| `REPORT_MAX_DELAY_MS`| Report endpoint maximum delay ceiling (ms) | `3000` | $\ge 1$ |
+| `EXPORT_DELAY_AFTER` | Export endpoint slowdown request threshold | `2` | $\ge 1$ |
+| `EXPORT_DELAY_MS` | Export endpoint delay added per request (ms) | `2000` | $\ge 1$ |
+| `EXPORT_MAX_DELAY_MS`| Export endpoint maximum delay ceiling (ms) | `10000` | $\ge 1$ |
 
 ### Payload Size Limits
 
@@ -46,8 +66,8 @@ This document specifies the rate limiting, request size limits, startup validati
 
 To guarantee server uptime, all configuration parameters undergo validation during app startup:
 1. **Trimming & Cleaning**: String boundaries are trimmed of whitespaces.
-2. **Rate Limit Bounds check**:
-   - Time windows and request limits are parsed to numbers.
+2. **Rate Limit & Slowdown Bounds check**:
+   - Time windows, request limits, delay thresholds, and delay increments are parsed to numbers.
    - If any value is non-integer, negative, zero (`0`), `NaN`, `Infinity`, or an empty string, the configuration triggers a warning message and falls back to the secure defaults listed above.
 3. **Payload Size string checks**:
    - Verified using the Express body-parser size pattern.

@@ -33,7 +33,7 @@ Slowdown limits are isolated in separate, non-interfering buckets:
    - `delayAfter`: `50` requests.
    - `delayMs`: `500` ms added per request above threshold.
    - `maxDelayMs`: `2000` ms ceiling.
-   - Bypasses auth, search, report, and export endpoints.
+   - Bypasses auth endpoints (`/api/v1/auth`), search queries (`GET /api/v1/books` or `GET /api/v1/books/search`), and reports/exports (`/api/v1/admin/dashboard/reports`) to maintain independent request buckets.
 2. **Authentication (`authSlowdown`)**:
    - `delayAfter`: `5` requests.
    - `delayMs`: `1000` ms.
