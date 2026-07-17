@@ -9,6 +9,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { PageWrapper } from "./components/ui/PageWrapper";
 import { ScrollToTop } from "./components/ui/ScrollToTop";
 import { AuthProvider } from "./context/AuthContext";
+import { BooksProvider } from "./context/BooksContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 const AnimatedRoutes = () => {
     const location = useLocation();
@@ -31,10 +32,12 @@ const AnimatedRoutes = () => {
 };
 function App() {
     return (<AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <AnimatedRoutes />
-      </BrowserRouter>
+      <BooksProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <AnimatedRoutes />
+        </BrowserRouter>
+      </BooksProvider>
     </AuthProvider>);
 }
 export default App;

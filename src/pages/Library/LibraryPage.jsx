@@ -12,7 +12,7 @@ import { AuthorSection } from "../../components/library/AuthorSection";
 import { useLibrary } from "../../hooks/useLibrary";
 import { revealVariants } from "../../utils/motion";
 export const LibraryPage = () => {
-    const { searchQuery, setSearchQuery, activeFilters, addFilter, removeFilter, clearAllFilters, selectedSort, setSelectedSort, viewMode, setViewMode, filteredBooks, } = useLibrary();
+    const { searchQuery, setSearchQuery, activeFilters, addFilter, removeFilter, clearAllFilters, selectedSort, setSelectedSort, viewMode, setViewMode, filteredBooks, isLoading, error, pagination, setPage } = useLibrary();
     const handleCategoryClick = (category) => {
         if (activeFilters.includes(category)) {
             removeFilter(category);
@@ -40,7 +40,7 @@ export const LibraryPage = () => {
         </motion.section>
 
         {/* Enhanced Search & Filter Toolbar */}
-        <SearchToolbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} activeFilters={activeFilters} addFilter={addFilter} removeFilter={removeFilter} clearAllFilters={clearAllFilters} selectedSort={selectedSort} setSelectedSort={setSelectedSort} viewMode={viewMode} setViewMode={setViewMode} resultCount={filteredBooks.length}/>
+        <SearchToolbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} activeFilters={activeFilters} addFilter={addFilter} removeFilter={removeFilter} clearAllFilters={clearAllFilters} selectedSort={selectedSort} setSelectedSort={setSelectedSort} viewMode={viewMode} setViewMode={setViewMode} resultCount={pagination?.totalItems || 0}/>
 
         {/* Elevated Featured Masterpiece */}
         <FeaturedBook />
@@ -49,7 +49,7 @@ export const LibraryPage = () => {
         <ContinueReading />
 
         {/* Editorial Grids: Trending Books */}
-        <BookGrid books={filteredBooks} viewMode={viewMode}/>
+        <BookGrid books={filteredBooks} viewMode={viewMode} isLoading={isLoading} error={error} pagination={pagination} onPageChange={setPage}/>
 
         {/* Browse by Category */}
         <CategorySection activeFilters={activeFilters} onCategoryClick={handleCategoryClick}/>
