@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
 import { staggers } from "../../utils/motion";
 import { Link } from "react-router-dom";
-import { authorBooks } from "../../data/books";
+import { authorBooks } from "../../data/landingMockData.js";
 export const FeaturedAuthor = () => {
     return (<AnimatedSection variant="B" className="py-section-padding px-gutter max-w-container-max mx-auto overflow-hidden relative z-10">
       <div className="flex flex-col md:flex-row gap-16 items-center">

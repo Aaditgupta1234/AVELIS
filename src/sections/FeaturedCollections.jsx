@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
 import { staggers } from "../utils/motion";
 import { BookCard } from "../components/ui/BookCard";
-import { featuredBooks } from "../data/books";
+import { featuredBooks } from "../data/landingMockData.js";
 export const FeaturedCollections = () => {
     return (<AnimatedSection variant="B" className="py-section-padding px-gutter relative z-10">
       <div className="max-w-container-max mx-auto">

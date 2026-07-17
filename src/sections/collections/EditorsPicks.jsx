@@ -3,7 +3,7 @@ import { AnimatedSection } from "../../components/ui/AnimatedSection";
 import { staggers } from "../../utils/motion";
 import { Link } from "react-router-dom";
 import { BookCard } from "../../components/ui/BookCard";
-import { editorPicks } from "../../data/books";
+import { editorPicks } from "../../data/landingMockData.js";
 export const EditorsPicks = () => {
     return (<AnimatedSection variant="C" className="bg-surface-variant/30 py-section-padding border-y border-white/5 relative z-10">
       <div className="px-gutter max-w-container-max mx-auto">
