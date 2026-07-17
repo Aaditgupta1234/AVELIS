@@ -1,3 +1,12 @@
+/**
+ * @fileoverview Reservation module routes.
+ *
+ * Defines endpoints for creating holds, canceling holds, retrieving hold transaction
+ * details, and managing the reservation queues.
+ *
+ * @module routes/reservation
+ */
+
 import { Router } from 'express';
 import * as reservationController from '../controllers/reservation.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';

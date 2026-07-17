@@ -29,7 +29,6 @@ AVELIS is a production-quality, premium Library Management System designed to co
 * [Testing & Optimization](#testing--optimization)
 * [Documentation Directory](#documentation-directory)
 * [Roadmap](#roadmap)
-* [Screenshots](#screenshots)
 * [Contributing & License](#contributing--license)
 
 ---
@@ -44,10 +43,10 @@ AVELIS is designed as an advanced showcase demonstrating how a highly interactiv
 | :--- | :--- |
 | **Node.js Environment** | Tested with v22.x |
 | **Project Dependencies** | Refer directly to [package.json](package.json) & [server/package.json](server/package.json) |
-| **Documentation Version** | Updated through Phase 13.5.4 (Backend) |
+| **Documentation Version** | Updated through Phase 13.7 (Backend) |
 
 > [!NOTE]
-> **Project Status:** The Express backend is fully complete and audited through Phase 13.5.4. The React landing page is complete; integration connecting the React app's login/dashboard views to the backend API is currently in progress.
+> **Project Status:** The Express backend is fully complete and audited through Phase 13.7. The React landing page is complete; integration connecting the React app's login/dashboard views to the backend API is currently in progress.
 
 ---
 
@@ -55,8 +54,6 @@ AVELIS is designed as an advanced showcase demonstrating how a highly interactiv
 
 * **Frontend Integration:** Main frontend views (search catalog, profiles, dashboards) currently run on mock data. Direct integration with the Express REST API is pending.
 * **WebSocket Feeds:** Real-time push notifications are planned but not yet implemented.
-* **Security Hardening (Phase 13.6):** Additional network security features are pending.
-* **Production Deployment:** Deployment scripts and production configuration are planned.
 
 ---
 
@@ -70,10 +67,13 @@ AVELIS is designed as an advanced showcase demonstrating how a highly interactiv
 
 ### ⚙️ Backend API
 * **Bearer Authorization:** JWT session verification with request context bindings.
+* **HTTP Hardening & Security Headers:** Integrated Helmet, Permissions-Policy, strict CORS caching controls (`CORS_MAX_AGE`), and custom cache prevention on sensitive routes.
+* **API Abuse Protection:** Enforces IP rate limiting and progressive request slowdown throttling with trust proxy hop validation.
+* **Centralized Security Logging:** Centralized security logger with automatic recursive data redaction.
 * **Inventory Control:** Copy tracking, barcodes, conditions, and shelf locations.
 * **FIFO Hold Queues:** Holds database and FIFO queue resolution on releases.
 * **Expiration Engine:** Automatic cleanup of expired holds and copy reassignment.
-* **Moderated Reviews:** Composite-key review limits and admin deletion.
+* **Review Limits:** Composite-key review limits and admin deletion.
 
 ---
 
@@ -182,20 +182,28 @@ Base API path: `/api/v1`. Authentication requires `Authorization: Bearer <JWT_TO
 
 | Category | Status |
 | :--- | :--- |
-| **Completed Modules** | Auth, Users, Books, Loans, Reservations, Reviews, Dashboard, Analytics, Reporting |
-| **Optimization Progress** | Audited & optimized through Phase 13.5.4 |
-| **Current Backend Progress** | ~95% Complete |
-| **Overall Full-Stack Progress**| ~65% Complete (Frontend integration pending) |
+| **Completed Modules** | Auth, Users, Books, Loans, Reservations, Reviews, Dashboard, Analytics, Reporting, Security Hardening, Structured Logging |
+| **Optimization Progress** | Audited, optimized & security hardened through Phase 13.7 |
+| **Current Backend Progress** | Complete through Phase 13.7 |
+| **Overall Full-Stack Progress**| ~70% Complete (Frontend integration pending) |
 
 ---
 
 ## Testing & Optimization
 
 ### Automated Test Runs
-All milestones include dedicated testing scripts. To run the verification suite:
+All milestones include dedicated testing scripts. To run the verification suites:
 ```bash
 cd server
+
+# Run core API validations
 node scratch/verify_phase_13.5.4.js
+
+# Run HTTP security headers & abuse protection verification
+node scratch/verify_phase_13.6.8.js
+
+# Run repository quality and documentation link audits
+node scratch/verify_phase_13.7.js
 ```
 *For test setups and phase checklists, see **[Testing & Verification Guide](docs/TESTING.md)**.*
 
@@ -230,22 +238,8 @@ Refer to the documents under **[docs/](docs/)** for deep architectural specifica
 
 * [x] **v0.9.0-backend** — Feature-complete Library Management System Backend.
 * [x] **v0.9.5-backend** — Phase 13.5 Database & Express Pipeline Optimizations.
-* [ ] **v1.0.0-backend** — Security Hardening, Testing coverage, and Production-ready build scripts.
+* [x] **v1.0.0-backend** — Security Hardening, Testing coverage, and Production-ready build scripts (Complete through Phase 13.7).
 * [ ] **v1.0.0** — Frontend API integration, PWA, and final deployment.
-
----
-
-## Screenshots
-
-### Core Portal Landing Page
-![Landing Page Screenshot](docs/images/screenshots/home.png)
-*Figure 1: High-fidelity dark-themed landing view.*
-
-### Personal Bookshelf & Reading Log
-![Reading Journal Screenshot](docs/images/screenshots/journal.png)
-*Figure 2: Reading journal tracking pages read and feedback.*
-
-*For additional views (Collections, Dashboard, Shelves), see **[Asset Registry Guide](docs/images/README.md)**.*
 
 ---
 

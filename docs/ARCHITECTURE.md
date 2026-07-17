@@ -15,29 +15,44 @@ AVELIS is engineered with an enterprise-grade, layered software architecture tha
 
 ---
 
-## System Flow Architecture
+## System Flow & Middleware Pipeline
 
-The system segregates frontend React assets from the Express API engine, communicating over secure HTTPS requests:
+The system segregates frontend React assets from the Express API engine, communicating over secure HTTPS requests. Every incoming request traverses a strict, ordered pipeline of security, sanitization, and throttling controls:
 
 ```mermaid
-graph TD
-    subgraph Frontend Client
-        React[React Client] --> Axios[Axios Client]
-    end
-
-    subgraph Express Server
-        Axios -- HTTPS Requests --> Router[Express Router]
-        Router --> ValMiddleware[Validation Middleware]
-        ValMiddleware --> AuthMiddleware[Auth Interceptor]
-        AuthMiddleware --> Controller[HTTP Controller]
-        Controller --> Service[Domain Service]
-        Service --> Prisma[Prisma ORM Client]
-    end
-
-    subgraph Database Layer
-        Prisma --> PostgreSQL[(PostgreSQL)]
-    end
+flowchart TD
+    Client[React Client SPA] --> Body[Body Parsers: JSON/URL limits]
+    Body --> Logger[morgan logging]
+    Logger --> Headers[Helmet & Permissions Policy]
+    Headers --> CORS[CORS policy configuration]
+    CORS --> Sanitizer[Request Normalization & Sanitization]
+    Sanitizer --> RateLimit[Rate Limiter & Slowdown Throttling]
+    RateLimit --> Cache[noCache Middleware selective]
+    Cache --> Router[Express Route Dispatcher]
+    Router --> Validator[Payload Schema Validators]
+    Validator --> Auth[JWT authMiddleware]
+    Auth --> RBAC[requireRole guards]
+    RBAC --> Controller[HTTP Controller Layer]
+    Controller --> Service[Domain Transaction Services]
+    Service --> Prisma[Prisma Database Client]
+    Prisma --> DB[(PostgreSQL Database)]
+    
+    %% Error flow
+    Controller -.-> Err[Global Error Handler / 404 handler]
+    Service -.-> Err
+    Auth -.-> Err
+    RBAC -.-> Err
+    Err --> Client
 ```
+
+### Pipeline Details:
+1. **Body Parsing**: Enforces `MAX_JSON_SIZE` limits to prevent memory bloat/denial of service.
+2. **Hardened Headers**: Helmet configures CSP, HSTS, frameguard, Referrer, and permitted-cross-domain rules. Disables `X-Powered-By`.
+3. **CORS Options**: Configured from `CORS_ORIGIN` with cache optimization (`CORS_MAX_AGE`).
+4. **Request Normalization**: Sanitizes input strings and normalizes keys recursively.
+5. **Abuse Protection**: Throttles bursts via `express-slow-down` and blocks abuse via `express-rate-limit`.
+6. **Selective Caching**: Applies cache-busting headers on sensitive/personal endpoints (`/auth`, `/users`, `/admin`, `/loans`, `/reservations`).
+7. **Error Interception**: Centralized error mapping prints structured JSON `ApiError` responses and logs security warnings.
 
 ---
 

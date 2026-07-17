@@ -86,8 +86,9 @@ This document provides a concise overview of all RESTful API endpoints available
 
 | Method | Endpoint | Description | Access |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/admin/dashboard` | Retrieve aggregated dashboard widget metrics. | Admin Only |
 | **GET** | `/admin/dashboard/summary` | Fetch dashboard widgets data summary. | Admin Only |
+| **GET** | `/admin/dashboard/reports` | Retrieve paginated administrative reports. | Admin Only |
+| **GET** | `/admin/dashboard/reports/export` | Export administrative reports. | Admin Only |
 | **GET** | `/admin/dashboard/analytics/borrowing`| Retrieve borrowing analytics trends. | Admin Only |
 | **GET** | `/admin/users` | Retrieve paginated user registry. | Admin Only |
 | **GET** | `/admin/users/:id` | Retrieve user details with borrow history. | Admin Only |
@@ -110,4 +111,6 @@ The API returns standard HTTP response codes:
 | **403** | Forbidden | Insufficient permissions (e.g. Member attempting to call Admin route). |
 | **404** | Not Found | Requested entity (book, user, loan) does not exist. |
 | **409** | Conflict | Unique constraint violation (duplicate ISBN, email, duplicate review). |
+| **413** | Payload Too Large| Sent request body size exceeds configured limits. |
+| **429** | Too Many Requests| API rate limit threshold has been exceeded. |
 | **500** | Internal Error | Unhandled server error. Complete trace logged. |

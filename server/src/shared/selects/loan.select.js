@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Loan module database selection mappings.
+ *
+ * Configures the fields to extract from the database when querying loan transactions.
+ *
+ * @module shared/selects/loan.select
+ */
+
+/**
+ * Prisma query select mapping for retrieving Loan database entries.
+ * @type {Object}
+ */
 export const LOAN_SELECT = {
   id: true,
   userId: true,

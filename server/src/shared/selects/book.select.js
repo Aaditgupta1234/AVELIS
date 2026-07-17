@@ -1,3 +1,16 @@
+/**
+ * @fileoverview Book module database selection mappings.
+ *
+ * Configures the fields to extract from the database when querying books
+ * to maintain consistent API payload contracts.
+ *
+ * @module shared/selects/book.select
+ */
+
+/**
+ * Prisma query select mapping for retrieving Book database entries.
+ * @type {Object}
+ */
 export const BOOK_SELECT = {
   id: true,
   title: true,

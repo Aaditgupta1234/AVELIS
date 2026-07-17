@@ -40,6 +40,11 @@ Each major backend implementation milestone includes a dedicated verification sc
 | :--- | :--- | :--- |
 | **[verify_phase_13.5.3.js](../server/scratch/verify_phase_13.5.3.js)** | 13.5.3 | Database connections, transaction timeout limits, and singleton client patterns. |
 | **[verify_phase_13.5.4.js](../server/scratch/verify_phase_13.5.4.js)** | 13.5.4 | JWT parsing speed, validation hoisting, stack trace limits, and concurrent load tests. |
+| **[verify_phase_13.6.5.4.js](../server/scratch/verify_phase_13.6.5.4.js)** | 13.6.5 | Rate limiting limits, progressive request delay calculations, and trust proxy hop counts. |
+| **[verify_phase_13.6.6.js](../server/scratch/verify_phase_13.6.6.js)** | 13.6.6 | Helmet HTTP headers verification, selective cache control headers, and CORS preflight optimization. |
+| **[verify_phase_13.6.7.js](../server/scratch/verify_phase_13.6.7.js)** | 13.6.7 | Centralized security auditing logs schema, recursive credential redaction, and error logging checks. |
+| **[verify_phase_13.6.8.js](../server/scratch/verify_phase_13.6.8.js)** | 13.6.8 | Comprehensive penetration testing suite, simulating JWT bypass, SQLi, XSS, rate violations, recovery, and SIGTERM clean shutdown. |
+| **[verify_phase_13.7.js](../server/scratch/verify_phase_13.7.js)** | 13.7.0 | Quality assurance, obsolete folder deletions check, JSDoc comment check, markdown link validation, and H1 heading uniqueness check. |
 
 ---
 

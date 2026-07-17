@@ -1,3 +1,12 @@
+/**
+ * @fileoverview User profile module routes.
+ *
+ * Defines routes for the authenticated member profile controls,
+ * including retrieving user info, updating details, and changing passwords.
+ *
+ * @module routes/user
+ */
+
 import { Router } from 'express';
 import { getMe, updateMe, changePassword } from '../controllers/users/user.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';

@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Admin module routes.
+ *
+ * Defines routes for administrative actions such as retrieving dashboard stats,
+ * managing users registry, updating roles/status, and review moderation.
+ * Protected by authMiddleware and adminMiddleware.
+ *
+ * @module routes/admin
+ */
+
 import { Router } from 'express';
 import { getDashboardStats, getUsers, getUserById, updateUserRole, updateUserStatus } from '../controllers/admin.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
