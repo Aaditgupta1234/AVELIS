@@ -825,7 +825,19 @@ const createLoan = async ({ userId, bookCopyId }) => {
     const dueDate = new Date();
     dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
 
-    // 1. Create the Loan record (maps parameter bookCopyId to copyId in schema)
+    // 1. Update the BookCopy status to BORROWED only if it is AVAILABLE (OCC check)
+    const updateResult = await tx.bookCopy.updateMany({
+      where: { id: bookCopyId, status: CopyStatus.AVAILABLE },
+      data: {
+        status: CopyStatus.BORROWED
+      }
+    });
+
+    if (updateResult.count === 0) {
+      throw new ApiError(409, 'Book copy is unavailable.');
+    }
+
+    // 2. Create the Loan record (maps parameter bookCopyId to copyId in schema)
     const loan = await tx.loan.create({
       data: {
         userId,
@@ -835,14 +847,6 @@ const createLoan = async ({ userId, bookCopyId }) => {
         status: LoanStatus.BORROWED
       },
       select: LOAN_SELECT
-    });
-
-    // 2. Update the BookCopy status to BORROWED
-    await tx.bookCopy.update({
-      where: { id: bookCopyId },
-      data: {
-        status: CopyStatus.BORROWED
-      }
     });
 
     return loan;
