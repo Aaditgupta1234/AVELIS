@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { LandingPage } from "./pages/LandingPage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { LibraryPage } from "./pages/Library/LibraryPage";
+import { BookDetailsPage } from "./pages/Library/BookDetailsPage";
 import { ReadingJournalPage } from "./pages/ReadingJournal/ReadingJournalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -18,6 +19,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>}/>
         <Route path="/collections" element={<PageWrapper><CollectionsPage /></PageWrapper>}/>
         <Route path="/library" element={<PageWrapper><LibraryPage /></PageWrapper>}/>
+        <Route path="/book/:id" element={<PageWrapper><BookDetailsPage /></PageWrapper>}/>
         <Route path="/journal" element={<PageWrapper><ReadingJournalPage /></PageWrapper>}/>
         <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>}/>
         <Route path="/dashboard" element={<ProtectedRoute>
