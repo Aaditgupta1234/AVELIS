@@ -9,6 +9,7 @@
 
 import { ApiError } from '../../utils/ApiError.js';
 import { logger } from '../../config/logger.js';
+import { securityLogger } from '../../utils/securityLogger.js';
 
 /**
  * Global error handling middleware.
@@ -17,11 +18,11 @@ import { logger } from '../../config/logger.js';
  * errors. Logs the error and returns a structured JSON response.
  *
  * @param {Error} err - The error object
- * @param {import('express').Request} _req - Express request (unused)
+ * @param {import('express').Request} req - Express request
  * @param {import('express').Response} res - Express response
  * @param {import('express').NextFunction} _next - Express next (unused)
  */
-const errorHandler = (err, _req, res, _next) => {
+const errorHandler = (err, req, res, _next) => {
   // Default to 500 if no status code is set
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
@@ -53,8 +54,14 @@ const errorHandler = (err, _req, res, _next) => {
   // Log the error
   if (statusCode >= 500) {
     logger.error(`[${statusCode}] ${message}`, err.stack);
+    securityLogger.logSecurityException(req, err);
   } else {
     logger.warn(`[${statusCode}] ${message}`);
+    
+    // Log authentication failures on auth endpoints
+    if (req && req.originalUrl && (req.originalUrl.endsWith('/auth/login') || req.originalUrl.endsWith('/auth/register')) && req.method === 'POST') {
+      securityLogger.logAuthenticationFailure(req, message, { statusCode, errors });
+    }
   }
 
   res.status(statusCode).json({

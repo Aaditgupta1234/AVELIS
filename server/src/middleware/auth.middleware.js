@@ -10,6 +10,7 @@
 
 import { verifyToken } from '../utils/jwt.js';
 import { ApiError } from '../utils/ApiError.js';
+import { securityLogger } from '../utils/securityLogger.js';
 
 /**
  * Middleware to authenticate requests via JWT.
@@ -26,11 +27,13 @@ export const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      securityLogger.logJwtFailure(req, 'Missing or malformed Authorization header');
       return next(new ApiError(401, 'Invalid or expired authentication token'));
     }
 
     const token = authHeader.slice(7).trim();
     if (!token) {
+      securityLogger.logJwtFailure(req, 'Empty Bearer token');
       return next(new ApiError(401, 'Invalid or expired authentication token'));
     }
 
@@ -40,9 +43,11 @@ export const authMiddleware = (req, res, next) => {
       next();
     } catch (err) {
       // Sanitize all token verification errors to return a unified message
+      securityLogger.logJwtFailure(req, err.message);
       return next(new ApiError(401, 'Invalid or expired authentication token'));
     }
   } catch (err) {
+    securityLogger.logJwtFailure(req, err.message);
     next(new ApiError(401, 'Invalid or expired authentication token'));
   }
 };

@@ -15,6 +15,7 @@ export { getPagination, getPaginationMeta, buildPaginationMetadata } from './pag
 export { generateToken, verifyToken } from './jwt.js';
 export { hashPassword, comparePassword } from './hash.js';
 export { sendSuccess, sendError } from './response.js';
+export { securityLogger, redactSensitiveData, EVENT_TYPES, SEVERITIES } from './securityLogger.js';
 export { slugify } from './slugify.js';
 export {
   resolveRoleLevel,

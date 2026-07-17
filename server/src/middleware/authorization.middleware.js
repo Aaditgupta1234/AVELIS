@@ -9,6 +9,7 @@
 
 import { ApiError } from '../utils/index.js';
 import { hasRole, hasAnyRole, hasMinimumRole } from '../utils/index.js';
+import { securityLogger } from '../utils/securityLogger.js';
 
 /**
  * Restrict request access to users matching the minimum required role (hierarchical check).
@@ -19,6 +20,7 @@ import { hasRole, hasAnyRole, hasMinimumRole } from '../utils/index.js';
 export function requireRole(minRole) {
   return (req, res, next) => {
     if (!req.user || !hasMinimumRole(req.user, minRole)) {
+      securityLogger.logAuthorizationFailure(req, 'Minimum role not satisfied', { requiredRole: minRole, userRole: req.user?.role });
       return next(new ApiError(403, 'You do not have permission to perform this action.'));
     }
     next();
@@ -34,6 +36,7 @@ export function requireRole(minRole) {
 export function requireExactRole(role) {
   return (req, res, next) => {
     if (!req.user || !hasRole(req.user, role)) {
+      securityLogger.logAuthorizationFailure(req, 'Exact role not satisfied', { requiredRole: role, userRole: req.user?.role });
       return next(new ApiError(403, 'You do not have permission to perform this action.'));
     }
     next();
@@ -49,6 +52,7 @@ export function requireExactRole(role) {
 export function requireAnyRole(...roles) {
   return (req, res, next) => {
     if (!req.user || !hasAnyRole(req.user, roles)) {
+      securityLogger.logAuthorizationFailure(req, 'Required role from set not satisfied', { requiredRoles: roles, userRole: req.user?.role });
       return next(new ApiError(403, 'You do not have permission to perform this action.'));
     }
     next();

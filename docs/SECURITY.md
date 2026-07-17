@@ -64,6 +64,24 @@ graph TD
      - `SameSite`: `'Strict'` or `'Lax'` (mitigates CSRF vulnerabilities).
 5. **Rate Limiting & Slowdown**: Protects endpoints from brute-force attacks and resource exhaustion using progressive throttling.
 6. **Conditional Trace Suppression:** Suppresses detailed error stack trace outputs in production mode for non-server client errors (errors `< 500`), avoiding stack disclosure.
+7. **Centralized Security Logging & Auditing**: Security-critical events are captured as structured JSON records, detailing request route, method, IP, user identifier, and message context:
+   - **Audited Events**: Authentication success/failure, authorization failure, token validation failure (expired, malformed, or signature errors), payload validation errors, rate-limiting, request slowdown throttling, 404 scanning targets (suspicious route scans), and critical security exceptions.
+   - **Log Schema**:
+     ```json
+     {
+       "timestamp": "ISO8601 String",
+       "eventType": "string",
+       "severity": "INFO | WARN | ERROR | CRITICAL",
+       "route": "string",
+       "method": "string",
+       "clientIp": "string",
+       "userId": "string | null",
+       "requestId": "string | null",
+       "message": "string",
+       "metadata": {}
+     }
+     ```
+   - **Automatic Sensitive Data Redaction**: Undergoes recursive sanitization to scrub confidential properties (e.g., `password`, `passwordConfirm`, `token`, `refreshToken`, `Authorization`, `cookie`, `apiKey`, `secret`, `otp`, `databaseUrl`, `jwtSecret`) replacing them with `[REDACTED]` prior to logging.
 
 ---
 

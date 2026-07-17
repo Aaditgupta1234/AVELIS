@@ -7,6 +7,8 @@
  * @module utils/response
  */
 
+import { securityLogger } from './securityLogger.js';
+
 /**
  * Send a standardized success API response.
  *
@@ -18,6 +20,15 @@
  * @returns {import('express').Response} Express response
  */
 export const sendSuccess = (res, statusCode, data = null, message = 'Success', meta = {}) => {
+  const req = res.req;
+  if (req && req.originalUrl) {
+    if (req.originalUrl.endsWith('/auth/login') && req.method === 'POST') {
+      securityLogger.logAuthenticationSuccess(req, { userId: data?.user?.id });
+    } else if (req.originalUrl.endsWith('/auth/register') && req.method === 'POST') {
+      securityLogger.logAuthenticationSuccess(req, { userId: data?.id, action: 'register' });
+    }
+  }
+
   return res.status(statusCode).json({
     success: true,
     message,
@@ -36,6 +47,11 @@ export const sendSuccess = (res, statusCode, data = null, message = 'Success', m
  * @returns {import('express').Response} Express response
  */
 export const sendError = (res, statusCode, message = 'Error', errors = []) => {
+  const req = res.req;
+  if (req && statusCode === 400 && message === 'Validation failed.') {
+    securityLogger.logValidationFailure(req, errors);
+  }
+
   return res.status(statusCode).json({
     success: false,
     message,

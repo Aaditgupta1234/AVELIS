@@ -10,6 +10,7 @@
 
 import { slowDown } from 'express-slow-down';
 import { rateLimitConfig } from '../config/index.js';
+import { securityLogger } from '../utils/securityLogger.js';
 
 /**
  * Creates a progressive delay function.
@@ -20,7 +21,11 @@ import { rateLimitConfig } from '../config/index.js';
 const makeProgressiveDelay = (config) => {
   return (used, req) => {
     const delayAfter = req.slowDown.limit;
-    return (used - delayAfter) * config.delayMs;
+    const delay = (used - delayAfter) * config.delayMs;
+    if (delay > 0) {
+      securityLogger.logSlowdownThrottling(req, { delay, used, limit: delayAfter });
+    }
+    return delay;
   };
 };
 

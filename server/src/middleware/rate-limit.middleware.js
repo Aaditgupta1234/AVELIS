@@ -10,9 +10,11 @@
 
 import rateLimit from 'express-rate-limit';
 import { rateLimitConfig } from '../config/index.js';
+import { securityLogger } from '../utils/securityLogger.js';
 
 /** Standard Rate Limit Exceeded Error Handler */
 const standardLimitHandler = (req, res) => {
+  securityLogger.logRateLimitExceeded(req);
   res.status(429).json({
     success: false,
     message: 'Too many requests from this IP, please try again later.'
