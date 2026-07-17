@@ -60,6 +60,12 @@ This document specifies the rate limiting, request size limits, startup validati
 | `MAX_TEXT_SIZE` | Max plain text request limit | `100kb` | `/^[1-9]\d*(?:\s*(?:b\|kb\|mb\|gb\|tb))?$/i` |
 | `MAX_RAW_SIZE` | Max raw binary request limit | `100kb` | `/^[1-9]\d*(?:\s*(?:b\|kb\|mb\|gb\|tb))?$/i` |
 
+### CORS Configuration
+
+| Environment Override | Purpose | Secure Default | Acceptable Format Pattern |
+| --- | --- | --- | --- |
+| `CORS_MAX_AGE` | CORS preflight preflight caching duration (seconds) | `86400` (24h) | Positive integer $\ge 1$ |
+
 ---
 
 ## 3. Startup Validation and Fallback Strategy
@@ -72,7 +78,9 @@ To guarantee server uptime, all configuration parameters undergo validation duri
 3. **Payload Size string checks**:
    - Verified using the Express body-parser size pattern.
    - Malformed, zero, negative, or invalid formats default back to secure production constants.
-4. **Proxy Trust check**:
+4. **CORS preflight cache check**:
+   - `CORS_MAX_AGE` is parsed as an integer. Invalid, non-integer, zero, negative, `NaN`, `Infinity` or empty values fall back to `86400`.
+5. **Proxy Trust check**:
    - Accepts boolean forms, integer hop counts, Express reserved terms (`'loopback'`, `'linklocal'`, `'uniquelocal'`), or comma-separated lists of subnets. Non-compliant overrides drop back to `false`.
-5. **Deep-Freeze Immutability**:
+6. **Deep-Freeze Immutability**:
    - Objects are recursively deep-frozen before exporting to prevent runtime mutation by other application dependencies.

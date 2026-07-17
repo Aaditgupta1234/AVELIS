@@ -48,10 +48,22 @@ graph TD
     E --> E1[No stack trace output for 4xx errors]
 ```
 
-1. **Helmet HTTP Headers:** Integrated Helmet middleware to set security headers, mitigating Cross-Site Scripting (XSS), clickjacking, and mime-type sniffing attacks.
-2. **Cross-Origin Resource Sharing (CORS):** Restricted to white-listed client origins, parsed dynamically from environment variables (`CORS_ORIGIN`).
-3. **Rate Limiting:** Protects endpoints (like authentication paths) from brute-force attacks and resource exhaustion via `express-rate-limit` window rules.
-4. **Conditional Trace Suppression:** Suppresses detailed error stack trace outputs in production mode for non-server client errors (errors `< 500`), avoiding stack disclosure.
+1. **Helmet HTTP Headers:** Integrated Helmet middleware to set security headers, mitigating Cross-Site Scripting (XSS), clickjacking, and mime-type sniffing attacks. Configures:
+   - `Content-Security-Policy`: Strict directives restricting resources to `'self'`, blocking object embedding, framing, and base/form overrides.
+   - `Permissions-Policy`: Restricts browser feature permissions (camera, microphone, geolocation, etc.) using custom headers.
+   - `Strict-Transport-Security` (HSTS): Enabled in production to enforce HTTPS connections.
+   - `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `X-DNS-Prefetch-Control`, `Origin-Agent-Cluster`, and `X-Permitted-Cross-Domain-Policies` set to secure defaults.
+2. **Cross-Origin Resource Sharing (CORS):** Restricted to white-listed client origins, parsed dynamically from environment variables (`CORS_ORIGIN`). Preflight requests are cached in browsers for up to `CORS_MAX_AGE` (default `86400` seconds) to optimize performance.
+3. **HTTP Hardening**:
+   - Framework exposure header `X-Powered-By` is explicitly disabled at the server level.
+   - Dynamic caching is disabled on all sensitive routes (e.g. `/auth`, `/users`, `/admin`, `/loans`, `/reservations`) using standard cache-busting headers (`Cache-Control: no-store, no-cache`, `Pragma: no-cache`, `Expires: 0`).
+4. **Cookie Security Guidelines (Future-Proofing)**:
+   - While AVELIS currently uses header-based JWT tokens (`Authorization: Bearer`), any future cookie usage must strictly enforce:
+     - `HttpOnly`: true (mitigates session theft via XSS).
+     - `Secure`: true (enforces TLS transmission).
+     - `SameSite`: `'Strict'` or `'Lax'` (mitigates CSRF vulnerabilities).
+5. **Rate Limiting & Slowdown**: Protects endpoints from brute-force attacks and resource exhaustion using progressive throttling.
+6. **Conditional Trace Suppression:** Suppresses detailed error stack trace outputs in production mode for non-server client errors (errors `< 500`), avoiding stack disclosure.
 
 ---
 

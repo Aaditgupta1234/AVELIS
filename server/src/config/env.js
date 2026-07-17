@@ -93,6 +93,7 @@ export const config = Object.freeze({
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   clientUrl: process.env.CLIENT_URL,
   corsOrigin: process.env.CLIENT_URL || process.env.CORS_ORIGIN || '*',
+  corsMaxAge: parseInt(process.env.CORS_MAX_AGE, 10) || 86400,
   
   // Logging settings
   loggingLevel: process.env.LOGGING_LEVEL || 'info',

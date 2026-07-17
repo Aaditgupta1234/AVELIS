@@ -18,6 +18,7 @@ import loanRoutes from './loan.routes.js';
 import reservationRoutes from './reservation.routes.js';
 import reviewRoutes from '../modules/review/review.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
+import { noCacheMiddleware } from '../middleware/nocache.middleware.js';
 
 const router = Router();
 
@@ -34,14 +35,14 @@ const router = Router();
  * /api/v1/reservations → Reservation routes
  * /api/v1/reviews      → Review routes
  */
-router.use('/auth', authRoutes);
+router.use('/auth', noCacheMiddleware, authRoutes);
 router.use('/books', bookRoutes);
-router.use('/users', userRoutes);
-router.use('/admin', adminRoutes);
-router.use('/loans', loanRoutes);
-router.use('/reservations', reservationRoutes);
+router.use('/users', noCacheMiddleware, userRoutes);
+router.use('/admin', noCacheMiddleware, adminRoutes);
+router.use('/loans', noCacheMiddleware, loanRoutes);
+router.use('/reservations', noCacheMiddleware, reservationRoutes);
 router.use('/reviews', reviewRoutes);
-router.use('/admin/dashboard', dashboardRoutes);
+router.use('/admin/dashboard', noCacheMiddleware, dashboardRoutes);
 
 export default router;
 

@@ -23,6 +23,7 @@ import { logger } from './config/logger.js';
  * Create and configure the Express application.
  */
 const app = express();
+app.disable('x-powered-by');
 
 /** Configure Express trust proxy settings */
 app.set('trust proxy', rateLimitConfig.TRUST_PROXY);
@@ -41,12 +42,7 @@ app.use(permissionsPolicyMiddleware);
 app.use(compression());
 
 /** Enable Cross-Origin Resource Sharing */
-app.use(
-  cors({
-    origin: config.corsOrigin,
-    credentials: true,
-  })
-);
+app.use(cors(securityConfig.corsOptions));
 
 // ---------------------------------------------------------------------------
 // Body Parsing

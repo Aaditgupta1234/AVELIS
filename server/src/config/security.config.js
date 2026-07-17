@@ -86,11 +86,19 @@ export const securityConfig = Object.freeze({
     noSniff: true,
     originAgentCluster: true,
     referrerPolicy: Object.freeze({ policy: process.env.REFERRER_POLICY || 'strict-origin-when-cross-origin' }),
-    xssFilter: true,
+    xssFilter: false,
+    permittedCrossDomainPolicies: Object.freeze({ policy: 'none' }),
   }),
 
   /** Custom permissions policy header string */
   permissionsPolicy: process.env.PERMISSIONS_POLICY || 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=()',
+
+  /** Centralized CORS options */
+  corsOptions: Object.freeze({
+    origin: config.corsOrigin,
+    credentials: true,
+    maxAge: config.corsMaxAge,
+  }),
 });
 
 /**
