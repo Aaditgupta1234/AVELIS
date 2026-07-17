@@ -1,11 +1,14 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-export const ProtectedRoute = ({ children }) => {
-    const { isAuthenticated, loading } = useAuth();
-    if (loading) {
-        // Elegant full-screen loading state matching AVELIS styling
-        return (<div className="min-h-screen bg-[#07111F] flex flex-col items-center justify-center relative">
+import { useAuth } from "../hooks/useAuth.js";
+
+export const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, isInitializing, user } = useAuth();
+
+  if (isInitializing) {
+    // Elegant full-screen loading state matching AVELIS styling
+    return (
+      <div className="min-h-screen bg-[#07111F] flex flex-col items-center justify-center relative">
         <div className="paper-grain opacity-5 pointer-events-none"/>
         <div className="flex flex-col items-center gap-4">
           <svg className="animate-spin h-8 w-8 text-[#C9A227]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -16,10 +19,18 @@ export const ProtectedRoute = ({ children }) => {
             Entering Sanctuary
           </span>
         </div>
-      </div>);
-    }
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace/>;
-    }
-    return <>{children}</>;
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace/>;
+  }
+
+  if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
+    // Authenticated but unauthorized for the requested route (e.g. Member trying to access Admin pages)
+    return <Navigate to="/dashboard" replace/>;
+  }
+
+  return <>{children}</>;
 };

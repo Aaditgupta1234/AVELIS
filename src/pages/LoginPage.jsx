@@ -15,7 +15,7 @@ const GoogleIcon = () => (<svg className="w-4 h-4 mr-3 flex-shrink-0" viewBox="0
   </svg>);
 export const LoginPage = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, login, loginWithGoogle } = useAuth();
+    const { isAuthenticated, login, register, loginWithGoogle } = useAuth();
     const [mode, setMode] = useState("login");
     const [emailLoading, setEmailLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
@@ -95,9 +95,11 @@ export const LoginPage = () => {
         }
         setEmailLoading(true);
         try {
-            if (mode === "login" || mode === "register") {
-                await login(email);
-                // AuthContext will update, triggering the redirect in useEffect
+            if (mode === "login") {
+                await login(email, password);
+            }
+            else if (mode === "register") {
+                await register(name, email, password);
             }
             else if (mode === "forgot") {
                 await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -114,7 +116,11 @@ export const LoginPage = () => {
             }
         }
         catch (err) {
-            setErrors({ form: "An unexpected error occurred. Please try again." });
+            if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
+                setErrors(err.fieldErrors);
+            } else {
+                setErrors({ form: err.message || "An unexpected error occurred. Please try again." });
+            }
             setEmailLoading(false);
         }
     };
