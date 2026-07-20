@@ -50,5 +50,12 @@ export const BOOK_PUBLIC_INCLUDE = {
         }
       }
     }
+  },
+  copies: {
+    select: {
+      id: true,
+      status: true,
+      condition: true
+    }
   }
 };

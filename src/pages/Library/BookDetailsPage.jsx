@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useBooks } from "../../context/BooksContext.jsx";
+import { useLoans } from "../../context/LoanContext.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import { getBookById } from "../../services/book.service.js";
 import { mapBookToUI } from "../../mappers/book.mapper.js";
 import { normalizeError } from "../../utils/error.js";
@@ -18,6 +20,8 @@ export const BookDetailsPage = () => {
   const id = useParams().id;
   const navigate = useNavigate();
   const { getCachedBook, cacheBookDetails, books } = useBooks();
+  const { borrowBook } = useLoans();
+  const { isAuthenticated } = useAuth();
 
   const isValidUuid = UUID_REGEX.test(id || "");
 
@@ -26,6 +30,11 @@ export const BookDetailsPage = () => {
   const [error, setError] = useState(null);
   const [isBorrowing, setIsBorrowing] = useState(false);
   const [borrowSuccess, setBorrowSuccess] = useState(false);
+  const [borrowError, setBorrowError] = useState("");
+
+  const availableCopy = book?.copies?.find((copy) => copy.status === "AVAILABLE");
+  const availableCopyId = availableCopy?.id;
+  const hasAvailableCopy = !!availableCopyId;
 
   // If the book is deleted from the catalog context, redirect to library
   useEffect(() => {
@@ -70,13 +79,24 @@ export const BookDetailsPage = () => {
   }, [id, isValidUuid, cacheBookDetails]);
 
   const handleBorrow = async () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: `/book/${id}` } });
+      return;
+    }
+    if (!availableCopyId) return;
+
     setIsBorrowing(true);
-    // Simulate loan integration (integrated fully in Step 3)
-    setTimeout(() => {
-      setIsBorrowing(false);
+    setBorrowError("");
+    try {
+      await borrowBook(availableCopyId);
       setBorrowSuccess(true);
       setTimeout(() => setBorrowSuccess(false), 3000);
-    }, 1200);
+    } catch (err) {
+      setBorrowError(err.message || "Borrow request failed.");
+      setTimeout(() => setBorrowError(""), 4000);
+    } finally {
+      setIsBorrowing(false);
+    }
   };
 
   // 1. Invalid UUID or 404 Not Found Page Layout
@@ -235,11 +255,13 @@ export const BookDetailsPage = () => {
               <div className="flex flex-wrap items-center gap-6">
                 <button
                   onClick={handleBorrow}
-                  disabled={book.stockQuantity <= 0 || isBorrowing || borrowSuccess}
+                  disabled={!hasAvailableCopy || isBorrowing || borrowSuccess}
                   className={`flex items-center justify-center gap-2 px-8 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer ${
                     borrowSuccess
                       ? "bg-emerald-500 text-[#07111F] shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                      : book.stockQuantity <= 0
+                      : borrowError
+                      ? "bg-rose-500 text-[#07111F] shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+                      : !hasAvailableCopy
                       ? "border border-white/10 text-white/30 cursor-not-allowed"
                       : "bg-[#C9A227] text-[#07111F] hover:bg-[#E5C16B] shadow-[0_10px_20px_rgba(201,162,39,0.15)] hover:shadow-[0_10px_30px_rgba(201,162,39,0.3)] hover:-translate-y-0.5"
                   }`}
@@ -251,7 +273,9 @@ export const BookDetailsPage = () => {
                       <Sparkles className="w-3.5 h-3.5 animate-spin"/>
                       <span>Allocated Successfully</span>
                     </>
-                  ) : book.stockQuantity <= 0 ? (
+                  ) : borrowError ? (
+                    <span>{borrowError}</span>
+                  ) : !hasAvailableCopy ? (
                     <span>Currently Checked Out</span>
                   ) : (
                     <span>Request Volume</span>

@@ -48,6 +48,7 @@ export const mapBookToUI = (book) => {
     isBorrowable: !!book.isBorrowable,
     isForSale: !!book.isForSale,
     rating: book.rating || 5.0, // Default fallback rating
+    copies: book.copies || [],
     createdAt: book.createdAt || new Date().toISOString(),
   };
 };

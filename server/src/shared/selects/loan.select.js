@@ -44,7 +44,18 @@ export const LOAN_SELECT = {
         select: {
           id: true,
           title: true,
-          isbn: true
+          isbn: true,
+          coverImage: true,
+          authors: {
+            select: {
+              author: {
+                select: {
+                  id: true,
+                  fullName: true
+                }
+              }
+            }
+          }
         }
       }
     }

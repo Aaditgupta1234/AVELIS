@@ -11,6 +11,7 @@ import { PageWrapper } from "./components/ui/PageWrapper";
 import { ScrollToTop } from "./components/ui/ScrollToTop";
 import { AuthProvider } from "./context/AuthContext";
 import { BooksProvider } from "./context/BooksContext";
+import { LoanProvider } from "./context/LoanContext.jsx";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 const AnimatedRoutes = () => {
     const location = useLocation();
@@ -40,10 +41,12 @@ const AnimatedRoutes = () => {
 function App() {
     return (<AuthProvider>
       <BooksProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <AnimatedRoutes />
-        </BrowserRouter>
+        <LoanProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </LoanProvider>
       </BooksProvider>
     </AuthProvider>);
 }
