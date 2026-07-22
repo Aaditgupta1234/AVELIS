@@ -19,8 +19,10 @@ import {
   BookOpen,
   Quote,
   Bookmark,
-  XCircle
+  XCircle,
+  ShoppingBag
 } from "lucide-react";
+import { apiClient } from "../api/client.js";
 import { Navbar } from "../components/layout/Navbar.jsx";
 import { ProfileView } from "../components/dashboard/ProfileView.jsx";
 import { SettingsView } from "../components/dashboard/SettingsView.jsx";
@@ -52,6 +54,23 @@ export const DashboardPage = () => {
 
   const { books } = useBooks();
   const { userReviews } = useReviews();
+
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await apiClient.get("/orders/my-orders");
+        setOrders(response.data?.data || []);
+      } catch (err) {
+        setOrders([]);
+      } finally {
+        setOrdersLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -138,10 +157,10 @@ export const DashboardPage = () => {
       color: "text-[#C9A227]"
     },
     {
-      label: "Active Holds",
-      value: reservationsLoading && reservations.length === 0 ? "..." : String(activeReservations.length),
-      change: "Reservation queue",
-      icon: Bookmark,
+      label: "My Orders",
+      value: ordersLoading ? "..." : String(orders.length),
+      change: "Physical book purchases",
+      icon: ShoppingBag,
       color: "text-amber-400"
     },
     {
@@ -507,13 +526,13 @@ export const DashboardPage = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => setActiveTab("reservations")}
+                        onClick={() => setActiveTab("orders")}
                         className={`font-display text-sm tracking-[0.15em] uppercase transition-colors relative pb-4 cursor-pointer focus:outline-none ${
-                          activeTab === "reservations" ? "text-[#C9A227]" : "text-[#F7F5EE]/40 hover:text-[#F7F5EE]/75"
+                          activeTab === "orders" ? "text-[#C9A227]" : "text-[#F7F5EE]/40 hover:text-[#F7F5EE]/75"
                         }`}
                       >
-                        Active Holds ({reservationsLoading && reservations.length === 0 ? "..." : activeReservations.length})
-                        {activeTab === "reservations" && (
+                        My Orders ({ordersLoading ? "..." : orders.length})
+                        {activeTab === "orders" && (
                           <motion.div
                             layoutId="activeTabUnderline"
                             className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C9A227]"
@@ -697,115 +716,72 @@ export const DashboardPage = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {activeReservations.length === 0 ? (
+                      {orders.length === 0 ? (
                         <div className="text-center py-12 border border-dashed border-[rgba(201,162,39,0.08)] rounded-lg">
-                          <Bookmark className="w-8 h-8 text-[#C9A227]/30 mx-auto mb-4" />
+                          <ShoppingBag className="w-8 h-8 text-[#C9A227]/30 mx-auto mb-4" />
                           <h4 className="font-display text-xs tracking-[0.15em] uppercase text-[#F7F5EE]/50 mb-1">
-                            No Active Holds
+                            No Orders Placed Yet
                           </h4>
                           <p className="font-body text-[11px] text-[#F7F5EE]/30 mb-4">
-                            You have no pending or ready volume reservations in the archival queue.
+                            You have no physical book purchases archived in your account.
                           </p>
                           <Link
                             to="/library"
                             className="inline-flex items-center gap-1.5 text-[9px] font-display tracking-[0.2em] uppercase text-[#C9A227] hover:text-[#E5C16B] transition-colors"
                           >
-                            <span>Browse Catalog</span>
+                            <span>Browse Catalog & Buy Books</span>
                             <ArrowRight className="w-3 h-3" />
                           </Link>
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 gap-4">
-                          {activeReservations.map((resItem) => {
-                            const isReady = resItem.status === "READY_FOR_PICKUP";
-                            const isActionPending = actionLoading[resItem.id] === "cancelling";
+                          {orders.map((order) => {
+                            const firstItem = order.items?.[0];
+                            const bookTitle = firstItem?.book?.title || "Archival Hardcover Volume";
+                            const coverImg =
+                              firstItem?.book?.coverImage ||
+                              "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80";
+
                             return (
                               <div
-                                key={resItem.id}
-                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded bg-[#0D1626]/20 border border-[rgba(201,162,39,0.08)] hover:border-[#C9A227]/20 hover:bg-[#0D1626]/40 transition-all duration-300"
+                                key={order.id}
+                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded bg-[#0D1626]/40 border border-[rgba(201,162,39,0.12)] hover:border-[#C9A227]/30 transition-all duration-300 shadow-md"
                               >
                                 <div className="flex items-center gap-4">
                                   <img
-                                    src={resItem.coverImage}
-                                    alt={resItem.bookTitle}
-                                    className="w-10 h-14 object-cover rounded shadow-md border border-white/5 flex-shrink-0"
+                                    src={coverImg}
+                                    alt={bookTitle}
+                                    className="w-12 h-16 object-cover rounded shadow border border-white/10 flex-shrink-0"
                                   />
                                   <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-display text-xs text-[#C9A227] font-semibold tracking-wider">
+                                        {order.orderNumber}
+                                      </span>
+                                      <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-display text-[8px] tracking-widest uppercase rounded">
+                                        {order.orderStatus || "PLACED"}
+                                      </span>
+                                    </div>
                                     <h4 className="font-display text-sm text-[#F7F5EE] tracking-wide line-clamp-1">
-                                      {resItem.bookTitle}
+                                      {bookTitle}{" "}
+                                      {order.items?.length > 1
+                                        ? `(+${order.items.length - 1} more)`
+                                        : ""}
                                     </h4>
                                     <p className="font-body text-[10px] text-[#F7F5EE]/50">
-                                      by {resItem.author}
+                                      Placed on {formatDate(order.orderedAt || order.createdAt)} • Address:{" "}
+                                      {order.shippingAddress}
                                     </p>
-                                    <div className="flex flex-wrap gap-x-3 gap-y-1 items-center pt-1 font-body text-[9px] text-[#F7F5EE]/40">
-                                      <span>Requested: {formatDate(resItem.createdAt)}</span>
-                                      {isReady && resItem.expiresAt && (
-                                        <>
-                                          <span className="w-1 h-1 bg-white/10 rounded-full" />
-                                          <span className="text-emerald-400 font-medium">
-                                            Pickup Expires: {formatDate(resItem.expiresAt)}
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-                                  <span
-                                    className={`px-2.5 py-1 border font-display text-[8px] tracking-[0.15em] uppercase rounded-full ${
-                                      isReady
-                                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                                        : "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                                    }`}
-                                  >
-                                    {isReady ? "Ready for Pickup" : "Pending Queue"}
+                                <div className="flex sm:flex-col items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                                  <span className="font-display text-base font-bold text-[#C9A227]">
+                                    ${Number(order.totalAmount || 24.99).toFixed(2)}
                                   </span>
-
-                                  <button
-                                    onClick={async () => {
-                                      setActionLoading((prev) => ({ ...prev, [resItem.id]: "checkout" }));
-                                      try {
-                                        const matched = books.find((b) => b.id === resItem.bookId || b.title === resItem.bookTitle);
-                                        const availableCopy = matched?.copies?.find((c) => c.status === "AVAILABLE") || matched?.copies?.[0];
-                                        if (availableCopy) {
-                                          await borrowBook(availableCopy.id);
-                                          try { await cancelReservation(resItem.id); } catch(e) {}
-                                        }
-                                        setToastMessage(`"${resItem.bookTitle}" checked out!`);
-                                        setReaderBook({
-                                          title: resItem.bookTitle,
-                                          author: resItem.author,
-                                          coverImage: resItem.coverImage,
-                                        });
-                                      } catch (err) {
-                                        setToastMessage(err.message || "Opening reader...");
-                                        setReaderBook({
-                                          title: resItem.bookTitle,
-                                          author: resItem.author,
-                                          coverImage: resItem.coverImage,
-                                        });
-                                      } finally {
-                                        setActionLoading((prev) => ({ ...prev, [resItem.id]: null }));
-                                      }
-                                    }}
-                                    disabled={actionLoading[resItem.id]}
-                                    className="flex items-center justify-center gap-1.5 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 shadow-[0_4px_12px_rgba(201,162,39,0.2)] cursor-pointer"
-                                  >
-                                    <BookOpen className="w-3 h-3" />
-                                    <span>{actionLoading[resItem.id] === "checkout" ? "Opening..." : "Checkout & Read"}</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleCancelReservation(resItem.id)}
-                                    disabled={isActionPending}
-                                    className="flex items-center justify-center gap-1.5 border border-rose-500/20 hover:border-rose-500/50 text-rose-400 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-colors bg-rose-950/10 focus:outline-none cursor-pointer"
-                                  >
-                                    <XCircle
-                                      className={`w-3 h-3 ${isActionPending ? "animate-spin" : ""}`}
-                                    />
-                                    <span>{isActionPending ? "Cancelling..." : "Cancel Hold"}</span>
-                                  </button>
+                                  <span className="font-body text-[9px] text-emerald-400">
+                                    Paid via Card / UPI
+                                  </span>
                                 </div>
                               </div>
                             );
