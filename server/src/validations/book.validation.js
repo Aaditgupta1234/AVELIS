@@ -152,6 +152,7 @@ export const updateBookValidator = (req, res, next) => {
     language,
     description,
     coverImage,
+    pdfUrl,
     sellingPrice,
     stockQuantity,
     isBorrowable,
@@ -211,12 +212,16 @@ export const updateBookValidator = (req, res, next) => {
       errors.push({ field: 'coverImage', message: 'Cover image must be a string.' });
     } else {
       const trimmedUrl = coverImage.trim();
-      try {
-        new URL(trimmedUrl);
-        req.body.coverImage = trimmedUrl;
-      } catch (_) {
-        errors.push({ field: 'coverImage', message: 'Cover image must be a valid URL.' });
-      }
+      req.body.coverImage = trimmedUrl;
+    }
+  }
+
+  // PDF URL validation (if provided)
+  if (pdfUrl !== undefined && pdfUrl !== null) {
+    if (typeof pdfUrl !== 'string') {
+      errors.push({ field: 'pdfUrl', message: 'PDF URL must be a string.' });
+    } else {
+      req.body.pdfUrl = pdfUrl.trim();
     }
   }
 

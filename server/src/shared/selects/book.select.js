@@ -20,6 +20,7 @@ export const BOOK_SELECT = {
   language: true,
   description: true,
   coverImage: true,
+  pdfUrl: true,
   sellingPrice: true,
   stockQuantity: true,
   isBorrowable: true,

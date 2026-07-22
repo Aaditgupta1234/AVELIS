@@ -33,7 +33,7 @@ export const createBook = async (bookData) => {
   const isbn = bookData.isbn?.trim();
   const publisher = bookData.publisher?.trim();
   const language = bookData.language?.trim();
-  const { publicationYear, description, coverImage, sellingPrice, stockQuantity, isBorrowable, isForSale, authorIds, categoryIds } = bookData;
+  const { publicationYear, description, coverImage, pdfUrl, sellingPrice, stockQuantity, isBorrowable, isForSale, authorIds, categoryIds } = bookData;
 
   return await prisma.$transaction(async (tx) => {
     // 1. Verify ISBN does not already exist
@@ -72,6 +72,7 @@ export const createBook = async (bookData) => {
         language: language ?? 'English',
         description: description ?? null,
         coverImage: coverImage ?? null,
+        pdfUrl: pdfUrl ?? null,
         sellingPrice: sellingPrice ?? 0,
         stockQuantity: stockQuantity ?? 0,
         isBorrowable: isBorrowable ?? true,
@@ -274,6 +275,7 @@ export const updateBook = async (id, bookData) => {
     if (bookData.language !== undefined) updateData.language = typeof bookData.language === 'string' ? bookData.language.trim() : bookData.language;
     if (bookData.description !== undefined) updateData.description = typeof bookData.description === 'string' ? bookData.description.trim() : bookData.description;
     if (bookData.coverImage !== undefined) updateData.coverImage = typeof bookData.coverImage === 'string' ? bookData.coverImage.trim() : bookData.coverImage;
+    if (bookData.pdfUrl !== undefined) updateData.pdfUrl = typeof bookData.pdfUrl === 'string' ? bookData.pdfUrl.trim() : bookData.pdfUrl;
     if (bookData.sellingPrice !== undefined) updateData.sellingPrice = bookData.sellingPrice;
     if (bookData.stockQuantity !== undefined) updateData.stockQuantity = bookData.stockQuantity;
     if (bookData.isBorrowable !== undefined) updateData.isBorrowable = bookData.isBorrowable;
