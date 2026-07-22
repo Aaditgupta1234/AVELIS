@@ -751,7 +751,7 @@ export const DashboardPage = () => {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
                                   <span
                                     className={`px-2.5 py-1 border font-display text-[8px] tracking-[0.15em] uppercase rounded-full ${
                                       isReady
@@ -761,6 +761,40 @@ export const DashboardPage = () => {
                                   >
                                     {isReady ? "Ready for Pickup" : "Pending Queue"}
                                   </span>
+
+                                  <button
+                                    onClick={async () => {
+                                      setActionLoading((prev) => ({ ...prev, [resItem.id]: "checkout" }));
+                                      try {
+                                        const matched = books.find((b) => b.id === resItem.bookId || b.title === resItem.bookTitle);
+                                        const availableCopy = matched?.copies?.find((c) => c.status === "AVAILABLE") || matched?.copies?.[0];
+                                        if (availableCopy) {
+                                          await borrowBook(availableCopy.id);
+                                          try { await cancelReservation(resItem.id); } catch(e) {}
+                                        }
+                                        setToastMessage(`"${resItem.bookTitle}" checked out!`);
+                                        setReaderBook({
+                                          title: resItem.bookTitle,
+                                          author: resItem.author,
+                                          coverImage: resItem.coverImage,
+                                        });
+                                      } catch (err) {
+                                        setToastMessage(err.message || "Opening reader...");
+                                        setReaderBook({
+                                          title: resItem.bookTitle,
+                                          author: resItem.author,
+                                          coverImage: resItem.coverImage,
+                                        });
+                                      } finally {
+                                        setActionLoading((prev) => ({ ...prev, [resItem.id]: null }));
+                                      }
+                                    }}
+                                    disabled={actionLoading[resItem.id]}
+                                    className="flex items-center justify-center gap-1.5 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 shadow-[0_4px_12px_rgba(201,162,39,0.2)] cursor-pointer"
+                                  >
+                                    <BookOpen className="w-3 h-3" />
+                                    <span>{actionLoading[resItem.id] === "checkout" ? "Opening..." : "Checkout & Read"}</span>
+                                  </button>
 
                                   <button
                                     onClick={() => handleCancelReservation(resItem.id)}
