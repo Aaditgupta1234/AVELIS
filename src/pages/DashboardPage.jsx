@@ -122,7 +122,7 @@ export const DashboardPage = () => {
     }
   };
 
-  const activeReservations = reservations.filter(
+  const activeReservations = (reservations || []).filter(
     (r) => r.status === "PENDING" || r.status === "READY_FOR_PICKUP"
   );
 
@@ -187,9 +187,22 @@ export const DashboardPage = () => {
     }
   ];
 
+  const fallbackRecentlyViewed = [
+    {
+      title: "Letters from a Stoic",
+      author: "Seneca",
+      image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80"
+    },
+    {
+      title: "Thus Spoke Zarathustra",
+      author: "Friedrich Nietzsche",
+      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=300&q=80"
+    }
+  ];
+
   // Dynamic recommendations derived from live catalog books with fallback
   const liveRecommendations =
-    books.length > 0
+    books && books.length > 0
       ? books.slice(0, 3).map((b) => ({
           title: b.title,
           author: b.author,
@@ -201,13 +214,13 @@ export const DashboardPage = () => {
 
   // Dynamic recently visited derived from user's submitted reviews / activity with fallback
   const liveRecentlyViewed =
-    userReviews.length > 0
+    userReviews && userReviews.length > 0
       ? userReviews.slice(0, 2).map((r) => ({
           title: r.bookTitle || "Archival Codex",
           author: r.author || "Archival Author",
           image: r.coverImage || "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80"
         }))
-      : recentlyViewed;
+      : fallbackRecentlyViewed;
 
   return (
     <>
