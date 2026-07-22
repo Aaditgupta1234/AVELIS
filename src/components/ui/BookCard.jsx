@@ -25,9 +25,13 @@ export const BookCard = ({
   const [toastMessage, setToastMessage] = useState("");
 
   const { isAuthenticated } = useAuth();
-  const { borrowBook } = useLoans();
+  const { borrowBook, activeLoans } = useLoans();
   const { books } = useBooks();
   const navigate = useNavigate();
+
+  const isBorrowedByMe = activeLoans?.some(
+    (l) => (id && l.bookId === id) || (title && l.title?.toLowerCase() === title.toLowerCase())
+  );
 
   const handleMouseMove = ({ currentTarget, clientX, clientY }) => {
     const { left, top } = currentTarget.getBoundingClientRect();
@@ -39,6 +43,10 @@ export const BookCard = ({
     e.stopPropagation();
     if (!isAuthenticated) {
       navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
+    if (isBorrowedByMe) {
+      navigate("/dashboard");
       return;
     }
 
@@ -175,11 +183,17 @@ export const BookCard = ({
                   transition: { ...springs.smooth, delay: 0.1 },
                 },
               }}
-              className="absolute top-4 right-4 h-9 px-3 bg-[#07111F]/90 hover:bg-[#C9A227] hover:text-[#07111F] text-[#C9A227] flex items-center gap-1.5 rounded-full border border-[#C9A227]/40 z-20 cursor-pointer transition-colors shadow-lg"
-              title="Borrow this book"
+              className={`absolute top-4 right-4 h-9 px-3 flex items-center gap-1.5 rounded-full border z-20 cursor-pointer transition-colors shadow-lg ${
+                isBorrowedByMe
+                  ? "bg-emerald-500 border-emerald-400 text-[#07111F]"
+                  : "bg-[#07111F]/90 hover:bg-[#C9A227] hover:text-[#07111F] text-[#C9A227] border-[#C9A227]/40"
+              }`}
+              title={isBorrowedByMe ? "Currently borrowed by you" : "Borrow this book"}
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span className="font-display text-[9px] uppercase tracking-wider font-semibold">Borrow</span>
+              {isBorrowedByMe ? <CheckCircle2 className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
+              <span className="font-display text-[9px] uppercase tracking-wider font-semibold">
+                {isBorrowedByMe ? "Borrowed" : "Borrow"}
+              </span>
             </motion.div>
           )}
 
@@ -207,11 +221,15 @@ export const BookCard = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label="Borrow Book"
-                className="px-4 py-2.5 rounded-full bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] flex items-center gap-1.5 transition-colors font-display text-[9px] uppercase tracking-widest font-semibold cursor-pointer shadow-lg"
-                title="Borrow Book"
+                className={`px-4 py-2.5 rounded-full flex items-center gap-1.5 transition-colors font-display text-[9px] uppercase tracking-widest font-semibold cursor-pointer shadow-lg ${
+                  isBorrowedByMe
+                    ? "bg-emerald-500 text-[#07111F]"
+                    : "bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F]"
+                }`}
+                title={isBorrowedByMe ? "Currently borrowed" : "Borrow Book"}
               >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>{isBorrowing ? "Borrowing..." : "Borrow"}</span>
+                {isBorrowedByMe ? <CheckCircle2 className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
+                <span>{isBorrowing ? "Borrowing..." : isBorrowedByMe ? "Borrowed" : "Borrow"}</span>
               </motion.button>
             </motion.div>
           )}

@@ -22,7 +22,7 @@ export const BookDetailsPage = () => {
   const id = useParams().id;
   const navigate = useNavigate();
   const { getCachedBook, cacheBookDetails, books } = useBooks();
-  const { borrowBook } = useLoans();
+  const { borrowBook, activeLoans } = useLoans();
   const { isAuthenticated } = useAuth();
   const {
     reviews,
@@ -55,30 +55,38 @@ export const BookDetailsPage = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
 
-  const availableCopy = book?.copies?.find((copy) => copy.status === "AVAILABLE");
+  const isReservedByMe = hasActiveReservation(id);
+  const isBorrowedByMe = activeLoans?.some(
+    (loan) =>
+      loan.bookId === id ||
+      (loan.title && book?.title && loan.title.toLowerCase() === book.title.toLowerCase())
+  );
+
+  const availableCopy =
+    book?.copies?.find(
+      (copy) => copy.status === "AVAILABLE" || (copy.status === "RESERVED" && isReservedByMe)
+    ) || book?.copies?.find((copy) => copy.status === "AVAILABLE");
   const availableCopyId = availableCopy?.id;
   const hasAvailableCopy = !!availableCopyId;
+
   const availableCopiesCount = Array.isArray(book?.copies)
     ? book.copies.filter((copy) => copy.status === "AVAILABLE").length
-    : (book?.stockQuantity || 0);
-  const isReservedByMe = hasActiveReservation(id);
+    : Math.max(0, (book?.stockQuantity || 0) - (isBorrowedByMe ? 1 : 0));
 
   const handleReserve = async () => {
     if (!isAuthenticated) {
       navigate("/login", { state: { from: `/book/${id}` } });
       return;
     }
-    if (isReservedByMe) return;
+    if (!id) return;
 
     setIsReserving(true);
     setReserveError("");
     try {
       await createReservation(id);
       setReserveSuccess(true);
-      setTimeout(() => setReserveSuccess(false), 3000);
     } catch (err) {
-      setReserveError(err.message || "Reservation failed.");
-      setTimeout(() => setReserveError(""), 4000);
+      setReserveError(err.message || "Failed to place reservation");
     } finally {
       setIsReserving(false);
     }
@@ -329,10 +337,10 @@ export const BookDetailsPage = () => {
               <div className="flex flex-wrap items-center gap-6">
                 <button
                   onClick={handleBorrow}
-                  disabled={!hasAvailableCopy || isBorrowing || borrowSuccess}
+                  disabled={(!hasAvailableCopy && !isBorrowedByMe) || isBorrowing}
                   className={`flex items-center justify-center gap-2 px-8 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer ${
-                    borrowSuccess
-                      ? "bg-emerald-500 text-[#07111F] shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                    isBorrowedByMe || borrowSuccess
+                      ? "bg-emerald-500 text-[#07111F] shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:bg-emerald-400"
                       : borrowError
                       ? "bg-rose-500 text-[#07111F] shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                       : !hasAvailableCopy
@@ -342,17 +350,17 @@ export const BookDetailsPage = () => {
                 >
                   {isBorrowing ? (
                     <span>Allocating...</span>
-                  ) : borrowSuccess ? (
+                  ) : isBorrowedByMe || borrowSuccess ? (
                     <>
-                      <Sparkles className="w-3.5 h-3.5 animate-spin"/>
-                      <span>Allocated Successfully</span>
+                      <CheckCircle2 className="w-4 h-4 text-[#07111F]" />
+                      <span>Borrowed</span>
                     </>
                   ) : borrowError ? (
                     <span>{borrowError}</span>
                   ) : !hasAvailableCopy ? (
                     <span>Out of Stock</span>
                   ) : (
-                    <span>Request Volume</span>
+                    <span>Borrow</span>
                   )}
                 </button>
                 

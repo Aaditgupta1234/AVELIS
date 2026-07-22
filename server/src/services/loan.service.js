@@ -639,7 +639,7 @@ export const memberBorrowBook = async ({ userId, bookCopyId }) => {
     await checkBorrowEligibility({ userId });
 
     // 3. Check copy availability (Phase 12.2.6)
-    const { bookCopyId: validatedCopyId } = await checkBookCopyAvailability({ bookCopyId });
+    const { bookCopyId: validatedCopyId } = await checkBookCopyAvailability({ userId, bookCopyId });
 
     // 4. Create the loan transaction (Phase 12.2.7)
     const loan = await createLoan({ userId, bookCopyId: validatedCopyId });
@@ -763,7 +763,7 @@ const checkBorrowEligibility = async ({ userId }) => {
  * @returns {Promise<Object>} Object containing the validated bookCopyId
  * @throws {ApiError} Thrown if book copy or book is not found/soft-deleted, book is not borrowable, or copy is not available.
  */
-const checkBookCopyAvailability = async ({ bookCopyId }) => {
+const checkBookCopyAvailability = async ({ userId, bookCopyId }) => {
   // 1. Fetch copy status and parent bookId
   const copy = await prisma.bookCopy.findUnique({
     where: { id: bookCopyId },
@@ -797,8 +797,19 @@ const checkBookCopyAvailability = async ({ bookCopyId }) => {
     throw new ApiError(400, 'Book is not borrowable.');
   }
 
-  // 4. Verify specific copy is AVAILABLE
-  if (copy.status !== CopyStatus.AVAILABLE) {
+  // 4. Verify specific copy is AVAILABLE or RESERVED by this user
+  if (copy.status === CopyStatus.RESERVED && userId) {
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        copyId: copy.id,
+        userId: userId,
+        status: { in: [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP] }
+      }
+    });
+    if (!reservation) {
+      throw new ApiError(409, 'Requested book copy is reserved for another member.');
+    }
+  } else if (copy.status !== CopyStatus.AVAILABLE) {
     throw new ApiError(409, 'Requested book copy is not available.');
   }
 
@@ -825,9 +836,12 @@ const createLoan = async ({ userId, bookCopyId }) => {
     const dueDate = new Date();
     dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
 
-    // 1. Update the BookCopy status to BORROWED only if it is AVAILABLE (OCC check)
+    // 1. Update the BookCopy status to BORROWED if it is AVAILABLE or RESERVED (OCC check)
     const updateResult = await tx.bookCopy.updateMany({
-      where: { id: bookCopyId, status: CopyStatus.AVAILABLE },
+      where: {
+        id: bookCopyId,
+        status: { in: [CopyStatus.AVAILABLE, CopyStatus.RESERVED] }
+      },
       data: {
         status: CopyStatus.BORROWED
       }
@@ -837,7 +851,20 @@ const createLoan = async ({ userId, bookCopyId }) => {
       throw new ApiError(409, 'Book copy is unavailable.');
     }
 
-    // 2. Create the Loan record (maps parameter bookCopyId to copyId in schema)
+    // 2. Fulfill/complete any active reservation for this user and copy/book
+    await tx.reservation.updateMany({
+      where: {
+        userId,
+        copyId: bookCopyId,
+        status: { in: [ReservationStatus.PENDING, ReservationStatus.READY_FOR_PICKUP] }
+      },
+      data: {
+        status: ReservationStatus.COMPLETED,
+        fulfilledAt: issueDate
+      }
+    });
+
+    // 3. Create Loan
     const loan = await tx.loan.create({
       data: {
         userId,
