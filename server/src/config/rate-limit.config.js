@@ -126,7 +126,7 @@ const rateLimitRaw = {
   /** Global API Limiter Configuration */
   globalLimiterConfig: {
     windowMs: parseRateLimitInteger(process.env.GLOBAL_WINDOW_MS, FIFTEEN_MINS_MS, 'GLOBAL_WINDOW_MS'),
-    max: parseRateLimitInteger(process.env.GLOBAL_RATE_LIMIT, 100, 'GLOBAL_RATE_LIMIT'),
+    max: parseRateLimitInteger(process.env.GLOBAL_RATE_LIMIT, process.env.NODE_ENV === 'development' ? 5000 : 100, 'GLOBAL_RATE_LIMIT'),
     standardHeaders: true,
     legacyHeaders: false,
     message: defaultMessage,

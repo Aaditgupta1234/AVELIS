@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
@@ -185,9 +185,12 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
   const [toastMessage, setToastMessage] = useState("");
   const [activeExploreBundle, setActiveExploreBundle] = useState(null);
 
-  // Trigger books load if empty
+  const hasFetchedRef = useRef(false);
+
+  // Trigger books load ONCE if empty
   useEffect(() => {
-    if ((!books || books.length === 0) && refreshBooks) {
+    if (!hasFetchedRef.current && (!books || books.length === 0) && refreshBooks) {
+      hasFetchedRef.current = true;
       refreshBooks();
     }
   }, [books, refreshBooks]);
