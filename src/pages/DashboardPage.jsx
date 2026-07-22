@@ -25,6 +25,7 @@ import { Navbar } from "../components/layout/Navbar.jsx";
 import { ProfileView } from "../components/dashboard/ProfileView.jsx";
 import { SettingsView } from "../components/dashboard/SettingsView.jsx";
 import { CatalogManager } from "../components/dashboard/CatalogManager.jsx";
+import { BookReaderModal } from "../components/reader/BookReaderModal.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const DashboardPage = () => {
@@ -33,6 +34,7 @@ export const DashboardPage = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [activeTab, setActiveTab] = useState("checkouts");
   const [actionLoading, setActionLoading] = useState({});
+  const [readerBook, setReaderBook] = useState(null);
 
   const {
     activeLoans,
@@ -395,6 +397,13 @@ export const DashboardPage = () => {
                           {/* Action Triggers */}
                           <div className="flex flex-wrap gap-3">
                             <button
+                              onClick={() => setReaderBook(currentLoan)}
+                              className="flex items-center gap-2 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] px-5 py-2.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 shadow-[0_4px_15px_rgba(201,162,39,0.2)] hover:shadow-[0_6px_20px_rgba(201,162,39,0.35)] cursor-pointer"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>Read Tome</span>
+                            </button>
+                            <button
                               onClick={() => handleRenew(currentLoan.id)}
                               disabled={actionLoading[currentLoan.id] || currentLoan.renewCount >= 3}
                               className="flex items-center gap-2 border border-[#C9A227]/20 hover:border-[#C9A227]/50 text-[#C9A227] hover:text-[#F7F5EE] px-5 py-2.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all bg-[#C9A227]/5 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
@@ -405,10 +414,10 @@ export const DashboardPage = () => {
                             <button
                               onClick={() => handleReturn(currentLoan.id)}
                               disabled={actionLoading[currentLoan.id]}
-                              className="flex items-center gap-2 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] px-5 py-2.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+                              className="flex items-center gap-2 border border-red-500/20 hover:border-red-500/50 text-red-400 hover:text-red-300 px-5 py-2.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all bg-red-950/10 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
                             >
                               <CornerDownLeft className={`w-3 h-3 ${actionLoading[currentLoan.id] === "returning" ? "animate-spin" : ""}`} />
-                              <span>{actionLoading[currentLoan.id] === "returning" ? "Returning..." : "Return Tome"}</span>
+                              <span>{actionLoading[currentLoan.id] === "returning" ? "Returning..." : "Return"}</span>
                             </button>
                           </div>
                         </div>
@@ -592,11 +601,18 @@ export const DashboardPage = () => {
                                   </div>
                                 </div>
 
-                                <div className="flex gap-3 w-full sm:w-auto justify-end">
+                                <div className="flex flex-wrap gap-2.5 w-full sm:w-auto justify-end">
+                                  <button
+                                    onClick={() => setReaderBook(loan)}
+                                    className="flex items-center justify-center gap-1.5 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] px-4 py-2 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 shadow-[0_4px_12px_rgba(201,162,39,0.2)] cursor-pointer"
+                                  >
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    <span>Read Book</span>
+                                  </button>
                                   <button
                                     onClick={() => handleRenew(loan.id)}
                                     disabled={isActionPending || loan.renewCount >= 3}
-                                    className="flex items-center justify-center gap-1.5 border border-[#C9A227]/20 hover:border-[#C9A227]/60 text-[#C9A227] disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-colors bg-white/3 focus:outline-none"
+                                    className="flex items-center justify-center gap-1.5 border border-[#C9A227]/20 hover:border-[#C9A227]/60 text-[#C9A227] disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-colors bg-white/3 focus:outline-none cursor-pointer"
                                   >
                                     <RotateCcw
                                       className={`w-3 h-3 ${
@@ -612,7 +628,7 @@ export const DashboardPage = () => {
                                   <button
                                     onClick={() => handleReturn(loan.id)}
                                     disabled={isActionPending}
-                                    className="flex items-center justify-center gap-1.5 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] px-4 py-2 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="flex items-center justify-center gap-1.5 border border-red-500/20 hover:border-red-500/50 text-red-400 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all bg-red-950/10 focus:outline-none cursor-pointer"
                                   >
                                     <CornerDownLeft
                                       className={`w-3 h-3 ${
@@ -875,6 +891,12 @@ export const DashboardPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Digital Book Reader Modal */}
+      <BookReaderModal
+        isOpen={!!readerBook}
+        onClose={() => setReaderBook(null)}
+        book={readerBook}
+      />
     </>
   );
 };
