@@ -13,7 +13,8 @@ import { Navbar } from "../../components/layout/Navbar.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { BackgroundShader } from "../../components/ui/BackgroundShader.jsx";
 import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
-import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2, ShoppingBag } from "lucide-react";
+import { BuyBookModal } from "../../components/checkout/BuyBookModal.jsx";
 import { revealVariants } from "../../utils/motion.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,6 +55,7 @@ export const BookDetailsPage = () => {
   const [reviewRating, setReviewRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
 
   const isReservedByMe = hasActiveReservation(id);
   const isBorrowedByMe = activeLoans?.some(
@@ -374,42 +376,19 @@ export const BookDetailsPage = () => {
                   )}
                 </button>
                 
-                {book?.isBorrowable !== false && (
-                  <button
-                    onClick={handleReserve}
-                    disabled={isReservedByMe || isReserving || reserveSuccess}
-                    className={`flex items-center gap-2 border px-6 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer ${
-                      reserveSuccess
-                        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
-                        : reserveError
-                        ? "border-rose-500/50 bg-rose-500/10 text-rose-400"
-                        : isReservedByMe
-                        ? "border-[#C9A227]/40 bg-[#C9A227]/10 text-[#C9A227] cursor-not-allowed opacity-80"
-                        : "border-[#C9A227]/30 hover:border-[#C9A227]/70 text-[#C9A227] hover:bg-[#C9A227]/10 bg-white/3"
-                    }`}
-                  >
-                    {isReserving ? (
-                      <span>Placing Hold...</span>
-                    ) : reserveSuccess ? (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                        <span>Hold Placed ✓</span>
-                      </>
-                    ) : reserveError ? (
-                      <span>{reserveError}</span>
-                    ) : isReservedByMe ? (
-                      <>
-                        <BookmarkCheck className="w-3.5 h-3.5" />
-                        <span>Hold Active</span>
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="w-3.5 h-3.5" />
-                        <span>Place Hold</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate("/login", { state: { from: `/book/${id}` } });
+                      return;
+                    }
+                    setIsBuyModalOpen(true);
+                  }}
+                  className="flex items-center justify-center gap-2 border border-[#C9A227]/40 hover:border-[#C9A227] text-[#C9A227] hover:text-[#F7F5EE] bg-[#C9A227]/10 hover:bg-[#C9A227]/20 px-8 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer shadow-[0_4px_15px_rgba(201,162,39,0.15)]"
+                >
+                  <ShoppingBag className="w-4 h-4 text-[#C9A227]" />
+                  <span>BUY NOW (${Number(book?.sellingPrice || 24.99).toFixed(2)})</span>
+                </button>
               </div>
             </div>
           </div>
@@ -694,6 +673,13 @@ export const BookDetailsPage = () => {
       </main>
 
       <Footer />
+
+      {/* Physical Copy Checkout & Buy Modal */}
+      <BuyBookModal
+        isOpen={isBuyModalOpen}
+        onClose={() => setIsBuyModalOpen(false)}
+        book={book}
+      />
     </div>
   );
 };
