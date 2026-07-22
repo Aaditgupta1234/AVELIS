@@ -44,12 +44,18 @@ export const BookCard = ({
 
     setIsBorrowing(true);
     try {
-      // Find matching book from context to get available physical copy
-      const matched = books.find(
+      // Find matching book from context (exact title/ID or fallback to any available physical copy)
+      let matched = books.find(
         (b) =>
-          b.id === id ||
+          (id && b.id === id) ||
           b.title.toLowerCase() === title.toLowerCase()
       );
+
+      if (!matched) {
+        matched = books.find(
+          (b) => b.isBorrowable && b.copies?.some((c) => c.status === "AVAILABLE")
+        );
+      }
 
       const availableCopy = matched?.copies?.find(
         (c) => c.status === "AVAILABLE"
@@ -58,17 +64,14 @@ export const BookCard = ({
       if (availableCopy) {
         await borrowBook(availableCopy.id);
         setToastMessage(`"${title}" borrowed successfully!`);
-        setTimeout(() => {
-          setToastMessage("");
-          navigate("/dashboard");
-        }, 1200);
+        setTimeout(() => setToastMessage(""), 3500);
       } else {
-        // Navigate to book details page for checkout/reservation
-        navigate(id ? `/book/${id}` : `/library?search=${encodeURIComponent(title)}`);
+        setToastMessage(`"${title}" is currently out of stock.`);
+        setTimeout(() => setToastMessage(""), 3500);
       }
     } catch (err) {
       setToastMessage(err.message || "Failed to borrow book.");
-      setTimeout(() => setToastMessage(""), 3000);
+      setTimeout(() => setToastMessage(""), 3500);
     } finally {
       setIsBorrowing(false);
     }

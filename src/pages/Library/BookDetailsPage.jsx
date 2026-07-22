@@ -316,7 +316,7 @@ export const BookDetailsPage = () => {
                 <div>
                   <span className="block font-display text-[9px] tracking-[0.2em] text-[#F7F5EE]/45 uppercase mb-1">Availability</span>
                   <span className={`font-body text-xs font-semibold ${availableCopiesCount > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                    {availableCopiesCount > 0 ? `${availableCopiesCount} copies available` : "Checked Out"}
+                    {availableCopiesCount > 0 ? `${availableCopiesCount} copies available` : "Out of Stock"}
                   </span>
                 </div>
                 <div>
@@ -350,7 +350,7 @@ export const BookDetailsPage = () => {
                   ) : borrowError ? (
                     <span>{borrowError}</span>
                   ) : !hasAvailableCopy ? (
-                    <span>Currently Checked Out</span>
+                    <span>Out of Stock</span>
                   ) : (
                     <span>Request Volume</span>
                   )}
