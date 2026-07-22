@@ -32,37 +32,19 @@ export const createReview = async ({ userId, bookId, rating, comment }) => {
     throw new ApiError(404, 'Book not found.');
   }
 
-  // 2. Verify borrowing eligibility: must have at least one loan record for this book
-  const loanCount = await prisma.loan.count({
-    where: {
-      userId,
-      bookCopy: {
-        bookId
-      }
-    }
-  });
-
-  if (loanCount === 0) {
-    throw new ApiError(400, 'You must borrow this book before writing a review.');
-  }
-
-  // 3. Duplicate prevention: check if user has already reviewed this book
-  const existingReview = await prisma.review.findUnique({
+  // 2. Upsert review (create or update if already existing)
+  const review = await prisma.review.upsert({
     where: {
       userId_bookId: {
         userId,
         bookId
       }
-    }
-  });
-
-  if (existingReview) {
-    throw new ApiError(409, 'You have already reviewed this book.');
-  }
-
-  // 4. Create and persist the review using Prisma selecting only response fields
-  const review = await prisma.review.create({
-    data: {
+    },
+    update: {
+      rating,
+      comment
+    },
+    create: {
       userId,
       bookId,
       rating,
@@ -225,6 +207,21 @@ export const adminDeleteReview = async (reviewId) => {
   await prisma.review.delete({
     where: { id: reviewId }
   });
+};
+
+export const getAllPublicReviews = async () => {
+  const reviews = await prisma.review.findMany({
+    where: {
+      book: {
+        isDeleted: false
+      }
+    },
+    select: REVIEW_SELECT,
+    orderBy: { createdAt: 'desc' },
+    take: 50
+  });
+
+  return reviews;
 };
 
 

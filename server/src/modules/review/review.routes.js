@@ -34,6 +34,12 @@ router.get(
   reviewController.getCurrentUserReviews
 );
 
+// GET /public — Retrieve all public reviews across all books
+router.get(
+  '/public',
+  reviewController.getAllPublicReviews
+);
+
 // GET /book/:bookId — Retrieve all reviews for a specific book (Member only)
 router.get(
   '/book/:bookId',

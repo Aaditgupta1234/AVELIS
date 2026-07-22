@@ -44,8 +44,8 @@ export const createReviewValidator = (req, res, next) => {
     errors.push({ field: 'comment', message: 'comment is required and must be a string.' });
   } else {
     const trimmedComment = comment.trim();
-    if (trimmedComment.length < 10 || trimmedComment.length > 1000) {
-      errors.push({ field: 'comment', message: 'comment must be between 10 and 1000 characters.' });
+    if (trimmedComment.length < 1 || trimmedComment.length > 5000) {
+      errors.push({ field: 'comment', message: 'comment must be between 1 and 5000 characters.' });
     } else {
       req.body.comment = trimmedComment;
     }

@@ -58,3 +58,14 @@ export const getUserReviews = async (options = {}) => {
   const response = await apiClient.get('/reviews/me', options);
   return response.data.data;
 };
+
+/**
+ * Service to retrieve all public reviews across books.
+ *
+ * @param {Object} [options] - Additional request options
+ * @returns {Promise<Array>}
+ */
+export const getAllPublicReviews = async (options = {}) => {
+  const response = await apiClient.get('/reviews/public', options);
+  return response.data.data;
+};

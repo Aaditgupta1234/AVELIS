@@ -157,6 +157,15 @@ export const adminDeleteReview = async (req, res, next) => {
   }
 };
 
+export const getAllPublicReviews = async (req, res, next) => {
+  try {
+    const reviews = await reviewService.getAllPublicReviews();
+    return sendSuccess(res, 200, reviews, 'Public reviews retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 
 
