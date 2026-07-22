@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
 import { springs } from "../../utils/motion";
@@ -14,20 +15,24 @@ export const CollectionsCTA = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <motion.button whileHover={{
-            y: -2,
-            boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
-            background: "linear-gradient(45deg, rgba(212,175,55,1) 0%, rgba(230,195,85,1) 100%)"
-        }} whileTap={{ scale: 0.98 }} transition={{ ...springs.buttonClick, y: springs.smooth }} className="bg-primary text-on-primary px-10 py-4 font-display text-[10px] tracking-[0.2em] uppercase transition-colors">
-              Explore Books
-            </motion.button>
-            <motion.button whileHover={{
-            y: -2,
-            backgroundColor: "rgba(212,175,55,0.05)",
-            borderColor: "rgba(230,195,85,1)"
-        }} whileTap={{ scale: 0.98 }} transition={springs.smooth} className="border border-primary text-primary px-10 py-4 font-display text-[10px] tracking-[0.2em] uppercase transition-colors">
-              Start Reading
-            </motion.button>
+            <Link to="/library">
+              <motion.button whileHover={{
+              y: -2,
+              boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
+              background: "linear-gradient(45deg, rgba(212,175,55,1) 0%, rgba(230,195,85,1) 100%)"
+          }} whileTap={{ scale: 0.98 }} transition={{ ...springs.buttonClick, y: springs.smooth }} className="bg-primary text-on-primary px-10 py-4 font-display text-[10px] tracking-[0.2em] uppercase transition-colors cursor-pointer">
+                Explore Books
+              </motion.button>
+            </Link>
+            <Link to="/library">
+              <motion.button whileHover={{
+              y: -2,
+              backgroundColor: "rgba(212,175,55,0.05)",
+              borderColor: "rgba(230,195,85,1)"
+          }} whileTap={{ scale: 0.98 }} transition={springs.smooth} className="border border-primary text-primary px-10 py-4 font-display text-[10px] tracking-[0.2em] uppercase transition-colors cursor-pointer">
+                Start Reading
+              </motion.button>
+            </Link>
           </div>
         </div>
       </div>

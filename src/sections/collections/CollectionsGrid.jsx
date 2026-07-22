@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
 import { springs, staggers } from "../../utils/motion";
@@ -36,7 +37,12 @@ const CollectionCard = ({ item, index }) => {
           </div>
           <div className="flex justify-between items-center">
             <span className="font-display text-[10px] text-white/40 tracking-[0.1em]">{item.volumes}</span>
-            <button className="font-display text-[10px] text-primary uppercase tracking-[0.2em] border-b border-primary/30 group-hover:border-primary pb-1 transition-all">Explore Collection</button>
+            <Link
+              to={`/library?search=${encodeURIComponent(item.title)}`}
+              className="font-display text-[10px] text-primary uppercase tracking-[0.2em] border-b border-primary/30 group-hover:border-primary pb-1 transition-all cursor-pointer hover:text-white"
+            >
+              Explore Collection
+            </Link>
           </div>
         </div>
       </motion.div>
