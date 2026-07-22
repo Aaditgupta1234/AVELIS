@@ -47,7 +47,7 @@ export const mapBookToUI = (book) => {
     stockQuantity: Number(book.stockQuantity || 0),
     isBorrowable: !!book.isBorrowable,
     isForSale: !!book.isForSale,
-    rating: book.rating || 5.0, // Default fallback rating
+    rating: book.rating ?? null,
     copies: book.copies || [],
     createdAt: book.createdAt || new Date().toISOString(),
   };

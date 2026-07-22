@@ -67,12 +67,16 @@ export const BookCard = ({ book, viewMode }) => {
                   <span className="text-[10px] tracking-[0.15em] text-primary/80 uppercase font-semibold">
                     {book.category}
                   </span>
-                  <div className="flex items-center text-primary">
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      star
-                    </span>
-                    <span className="text-xs font-bold ml-1">{book.rating}</span>
-                  </div>
+                  {book.rating != null ? (
+                    <div className="flex items-center text-primary">
+                      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        star
+                      </span>
+                      <span className="text-xs font-bold ml-1">{Number(book.rating).toFixed(1)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold text-on-surface-variant/40">—</span>
+                  )}
                 </div>
                 
                 <Link to={`/book/${book.id}`}>
@@ -171,12 +175,16 @@ export const BookCard = ({ book, viewMode }) => {
             </div>
             
             <div className="flex items-center justify-between pt-3 mt-3 border-t border-outline-variant/10">
-              <div className="flex items-center text-primary">
-                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  star
-                </span>
-                <span className="text-[11px] font-bold ml-1">{book.rating}</span>
-              </div>
+              {book.rating != null ? (
+                <div className="flex items-center text-primary">
+                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    star
+                  </span>
+                  <span className="text-[11px] font-bold ml-1">{Number(book.rating).toFixed(1)}</span>
+                </div>
+              ) : (
+                <span className="text-[11px] font-bold text-on-surface-variant/40">—</span>
+              )}
               
               <Link
                 to={`/book/${book.id}`}

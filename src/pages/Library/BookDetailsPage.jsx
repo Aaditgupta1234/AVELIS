@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { useLoans } from "../../context/LoanContext.jsx";
+import { useReviews } from "../../context/ReviewContext.jsx";
 import { useAuth } from "../../hooks/useAuth.js";
 import { getBookById } from "../../services/book.service.js";
 import { mapBookToUI } from "../../mappers/book.mapper.js";
@@ -11,7 +12,7 @@ import { Navbar } from "../../components/layout/Navbar.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { BackgroundShader } from "../../components/ui/BackgroundShader.jsx";
 import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
-import { ArrowLeft, Star, Bookmark, ShieldAlert, Sparkles } from "lucide-react";
+import { ArrowLeft, Star, Bookmark, ShieldAlert, Sparkles, Send, Trash2, MessageSquare } from "lucide-react";
 import { revealVariants } from "../../utils/motion.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,6 +23,20 @@ export const BookDetailsPage = () => {
   const { getCachedBook, cacheBookDetails, books } = useBooks();
   const { borrowBook } = useLoans();
   const { isAuthenticated } = useAuth();
+  const {
+    reviews,
+    ratingStats,
+    userReviews,
+    isLoadingReviews,
+    isLoadingStats,
+    isSubmitting,
+    reviewsError,
+    error: reviewError,
+    fetchBookReviews,
+    createReview,
+    deleteReview,
+    hasUserReviewed,
+  } = useReviews();
 
   const isValidUuid = UUID_REGEX.test(id || "");
 
@@ -31,10 +46,34 @@ export const BookDetailsPage = () => {
   const [isBorrowing, setIsBorrowing] = useState(false);
   const [borrowSuccess, setBorrowSuccess] = useState(false);
   const [borrowError, setBorrowError] = useState("");
+  const [reviewRating, setReviewRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
 
   const availableCopy = book?.copies?.find((copy) => copy.status === "AVAILABLE");
   const availableCopyId = availableCopy?.id;
   const hasAvailableCopy = !!availableCopyId;
+
+  const handleSubmitReview = useCallback(async (e) => {
+    e.preventDefault();
+    if (!reviewRating) return;
+    try {
+      await createReview({ bookId: id, rating: reviewRating, comment: reviewComment });
+      setReviewRating(0);
+      setHoverRating(0);
+      setReviewComment("");
+    } catch {
+      // Error is surfaced via reviewError from ReviewContext
+    }
+  }, [reviewRating, reviewComment, createReview, id]);
+
+  const handleDeleteReview = useCallback(async (reviewId) => {
+    try {
+      await deleteReview(reviewId, id);
+    } catch {
+      // Error is surfaced via reviewError from ReviewContext
+    }
+  }, [deleteReview, id]);
 
   // If the book is deleted from the catalog context, redirect to library
   useEffect(() => {
@@ -72,11 +111,12 @@ export const BookDetailsPage = () => {
     };
 
     fetchDetails();
+    fetchBookReviews(id, controller.signal);
 
     return () => {
       controller.abort();
     };
-  }, [id, isValidUuid, cacheBookDetails]);
+  }, [id, isValidUuid, cacheBookDetails, fetchBookReviews]);
 
   const handleBorrow = async () => {
     if (!isAuthenticated) {
@@ -202,10 +242,14 @@ export const BookDetailsPage = () => {
                   <span className="px-3 py-1 border border-[#C9A227]/20 rounded-full bg-[#C9A227]/5 font-display text-[8px] tracking-[0.2em] text-[#C9A227] uppercase">
                     {book.category}
                   </span>
-                  <div className="flex items-center gap-1.5 text-[#C9A227]">
-                    <Star className="w-4 h-4 fill-[#C9A227]"/>
-                    <span className="font-display text-sm font-bold">{book.rating}</span>
-                  </div>
+                  {ratingStats.averageRating != null ? (
+                    <div className="flex items-center gap-1.5 text-[#C9A227]">
+                      <Star className="w-4 h-4 fill-[#C9A227]"/>
+                      <span className="font-display text-sm font-bold">{Number(ratingStats.averageRating).toFixed(1)}</span>
+                    </div>
+                  ) : (
+                    <span className="font-display text-sm font-bold text-[#F7F5EE]/40">—</span>
+                  )}
                 </div>
 
                 <h1 className="font-display text-3xl sm:text-5xl text-[#F7F5EE] tracking-wide leading-tight">
@@ -288,6 +332,283 @@ export const BookDetailsPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* ── Reviews & Ratings Section ─────────────────────────────── */}
+          <div className="mt-20 border-t border-[rgba(201,162,39,0.12)] pt-12">
+            <h2 className="font-display text-xl tracking-[0.12em] text-[#F7F5EE] uppercase mb-10">
+              Reader Reviews
+            </h2>
+
+            {/* Rating Statistics Block */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 p-6 bg-[#0D1626]/40 border border-[#C9A227]/10 rounded-2xl backdrop-blur-sm">
+              {isLoadingStats ? (
+                <div className="flex items-center gap-6 animate-pulse">
+                  <div className="w-20 h-20 bg-[#C9A227]/10 rounded-xl" />
+                  <div className="space-y-3">
+                    <div className="h-4 w-28 bg-[#C9A227]/10 rounded" />
+                    <div className="h-3 w-16 bg-white/5 rounded" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-6">
+                  <div className="text-center">
+                    {ratingStats.averageRating != null ? (
+                      <>
+                        <div className="font-display text-5xl font-bold text-[#C9A227] leading-none">
+                          {Number(ratingStats.averageRating).toFixed(1)}
+                        </div>
+                        <div className="flex items-center justify-center gap-0.5 mt-2">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`w-3.5 h-3.5 ${
+                                s <= Math.round(ratingStats.averageRating)
+                                  ? "fill-[#C9A227] text-[#C9A227]"
+                                  : "text-[#C9A227]/20"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="font-display text-5xl font-bold text-[#F7F5EE]/25 leading-none">—</div>
+                    )}
+                    <p className="font-display text-[9px] tracking-[0.2em] text-[#F7F5EE]/40 uppercase mt-3">
+                      {ratingStats.totalReviews}{" "}
+                      {ratingStats.totalReviews === 1 ? "review" : "reviews"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Distribution bars */}
+              {!isLoadingStats && (
+                <div className="space-y-2.5">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = ratingStats.ratingDistribution?.[String(star)] || 0;
+                    const pct =
+                      ratingStats.totalReviews > 0
+                        ? (count / ratingStats.totalReviews) * 100
+                        : 0;
+                    return (
+                      <div key={star} className="flex items-center gap-3">
+                        <span className="font-display text-[10px] text-[#F7F5EE]/40 w-2.5 flex-shrink-0">
+                          {star}
+                        </span>
+                        <Star className="w-2.5 h-2.5 fill-[#C9A227]/50 text-[#C9A227]/50 flex-shrink-0" />
+                        <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#C9A227] rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="font-display text-[9px] text-[#F7F5EE]/30 w-5 text-right flex-shrink-0">
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Review Form / Already-Reviewed Notice / Guest CTA */}
+            {isAuthenticated ? (
+              hasUserReviewed(id) ? (
+                <div className="mb-10 p-5 border border-[#C9A227]/15 bg-[#C9A227]/5 rounded-xl flex items-center gap-3">
+                  <Star className="w-4 h-4 fill-[#C9A227] text-[#C9A227] flex-shrink-0" />
+                  <p className="font-body text-sm text-[#F7F5EE]/60">
+                    You have already submitted a review for this volume.
+                  </p>
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleSubmitReview}
+                  className="mb-12 p-6 bg-[#0D1626]/40 border border-[#C9A227]/10 rounded-2xl backdrop-blur-sm space-y-5"
+                >
+                  <h3 className="font-display text-sm tracking-[0.15em] text-[#F7F5EE]/70 uppercase">
+                    Leave a Review
+                  </h3>
+
+                  {/* Interactive star selector */}
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="focus:outline-none transition-transform hover:scale-110"
+                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                      >
+                        <Star
+                          className={`w-7 h-7 transition-colors duration-150 ${
+                            star <= (hoverRating || reviewRating)
+                              ? "fill-[#C9A227] text-[#C9A227]"
+                              : "text-[#F7F5EE]/15"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    {reviewRating > 0 && (
+                      <span className="ml-1 font-display text-[10px] tracking-[0.15em] text-[#C9A227]/70 uppercase">
+                        {["Unrated", "Poor", "Fair", "Good", "Very Good", "Excellent"][reviewRating]}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Comment textarea */}
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Share your thoughts on this volume..."
+                    rows={4}
+                    className="w-full bg-white/3 border border-[#C9A227]/10 focus:border-[#C9A227]/30 rounded-xl px-4 py-3 font-body text-sm text-[#F7F5EE]/80 placeholder:text-[#F7F5EE]/25 resize-none outline-none transition-colors"
+                  />
+
+                  {/* Inline error */}
+                  {reviewError && (
+                    <p className="font-body text-xs text-rose-400/80">{reviewError.message}</p>
+                  )}
+
+                  {/* Submit */}
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={!reviewRating || isSubmitting}
+                      className={`flex items-center gap-2 px-6 py-3 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 ${
+                        !reviewRating || isSubmitting
+                          ? "border border-white/10 text-white/30 cursor-not-allowed"
+                          : "bg-[#C9A227] text-[#07111F] hover:bg-[#E5C16B] shadow-[0_6px_20px_rgba(201,162,39,0.15)] hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>{isSubmitting ? "Submitting..." : "Submit Review"}</span>
+                    </button>
+                  </div>
+                </form>
+              )
+            ) : (
+              <div className="mb-12 p-6 border border-[#C9A227]/10 bg-[#0D1626]/20 rounded-2xl flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                <MessageSquare className="w-8 h-8 text-[#C9A227]/30 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-display text-sm tracking-wide text-[#F7F5EE]/60 mb-1">
+                    Sign in to leave a review
+                  </p>
+                  <p className="font-body text-xs text-[#F7F5EE]/30">
+                    Share your thoughts with the AVELIS community.
+                  </p>
+                </div>
+                <Link
+                  to="/login"
+                  state={{ from: `/book/${id}` }}
+                  className="flex-shrink-0 px-5 py-2.5 bg-[#C9A227] text-[#07111F] rounded font-display text-[10px] tracking-[0.2em] uppercase hover:bg-[#E5C16B] transition-colors"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
+
+            {/* Reviews List */}
+            {isLoadingReviews ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="p-5 border border-white/5 rounded-xl animate-pulse space-y-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/5" />
+                      <div className="h-3 w-28 bg-white/5 rounded" />
+                    </div>
+                    <div className="h-3 w-full bg-white/5 rounded" />
+                    <div className="h-3 w-2/3 bg-white/5 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : reviewsError ? (
+              <div className="p-5 border border-red-500/20 bg-red-950/10 rounded-xl text-center">
+                <p className="font-body text-xs text-red-400/70">{reviewsError.message}</p>
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="py-16 text-center border border-white/5 rounded-2xl">
+                <MessageSquare className="w-10 h-10 text-[#C9A227]/20 mx-auto mb-4" />
+                <p className="font-display text-sm tracking-[0.15em] text-[#F7F5EE]/30 uppercase">
+                  No Reviews Yet
+                </p>
+                <p className="font-body text-xs text-[#F7F5EE]/20 mt-2">
+                  Be the first to chronicle your thoughts on this volume.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <motion.div
+                    key={review.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-5 border border-white/5 bg-[#0D1626]/30 rounded-xl space-y-3 group"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Reviewer identity */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#C9A227]/15 border border-[#C9A227]/20 flex items-center justify-center flex-shrink-0">
+                          <span className="font-display text-[10px] text-[#C9A227] uppercase">
+                            {review.username.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-display text-xs tracking-wide text-[#F7F5EE]/80">
+                            {review.username}
+                          </p>
+                          <p className="font-body text-[10px] text-[#F7F5EE]/30">
+                            {new Date(review.createdAt).toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Star row + optional delete */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`w-3 h-3 ${
+                                s <= review.rating
+                                  ? "fill-[#C9A227] text-[#C9A227]"
+                                  : "text-[#C9A227]/15"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        {userReviews.some((ur) => ur.id === review.id) && (
+                          <button
+                            onClick={() => handleDeleteReview(review.id)}
+                            disabled={isSubmitting}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 p-1 rounded hover:bg-red-500/10 text-[#F7F5EE]/30 hover:text-rose-400 disabled:cursor-not-allowed"
+                            aria-label="Delete review"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {review.comment && (
+                      <p className="font-body text-sm text-[#F7F5EE]/60 leading-relaxed">
+                        {review.comment}
+                      </p>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
