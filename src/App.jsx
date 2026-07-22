@@ -12,6 +12,7 @@ import { ScrollToTop } from "./components/ui/ScrollToTop";
 import { AuthProvider } from "./context/AuthContext";
 import { BooksProvider } from "./context/BooksContext";
 import { LoanProvider } from "./context/LoanContext.jsx";
+import { ReservationProvider } from "./context/ReservationContext.jsx";
 import { ReviewProvider } from "./context/ReviewContext.jsx";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 const AnimatedRoutes = () => {
@@ -43,12 +44,14 @@ function App() {
     return (<AuthProvider>
       <BooksProvider>
         <LoanProvider>
-          <ReviewProvider>
-            <BrowserRouter>
-              <ScrollToTop />
-              <AnimatedRoutes />
-            </BrowserRouter>
-          </ReviewProvider>
+          <ReservationProvider>
+            <ReviewProvider>
+              <BrowserRouter>
+                <ScrollToTop />
+                <AnimatedRoutes />
+              </BrowserRouter>
+            </ReviewProvider>
+          </ReservationProvider>
         </LoanProvider>
       </BooksProvider>
     </AuthProvider>);

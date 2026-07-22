@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useLoans } from "../context/LoanContext.jsx";
+import { useReservations } from "../context/ReservationContext.jsx";
 import { BookCard } from "../components/ui/BookCard.jsx";
 import {
   BookMarked,
@@ -14,7 +15,9 @@ import {
   RotateCcw,
   CornerDownLeft,
   BookOpen,
-  Quote
+  Quote,
+  Bookmark,
+  XCircle
 } from "lucide-react";
 import { Navbar } from "../components/layout/Navbar.jsx";
 import { ProfileView } from "../components/dashboard/ProfileView.jsx";
@@ -36,6 +39,12 @@ export const DashboardPage = () => {
     renewLoan,
     returnBook
   } = useLoans();
+
+  const {
+    reservations,
+    isLoading: reservationsLoading,
+    cancelReservation
+  } = useReservations();
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -96,6 +105,22 @@ export const DashboardPage = () => {
     }
   };
 
+  const handleCancelReservation = async (reservationId) => {
+    setActionLoading((prev) => ({ ...prev, [reservationId]: "cancelling" }));
+    try {
+      await cancelReservation(reservationId);
+      showToast("Hold request cancelled successfully.");
+    } catch (err) {
+      showToast(err.message || "Failed to cancel reservation.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [reservationId]: null }));
+    }
+  };
+
+  const activeReservations = reservations.filter(
+    (r) => r.status === "PENDING" || r.status === "READY_FOR_PICKUP"
+  );
+
   // Dynamic statistics counts based on actual database loans
   const stats = [
     {
@@ -104,6 +129,13 @@ export const DashboardPage = () => {
       change: "Limit: 5 active loans",
       icon: BookMarked,
       color: "text-[#C9A227]"
+    },
+    {
+      label: "Active Holds",
+      value: reservationsLoading && reservations.length === 0 ? "..." : String(activeReservations.length),
+      change: "Reservation queue",
+      icon: Bookmark,
+      color: "text-amber-400"
     },
     {
       label: "Borrow History",
@@ -381,7 +413,7 @@ export const DashboardPage = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {stats.map((stat, i) => (
                     <div
                       key={i}
@@ -433,6 +465,20 @@ export const DashboardPage = () => {
                       >
                         Borrow History ({loansLoading && loanHistory.length === 0 ? "..." : loanHistory.length})
                         {activeTab === "history" && (
+                          <motion.div
+                            layoutId="activeTabUnderline"
+                            className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C9A227]"
+                          />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("reservations")}
+                        className={`font-display text-sm tracking-[0.15em] uppercase transition-colors relative pb-4 cursor-pointer focus:outline-none ${
+                          activeTab === "reservations" ? "text-[#C9A227]" : "text-[#F7F5EE]/40 hover:text-[#F7F5EE]/75"
+                        }`}
+                      >
+                        Active Holds ({reservationsLoading && reservations.length === 0 ? "..." : activeReservations.length})
+                        {activeTab === "reservations" && (
                           <motion.div
                             layoutId="activeTabUnderline"
                             className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C9A227]"
@@ -560,7 +606,7 @@ export const DashboardPage = () => {
                         </div>
                       )}
                     </div>
-                  ) : (
+                  ) : activeTab === "history" ? (
                     <div className="space-y-4">
                       {loanHistory.length === 0 ? (
                         <div className="text-center py-12 border border-dashed border-[rgba(201,162,39,0.08)] rounded-lg">
@@ -604,6 +650,90 @@ export const DashboardPage = () => {
                               </span>
                             </div>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {activeReservations.length === 0 ? (
+                        <div className="text-center py-12 border border-dashed border-[rgba(201,162,39,0.08)] rounded-lg">
+                          <Bookmark className="w-8 h-8 text-[#C9A227]/30 mx-auto mb-4" />
+                          <h4 className="font-display text-xs tracking-[0.15em] uppercase text-[#F7F5EE]/50 mb-1">
+                            No Active Holds
+                          </h4>
+                          <p className="font-body text-[11px] text-[#F7F5EE]/30 mb-4">
+                            You have no pending or ready volume reservations in the archival queue.
+                          </p>
+                          <Link
+                            to="/library"
+                            className="inline-flex items-center gap-1.5 text-[9px] font-display tracking-[0.2em] uppercase text-[#C9A227] hover:text-[#E5C16B] transition-colors"
+                          >
+                            <span>Browse Catalog</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                          {activeReservations.map((resItem) => {
+                            const isReady = resItem.status === "READY_FOR_PICKUP";
+                            const isActionPending = actionLoading[resItem.id] === "cancelling";
+                            return (
+                              <div
+                                key={resItem.id}
+                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded bg-[#0D1626]/20 border border-[rgba(201,162,39,0.08)] hover:border-[#C9A227]/20 hover:bg-[#0D1626]/40 transition-all duration-300"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <img
+                                    src={resItem.coverImage}
+                                    alt={resItem.bookTitle}
+                                    className="w-10 h-14 object-cover rounded shadow-md border border-white/5 flex-shrink-0"
+                                  />
+                                  <div className="space-y-1">
+                                    <h4 className="font-display text-sm text-[#F7F5EE] tracking-wide line-clamp-1">
+                                      {resItem.bookTitle}
+                                    </h4>
+                                    <p className="font-body text-[10px] text-[#F7F5EE]/50">
+                                      by {resItem.author}
+                                    </p>
+                                    <div className="flex flex-wrap gap-x-3 gap-y-1 items-center pt-1 font-body text-[9px] text-[#F7F5EE]/40">
+                                      <span>Requested: {formatDate(resItem.createdAt)}</span>
+                                      {isReady && resItem.expiresAt && (
+                                        <>
+                                          <span className="w-1 h-1 bg-white/10 rounded-full" />
+                                          <span className="text-emerald-400 font-medium">
+                                            Pickup Expires: {formatDate(resItem.expiresAt)}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                  <span
+                                    className={`px-2.5 py-1 border font-display text-[8px] tracking-[0.15em] uppercase rounded-full ${
+                                      isReady
+                                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                        : "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                                    }`}
+                                  >
+                                    {isReady ? "Ready for Pickup" : "Pending Queue"}
+                                  </span>
+
+                                  <button
+                                    onClick={() => handleCancelReservation(resItem.id)}
+                                    disabled={isActionPending}
+                                    className="flex items-center justify-center gap-1.5 border border-rose-500/20 hover:border-rose-500/50 text-rose-400 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-colors bg-rose-950/10 focus:outline-none cursor-pointer"
+                                  >
+                                    <XCircle
+                                      className={`w-3 h-3 ${isActionPending ? "animate-spin" : ""}`}
+                                    />
+                                    <span>{isActionPending ? "Cancelling..." : "Cancel Hold"}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

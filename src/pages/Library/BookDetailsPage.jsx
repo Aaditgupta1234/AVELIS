@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { useLoans } from "../../context/LoanContext.jsx";
 import { useReviews } from "../../context/ReviewContext.jsx";
+import { useReservations } from "../../context/ReservationContext.jsx";
 import { useAuth } from "../../hooks/useAuth.js";
 import { getBookById } from "../../services/book.service.js";
 import { mapBookToUI } from "../../mappers/book.mapper.js";
@@ -12,7 +13,7 @@ import { Navbar } from "../../components/layout/Navbar.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { BackgroundShader } from "../../components/ui/BackgroundShader.jsx";
 import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
-import { ArrowLeft, Star, Bookmark, ShieldAlert, Sparkles, Send, Trash2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare } from "lucide-react";
 import { revealVariants } from "../../utils/motion.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -37,6 +38,7 @@ export const BookDetailsPage = () => {
     deleteReview,
     hasUserReviewed,
   } = useReviews();
+  const { createReservation, hasActiveReservation } = useReservations();
 
   const isValidUuid = UUID_REGEX.test(id || "");
 
@@ -46,6 +48,9 @@ export const BookDetailsPage = () => {
   const [isBorrowing, setIsBorrowing] = useState(false);
   const [borrowSuccess, setBorrowSuccess] = useState(false);
   const [borrowError, setBorrowError] = useState("");
+  const [isReserving, setIsReserving] = useState(false);
+  const [reserveSuccess, setReserveSuccess] = useState(false);
+  const [reserveError, setReserveError] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -53,6 +58,28 @@ export const BookDetailsPage = () => {
   const availableCopy = book?.copies?.find((copy) => copy.status === "AVAILABLE");
   const availableCopyId = availableCopy?.id;
   const hasAvailableCopy = !!availableCopyId;
+  const isReservedByMe = hasActiveReservation(id);
+
+  const handleReserve = async () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: `/book/${id}` } });
+      return;
+    }
+    if (isReservedByMe) return;
+
+    setIsReserving(true);
+    setReserveError("");
+    try {
+      await createReservation(id);
+      setReserveSuccess(true);
+      setTimeout(() => setReserveSuccess(false), 3000);
+    } catch (err) {
+      setReserveError(err.message || "Reservation failed.");
+      setTimeout(() => setReserveError(""), 4000);
+    } finally {
+      setIsReserving(false);
+    }
+  };
 
   const handleSubmitReview = useCallback(async (e) => {
     e.preventDefault();
@@ -326,10 +353,42 @@ export const BookDetailsPage = () => {
                   )}
                 </button>
                 
-                <button className="flex items-center gap-2 border border-[#C9A227]/20 hover:border-[#C9A227]/60 text-[#C9A227] px-6 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-colors bg-white/3 focus:outline-none">
-                  <Bookmark className="w-3.5 h-3.5"/>
-                  <span>Add to Shelf</span>
-                </button>
+                {book?.isBorrowable !== false && (
+                  <button
+                    onClick={handleReserve}
+                    disabled={isReservedByMe || isReserving || reserveSuccess}
+                    className={`flex items-center gap-2 border px-6 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer ${
+                      reserveSuccess
+                        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
+                        : reserveError
+                        ? "border-rose-500/50 bg-rose-500/10 text-rose-400"
+                        : isReservedByMe
+                        ? "border-[#C9A227]/40 bg-[#C9A227]/10 text-[#C9A227] cursor-not-allowed opacity-80"
+                        : "border-[#C9A227]/30 hover:border-[#C9A227]/70 text-[#C9A227] hover:bg-[#C9A227]/10 bg-white/3"
+                    }`}
+                  >
+                    {isReserving ? (
+                      <span>Placing Hold...</span>
+                    ) : reserveSuccess ? (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                        <span>Hold Placed ✓</span>
+                      </>
+                    ) : reserveError ? (
+                      <span>{reserveError}</span>
+                    ) : isReservedByMe ? (
+                      <>
+                        <BookmarkCheck className="w-3.5 h-3.5" />
+                        <span>Hold Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="w-3.5 h-3.5" />
+                        <span>Place Hold</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
