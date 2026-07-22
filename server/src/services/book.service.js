@@ -82,6 +82,12 @@ export const createBook = async (bookData) => {
         },
         categories: {
           create: categoryIds.map(categoryId => ({ categoryId }))
+        },
+        copies: {
+          create: Array.from({ length: Math.max(0, stockQuantity ?? 0) }, (_, i) => ({
+            barcode: `BC-${Date.now()}-${i + 1}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+            status: 'AVAILABLE'
+          }))
         }
       },
       include: BOOK_PUBLIC_INCLUDE
@@ -173,6 +179,12 @@ export const getBooks = async (query) => {
                 name: true
               }
             }
+          }
+        },
+        copies: {
+          select: {
+            id: true,
+            status: true
           }
         }
       }

@@ -3,7 +3,6 @@ import path from 'path';
 import crypto from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { config } from '../config/index.js';
-import { ApiError } from '../utils/index.js';
 
 /**
  * Storage Service — Hybrid Supabase Storage with Local Dev Fallback.
@@ -23,18 +22,24 @@ class StorageService {
   }
 
   /**
-   * Check if Supabase key is configured with a valid JWT string structure.
+   * Check if Supabase URL and Secret Key are configured in environment variables.
    */
-  isSupabaseJwtValid() {
+  isSupabaseConfigured() {
+    const url = config.supabaseUrl;
     const key = config.supabaseSecretKey;
-    return typeof key === 'string' && key.startsWith('eyJ');
+    return (
+      typeof url === 'string' &&
+      url.trim().length > 0 &&
+      typeof key === 'string' &&
+      key.trim().length > 0
+    );
   }
 
   /**
-   * Upload a file buffer. Uses Supabase Storage if valid JWT key, else saves to local uploads directory as dev fallback.
+   * Upload a file buffer. Attempts Supabase Storage first, falling back to local disk storage if unconfigured or error occurs.
    *
    * @param {string} bucket - Target bucket name ('book-covers' or 'book-pdfs')
-   * @param {Buffer} fileBuffer - In-memory file buffer
+   * @param {Buffer} fileBuffer - In-memory file buffer from Multer
    * @param {string} mimeType - File MIME type
    * @param {string} extension - Extension without dot
    * @param {string} folderPrefix - Folder prefix ('cover' or 'pdf')
@@ -43,8 +48,8 @@ class StorageService {
   async upload(bucket, fileBuffer, mimeType, extension, folderPrefix = 'file') {
     const relPath = this.generateDateOrganizedPath(folderPrefix, extension);
 
-    // Try Supabase Storage upload if JWT key is present
-    if (this.isSupabaseJwtValid()) {
+    // Attempt Supabase Cloud Storage upload
+    if (this.isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase.storage.from(bucket).upload(relPath, fileBuffer, {
           contentType: mimeType,
@@ -53,19 +58,22 @@ class StorageService {
 
         if (!error && data) {
           const fileUrl = this.getPublicUrl(bucket, data.path || relPath);
+          console.log(`[StorageService] Uploaded successfully to Supabase Storage bucket "${bucket}": ${fileUrl}`);
           return {
             bucket,
             path: data.path || relPath,
             fileUrl,
           };
         }
-        console.warn(`[StorageService] Supabase storage upload notice (${error?.message}). Falling back to local storage.`);
+        if (error) {
+          console.warn(`[StorageService] Supabase upload error (${error.message}). Falling back to local storage.`);
+        }
       } catch (err) {
-        console.warn(`[StorageService] Supabase upload failed (${err.message}). Falling back to local storage.`);
+        console.warn(`[StorageService] Supabase exception (${err.message}). Falling back to local storage.`);
       }
     }
 
-    // Local Storage Fallback (for development / unconfigured Supabase keys)
+    // Local Storage Fallback (for local development or if bucket does not exist)
     const localDir = path.join(process.cwd(), 'uploads', bucket, path.dirname(relPath));
     fs.mkdirSync(localDir, { recursive: true });
 
@@ -74,6 +82,8 @@ class StorageService {
 
     const hostUrl = config.clientUrl ? config.clientUrl.replace(/:[0-9]+$/, `:${config.port}`) : `http://localhost:${config.port}`;
     const fileUrl = `${hostUrl}/uploads/${bucket}/${relPath.replace(/\\/g, '/')}`;
+
+    console.log(`[StorageService] Uploaded to Local Fallback: ${fileUrl}`);
 
     return {
       bucket,
@@ -88,9 +98,11 @@ class StorageService {
   async delete(bucket, relPath) {
     if (!relPath) return false;
 
-    if (this.isSupabaseJwtValid()) {
-      const { error } = await supabase.storage.from(bucket).remove([relPath]);
-      if (!error) return true;
+    if (this.isSupabaseConfigured()) {
+      try {
+        const { error } = await supabase.storage.from(bucket).remove([relPath]);
+        if (!error) return true;
+      } catch (_) {}
     }
 
     // Local deletion fallback
@@ -105,16 +117,18 @@ class StorageService {
   }
 
   /**
-   * Check if object exists.
+   * Check if object exists in storage.
    */
   async exists(bucket, relPath) {
     if (!relPath) return false;
 
-    if (this.isSupabaseJwtValid()) {
-      const { data, error } = await supabase.storage.from(bucket).list(relPath.substring(0, relPath.lastIndexOf('/')), {
-        search: relPath.substring(relPath.lastIndexOf('/') + 1),
-      });
-      if (!error && data && data.length > 0) return true;
+    if (this.isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.storage.from(bucket).list(relPath.substring(0, relPath.lastIndexOf('/')), {
+          search: relPath.substring(relPath.lastIndexOf('/') + 1),
+        });
+        if (!error && data && data.length > 0) return true;
+      } catch (_) {}
     }
 
     const fullLocalPath = path.join(process.cwd(), 'uploads', bucket, relPath);
@@ -125,7 +139,7 @@ class StorageService {
    * Retrieve public URL.
    */
   getPublicUrl(bucket, relPath) {
-    if (this.isSupabaseJwtValid()) {
+    if (this.isSupabaseConfigured()) {
       const { data } = supabase.storage.from(bucket).getPublicUrl(relPath);
       if (data?.publicUrl) return data.publicUrl;
     }
@@ -138,9 +152,11 @@ class StorageService {
    * Retrieve signed URL.
    */
   async getSignedUrl(bucket, relPath, expiresInSeconds = 3600) {
-    if (this.isSupabaseJwtValid()) {
-      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(relPath, expiresInSeconds);
-      if (!error && data?.signedUrl) return data.signedUrl;
+    if (this.isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.storage.from(bucket).createSignedUrl(relPath, expiresInSeconds);
+        if (!error && data?.signedUrl) return data.signedUrl;
+      } catch (_) {}
     }
 
     return this.getPublicUrl(bucket, relPath);

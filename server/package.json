@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "npx prisma db seed",
+    "sync-copies": "node prisma/sync_copies.js",
     "lint": "echo \"No linter configured yet\""
   },
   "prisma": {

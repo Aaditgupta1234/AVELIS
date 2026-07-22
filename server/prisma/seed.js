@@ -179,24 +179,17 @@ async function main() {
         },
       });
 
-      // Create Physical Book Copies
+      // Create Physical Book Copies matching stockQuantity
+      const copiesData = Array.from({ length: b.stockQuantity }, (_, i) => ({
+        bookId: createdBook.id,
+        barcode: `BC-${b.title.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10)}-${String(i + 1).padStart(3, '0')}`,
+        shelfLocation: 'Shelf A-1',
+        condition: CopyCondition.NEW,
+        status: CopyStatus.AVAILABLE,
+      }));
+
       await prisma.bookCopy.createMany({
-        data: [
-          {
-            bookId: createdBook.id,
-            barcode: `BC-${b.title.toUpperCase().replace(/[^A-Z0-9]/g, '')}-001`,
-            shelfLocation: 'Shelf A-1',
-            condition: CopyCondition.NEW,
-            status: CopyStatus.AVAILABLE,
-          },
-          {
-            bookId: createdBook.id,
-            barcode: `BC-${b.title.toUpperCase().replace(/[^A-Z0-9]/g, '')}-002`,
-            shelfLocation: 'Shelf A-2',
-            condition: CopyCondition.GOOD,
-            status: CopyStatus.AVAILABLE,
-          },
-        ],
+        data: copiesData,
       });
     }
   }

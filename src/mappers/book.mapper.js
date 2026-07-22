@@ -30,6 +30,10 @@ export const mapBookToUI = (book) => {
     ? book.categories.map((c) => ({ id: c.category?.id, name: c.category?.name })).filter(c => c.id)
     : [];
 
+  const availableCopiesCount = Array.isArray(book.copies) && book.copies.length > 0
+    ? book.copies.filter((c) => c.status === "AVAILABLE").length
+    : Number(book.stockQuantity || 0);
+
   return {
     id: book.id,
     title: book.title,
@@ -46,6 +50,7 @@ export const mapBookToUI = (book) => {
     description: book.description || "",
     sellingPrice: Number(book.sellingPrice || 0),
     stockQuantity: Number(book.stockQuantity || 0),
+    availableCopiesCount,
     isBorrowable: !!book.isBorrowable,
     isForSale: !!book.isForSale,
     rating: book.rating ?? null,

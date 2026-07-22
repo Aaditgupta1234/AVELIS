@@ -564,6 +564,9 @@ export const CatalogManager = () => {
                           <img
                             src={book.coverImage}
                             alt={book.title}
+                            onError={(e) => {
+                              e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80";
+                            }}
                             className="w-9 h-13 object-cover rounded border border-white/10 shadow"
                           />
                         </td>
@@ -580,12 +583,14 @@ export const CatalogManager = () => {
                         <td className="p-4">
                           <span
                             className={`px-2.5 py-1 rounded text-[10px] font-bold ${
-                              book.stockQuantity > 0
+                              (book.availableCopiesCount ?? book.stockQuantity) > 0
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                                 : "bg-red-500/10 text-red-400 border border-red-500/20"
                             }`}
                           >
-                            {book.stockQuantity > 0 ? `${book.stockQuantity} in stock` : "Out of stock"}
+                            {(book.availableCopiesCount ?? book.stockQuantity) > 0
+                              ? `${book.availableCopiesCount ?? book.stockQuantity} in stock`
+                              : "Out of stock"}
                           </span>
                         </td>
                         <td className="p-4">

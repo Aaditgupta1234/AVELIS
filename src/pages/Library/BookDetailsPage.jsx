@@ -64,16 +64,17 @@ export const BookDetailsPage = () => {
       (loan.title && book?.title && loan.title.toLowerCase() === book.title.toLowerCase())
   );
 
+  const availableCopiesCount = Array.isArray(book?.copies) && book.copies.length > 0
+    ? book.copies.filter((copy) => copy.status === "AVAILABLE").length
+    : Math.max(0, (book?.stockQuantity || 0) - (isBorrowedByMe ? 1 : 0));
+
   const availableCopy =
     book?.copies?.find(
       (copy) => copy.status === "AVAILABLE" || (copy.status === "RESERVED" && isReservedByMe)
     ) || book?.copies?.find((copy) => copy.status === "AVAILABLE");
-  const availableCopyId = availableCopy?.id;
-  const hasAvailableCopy = !!availableCopyId;
 
-  const availableCopiesCount = Array.isArray(book?.copies)
-    ? book.copies.filter((copy) => copy.status === "AVAILABLE").length
-    : Math.max(0, (book?.stockQuantity || 0) - (isBorrowedByMe ? 1 : 0));
+  const availableCopyId = availableCopy?.id || (availableCopiesCount > 0 ? "virtual-available-copy" : null);
+  const hasAvailableCopy = availableCopiesCount > 0;
 
   const handleReserve = async () => {
     if (!isAuthenticated) {
@@ -108,13 +109,30 @@ export const BookDetailsPage = () => {
     setIsBorrowing(true);
     setBorrowError("");
     try {
-      await borrowBook(availableCopyId);
+      let targetCopyId = availableCopyId;
+
+      // If target copy ID is missing or non-UUID (stale cache), fetch fresh details from server
+      if (!UUID_REGEX.test(targetCopyId || "")) {
+        const freshRaw = await getBookById(id);
+        const freshMapped = mapBookToUI(freshRaw);
+        setBook(freshMapped);
+        cacheBookDetails(freshMapped);
+
+        const freshCopy = freshMapped?.copies?.find((c) => c.status === "AVAILABLE");
+        if (freshCopy?.id) {
+          targetCopyId = freshCopy.id;
+        } else {
+          throw new Error("No physical copy available for borrowing.");
+        }
+      }
+
+      await borrowBook(targetCopyId);
       setBorrowSuccess(true);
       if (book?.copies) {
         setBook((prev) => ({
           ...prev,
           copies: prev.copies.map((c) =>
-            c.id === availableCopyId ? { ...c, status: "BORROWED" } : c
+            c.id === targetCopyId ? { ...c, status: "BORROWED" } : c
           ),
         }));
       }
@@ -259,7 +277,34 @@ export const BookDetailsPage = () => {
     );
   }
 
-  // 4. Successful details display (Either rendered immediately via cache or updated via API)
+  // 4. Missing Book Guard Layout
+  if (!book) {
+    return (
+      <div className="min-h-screen bg-[#07111F] text-on-background relative flex flex-col justify-between">
+        <div className="paper-grain opacity-5 pointer-events-none"/>
+        <BackgroundShader />
+        <Navbar />
+        <main className="pt-40 pb-24 relative z-10 flex-grow flex items-center justify-center">
+          <div className="max-w-md text-center p-8 bg-[#0D1626]/40 border border-[#C9A227]/20 rounded-2xl shadow-2xl backdrop-blur-md">
+            <ShieldAlert className="w-12 h-12 text-[#C9A227] mx-auto mb-6 animate-pulse"/>
+            <h1 className="font-display text-2xl text-primary tracking-wider uppercase mb-4">
+              Book Not Found
+            </h1>
+            <p className="font-body text-sm text-on-surface-variant/60 leading-relaxed mb-8">
+              The requested volume is currently unavailable in the library archives.
+            </p>
+            <Link to="/library" className="inline-flex items-center gap-2 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] px-6 py-3 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 shadow-md">
+              <ArrowLeft className="w-3.5 h-3.5"/>
+              <span>Return to Library</span>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 5. Successful details display (Either rendered immediately via cache or updated via API)
   return (
     <div className="min-h-screen bg-[#07111F] text-[#F7F5EE] relative flex flex-col justify-between">
       <div className="paper-grain opacity-5 pointer-events-none"/>
@@ -280,7 +325,14 @@ export const BookDetailsPage = () => {
             {/* Left Cover aspect */}
             <div className="lg:col-span-4 flex justify-center lg:justify-start">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="relative w-full max-w-[280px] aspect-[2/3] rounded-xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-[#C9A227]/25 bg-surface-container-lowest">
-                <img src={book.coverImage} alt={book.title} className="w-full h-full object-cover"/>
+                <img
+                  src={book.coverImage}
+                  alt={book.title}
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80";
+                  }}
+                  className="w-full h-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#07111F]/60 to-transparent"/>
               </motion.div>
             </div>
@@ -292,7 +344,7 @@ export const BookDetailsPage = () => {
                   <span className="px-3 py-1 border border-[#C9A227]/20 rounded-full bg-[#C9A227]/5 font-display text-[8px] tracking-[0.2em] text-[#C9A227] uppercase">
                     {book.category}
                   </span>
-                  {ratingStats.averageRating != null ? (
+                  {ratingStats?.averageRating != null ? (
                     <div className="flex items-center gap-1.5 text-[#C9A227]">
                       <Star className="w-4 h-4 fill-[#C9A227]"/>
                       <span className="font-display text-sm font-bold">{Number(ratingStats.averageRating).toFixed(1)}</span>
@@ -303,7 +355,7 @@ export const BookDetailsPage = () => {
                 </div>
 
                 <h1 className="font-display text-3xl sm:text-5xl text-[#F7F5EE] tracking-wide leading-tight">
-                  {book.title}
+                  {book.title || "Archival Volume"}
                 </h1>
                 
                 <p className="font-body text-sm sm:text-base text-primary italic">
