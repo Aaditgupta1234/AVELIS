@@ -1,11 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { createBook, updateBook, deleteBook } from "../../services/book.service.js";
 import { mapBookToUI } from "../../mappers/book.mapper.js";
-import { normalizeError } from "../../utils/error.js";
-import { Trash2, Edit, Plus, X, Search, AlertCircle, CheckCircle } from "lucide-react";
+import { mockCollections } from "../../data/collections.js";
+import {
+  Trash2,
+  Edit,
+  Plus,
+  X,
+  Search,
+  CheckCircle,
+  Sparkles,
+  Package,
+  BookOpen,
+  Layout,
+  Tag,
+  DollarSign,
+  Layers,
+  Star,
+  Megaphone,
+  CheckSquare
+} from "lucide-react";
 
-// Seeded database fallbacks in case database has no loaded books
+// Fallback relation seeds
 const DEFAULT_AUTHORS = [
   { id: "4809f491-50c3-4b09-9ec3-3d7e3379eef6", name: "J.K. Rowling" },
   { id: "d6a4423a-c72e-4264-9eb7-39a106736aed", name: "Route Test Author" }
@@ -17,19 +34,32 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export const CatalogManager = () => {
-  const { books, isLoading, error: contextError, refreshBooks, removeBookFromState, optimisticCreate, optimisticEdit } = useBooks();
+  const {
+    books,
+    isLoading,
+    refreshBooks,
+    removeBookFromState,
+    optimisticCreate,
+    optimisticEdit
+  } = useBooks();
 
+  // Admin Hub Main Section Tabs
+  const [adminTab, setAdminTab] = useState("catalog"); // "catalog" | "hero" | "bundles"
+
+  // -------------------------------------------------------------
+  // TAB 1: BOOK CATALOG & PRICE MANAGER STATE
+  // -------------------------------------------------------------
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
-  
-  // Form state fields
+
+  // Form state
   const [title, setTitle] = useState("");
   const [isbn, setIsbn] = useState("");
   const [publisher, setPublisher] = useState("");
   const [language, setLanguage] = useState("English");
   const [publicationYear, setPublicationYear] = useState(new Date().getFullYear());
-  const [sellingPrice, setSellingPrice] = useState(19.99);
+  const [sellingPrice, setSellingPrice] = useState(24.99);
   const [stockQuantity, setStockQuantity] = useState(10);
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState("");
@@ -41,21 +71,65 @@ export const CatalogManager = () => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  // Dynamically extract unique authors/categories from currently loaded books
+  // -------------------------------------------------------------
+  // TAB 2: HERO & TOP LAYOUT MANAGER ("WHAT APPEARS ABOVE")
+  // -------------------------------------------------------------
+  const [featuredHeroBookId, setFeaturedHeroBookId] = useState(() => {
+    return localStorage.getItem("avelis_hero_book_id") || books[0]?.id || "";
+  });
+  const [announcementText, setAnnouncementText] = useState(() => {
+    return (
+      localStorage.getItem("avelis_announcement_text") ||
+      "Welcome to AVELIS — Enjoy 20% Off All Curated Bundling & Physical Archives this Season."
+    );
+  });
+
+  // -------------------------------------------------------------
+  // TAB 3: CURATED BUNDLES MANAGER ("WHAT SHOULD BUNDLE LOOK LIKE")
+  // -------------------------------------------------------------
+  const [bundles, setBundles] = useState(() => {
+    try {
+      const saved = localStorage.getItem("avelis_custom_bundles_v1");
+      return saved ? JSON.parse(saved) : mockCollections;
+    } catch {
+      return mockCollections;
+    }
+  });
+
+  const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
+  const [editingBundle, setEditingBundle] = useState(null);
+  const [bundleTitle, setBundleTitle] = useState("");
+  const [bundleSubtitle, setBundleSubtitle] = useState("");
+  const [bundleDescription, setBundleDescription] = useState("");
+  const [bundleVolumes, setBundleVolumes] = useState("3 Volumes");
+  const [bundlePrice, setBundlePrice] = useState(49.99);
+  const [bundleImage, setBundleImage] = useState("");
+  const [selectedBookIds, setSelectedBookIds] = useState([]);
+
+  // Save Bundles & Layout to LocalStorage
+  const saveBundlesToStorage = (updatedBundles) => {
+    setBundles(updatedBundles);
+    try {
+      localStorage.setItem("avelis_custom_bundles_v1", JSON.stringify(updatedBundles));
+    } catch {}
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3000);
+  };
+
+  // Helper relation extractor
   const getUniqueRelations = () => {
     const authorsMap = new Map();
     const categoriesMap = new Map();
 
-    DEFAULT_AUTHORS.forEach(a => authorsMap.set(a.id, a));
-    DEFAULT_CATEGORIES.forEach(c => categoriesMap.set(c.id, c));
+    DEFAULT_AUTHORS.forEach((a) => authorsMap.set(a.id, a));
+    DEFAULT_CATEGORIES.forEach((c) => categoriesMap.set(c.id, c));
 
-    books.forEach(b => {
-      if (b.authorsList) {
-        b.authorsList.forEach(a => authorsMap.set(a.id, a));
-      }
-      if (b.categoriesList) {
-        b.categoriesList.forEach(c => categoriesMap.set(c.id, c));
-      }
+    books.forEach((b) => {
+      if (b.authorsList) b.authorsList.forEach((a) => authorsMap.set(a.id, a));
+      if (b.categoriesList) b.categoriesList.forEach((c) => categoriesMap.set(c.id, c));
     });
 
     return {
@@ -66,11 +140,7 @@ export const CatalogManager = () => {
 
   const { authors, categories } = getUniqueRelations();
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 3000);
-  };
-
+  // Book Modal Triggers
   const openCreateModal = () => {
     setEditingBook(null);
     setTitle("");
@@ -78,7 +148,7 @@ export const CatalogManager = () => {
     setPublisher("Archival Press");
     setLanguage("English");
     setPublicationYear(new Date().getFullYear());
-    setSellingPrice(19.99);
+    setSellingPrice(24.99);
     setStockQuantity(10);
     setDescription("");
     setCoverImage("");
@@ -96,7 +166,7 @@ export const CatalogManager = () => {
     setPublisher(book.publisher || "Archival Press");
     setLanguage(book.language || "English");
     setPublicationYear(book.publicationYear || new Date().getFullYear());
-    setSellingPrice(book.sellingPrice || 19.99);
+    setSellingPrice(book.sellingPrice || 24.99);
     setStockQuantity(book.stockQuantity || 10);
     setDescription(book.description || "");
     setCoverImage(book.coverImage || "");
@@ -107,7 +177,8 @@ export const CatalogManager = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  // Submit Book Form
+  const handleSubmitBook = async (e) => {
     e.preventDefault();
     setFormError(null);
     setFieldErrors({});
@@ -131,7 +202,6 @@ export const CatalogManager = () => {
 
     try {
       if (editingBook) {
-        // Optimistic edit mapping
         optimisticEdit(editingBook.id, {
           title,
           isbn,
@@ -141,20 +211,18 @@ export const CatalogManager = () => {
           sellingPrice: parseFloat(sellingPrice),
           stockQuantity: parseInt(stockQuantity, 10),
           description,
-          coverImage,
+          coverImage
         });
 
         const rawUpdated = await updateBook(editingBook.id, payload);
-        const normalized = mapBookToUI(rawUpdated);
-        // Refresh context to resolve final data
+        mapBookToUI(rawUpdated);
         refreshBooks();
-        showToast("Volume updated successfully!");
+        showToast(`Volume "${title}" updated with price $${sellingPrice}!`);
       } else {
-        // Create DTO call
         const rawCreated = await createBook(payload);
         const normalized = mapBookToUI(rawCreated);
         optimisticCreate(normalized);
-        showToast("New volume registered in catalog!");
+        showToast(`New volume "${title}" added to catalog at $${sellingPrice}!`);
       }
       setIsModalOpen(false);
     } catch (err) {
@@ -168,316 +236,788 @@ export const CatalogManager = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to remove this volume from the archives?")) {
+  const handleDeleteBook = async (id, bookTitle) => {
+    if (!window.confirm(`Are you sure you want to remove "${bookTitle}" from the catalog?`)) {
       return;
     }
     try {
       await deleteBook(id);
       removeBookFromState(id);
-      showToast("Volume deleted successfully.");
+      showToast(`Volume "${bookTitle}" deleted.`);
     } catch (err) {
       alert(`Deletion failed: ${err.message || "Unknown error"}`);
     }
   };
 
-  const filteredBooks = books.filter(b => 
-    b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.author.toLowerCase().includes(searchQuery.toLowerCase())
+  // -------------------------------------------------------------
+  // TAB 2: HERO & LAYOUT ACTIONS
+  // -------------------------------------------------------------
+  const handleSetHeroBook = (bookId, bookTitle) => {
+    setFeaturedHeroBookId(bookId);
+    localStorage.setItem("avelis_hero_book_id", bookId);
+    showToast(`"${bookTitle}" is now set as the Featured Hero Book at the top of the site!`);
+  };
+
+  const handleSaveAnnouncement = (e) => {
+    e.preventDefault();
+    localStorage.setItem("avelis_announcement_text", announcementText);
+    showToast("Site-wide announcement updated successfully!");
+  };
+
+  // -------------------------------------------------------------
+  // TAB 3: BUNDLES ACTIONS WITH BOOK SELECTOR
+  // -------------------------------------------------------------
+  const openCreateBundleModal = () => {
+    setEditingBundle(null);
+    setBundleTitle("");
+    setBundleSubtitle("Curated Collection");
+    setBundleDescription("");
+    setBundleVolumes("3 Volumes Boxed Set");
+    setBundlePrice(49.99);
+    setBundleImage("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2228&auto=format&fit=crop");
+    setSelectedBookIds(books.slice(0, 3).map((b) => b.id));
+    setIsBundleModalOpen(true);
+  };
+
+  const openEditBundleModal = (bundle) => {
+    setEditingBundle(bundle);
+    setBundleTitle(bundle.title);
+    setBundleSubtitle(bundle.subtitle || "Curated Series");
+    setBundleDescription(bundle.description || "");
+    setBundleVolumes(bundle.volumes || `${bundle.bookIds?.length || 3} Volumes Set`);
+    setBundlePrice(bundle.price || 49.99);
+    setBundleImage(bundle.image || "");
+    setSelectedBookIds(bundle.bookIds || books.slice(0, 3).map((b) => b.id));
+    setIsBundleModalOpen(true);
+  };
+
+  const handleSaveBundle = (e) => {
+    e.preventDefault();
+    if (!bundleTitle.trim() || !bundleDescription.trim()) return;
+
+    const volumesLabel = bundleVolumes || `${selectedBookIds.length} Volumes Included`;
+
+    if (editingBundle) {
+      const updated = bundles.map((b) =>
+        b.id === editingBundle.id
+          ? {
+              ...b,
+              title: bundleTitle,
+              subtitle: bundleSubtitle,
+              description: bundleDescription,
+              volumes: volumesLabel,
+              price: parseFloat(bundlePrice),
+              image: bundleImage,
+              bookIds: selectedBookIds
+            }
+          : b
+      );
+      saveBundlesToStorage(updated);
+      showToast(`Bundle "${bundleTitle}" updated with ${selectedBookIds.length} selected books!`);
+    } else {
+      const newBundle = {
+        id: `bundle-${Date.now()}`,
+        title: bundleTitle,
+        subtitle: bundleSubtitle,
+        description: bundleDescription,
+        volumes: volumesLabel,
+        price: parseFloat(bundlePrice),
+        image: bundleImage || "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2190&auto=format&fit=crop",
+        bookIds: selectedBookIds
+      };
+      const updated = [newBundle, ...bundles];
+      saveBundlesToStorage(updated);
+      showToast(`New Bundle "${bundleTitle}" created with ${selectedBookIds.length} books at $${bundlePrice}!`);
+    }
+    setIsBundleModalOpen(false);
+  };
+
+  const handleDeleteBundle = (bundleId, bTitle) => {
+    if (!window.confirm(`Delete bundle "${bTitle}"?`)) return;
+    const updated = bundles.filter((b) => b.id !== bundleId);
+    saveBundlesToStorage(updated);
+    showToast(`Bundle "${bTitle}" deleted.`);
+  };
+
+  const filteredBooks = books.filter(
+    (b) =>
+      b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.author.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-8 bg-[#0D1626]/20 border border-[rgba(201,162,39,0.12)] rounded-lg p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+    <div className="space-y-8 bg-[#0D1626]/40 border border-[rgba(201,162,39,0.15)] rounded-xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
       {/* Toast Announcement */}
       {toastMessage && (
-        <div className="fixed bottom-8 right-8 bg-[#0D1626] border border-emerald-500/30 text-emerald-400 px-6 py-4 rounded shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-50 flex items-center gap-3 font-body text-sm animate-bounce">
-          <CheckCircle className="w-5 h-5"/>
+        <div className="fixed bottom-8 right-8 bg-[#0D1626] border border-emerald-500/40 text-emerald-400 px-6 py-4 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-50 flex items-center gap-3 font-body text-sm animate-bounce">
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Header toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-[rgba(201,162,39,0.1)]">
+      {/* Header Toolbar & Role Badge */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-[rgba(201,162,39,0.15)]">
         <div>
-          <h2 className="font-display text-2xl tracking-[0.05em] text-[#F7F5EE] uppercase">
-            Codex Catalog Management
+          <div className="flex items-center gap-3 mb-1">
+            <span className="px-2.5 py-0.5 rounded bg-[#C9A227]/10 border border-[#C9A227]/30 text-[#C9A227] font-display text-[9px] tracking-[0.2em] uppercase font-bold">
+              ADMIN CONTROL CENTER
+            </span>
+          </div>
+          <h2 className="font-display text-2xl sm:text-3xl tracking-[0.05em] text-[#F7F5EE] uppercase">
+            Sanctuary Site & Catalog Management
           </h2>
           <p className="text-xs text-[#F7F5EE]/60 font-body mt-1">
-            Maintain, edit, and audit the timeworn archives.
+            Manage physical stock, set pricing, choose top featured hero books, and select specific books in curated bundles.
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-3 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 shadow-[0_5px_15px_rgba(201,162,39,0.2)] hover:-translate-y-0.5 cursor-pointer font-bold"
-        >
-          <Plus className="w-3.5 h-3.5"/>
-          <span>Add Volume</span>
-        </button>
+
+        {/* Tab Navigation Pill Selector */}
+        <div className="flex items-center gap-2 bg-[#07111F] p-1.5 rounded-lg border border-[#C9A227]/20">
+          <button
+            onClick={() => setAdminTab("catalog")}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
+              adminTab === "catalog"
+                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                : "text-[#F7F5EE]/70 hover:text-white"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Books & Pricing</span>
+          </button>
+          <button
+            onClick={() => setAdminTab("hero")}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
+              adminTab === "hero"
+                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                : "text-[#F7F5EE]/70 hover:text-white"
+            }`}
+          >
+            <Layout className="w-3.5 h-3.5" />
+            <span>Hero & Layout</span>
+          </button>
+          <button
+            onClick={() => setAdminTab("bundles")}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
+              adminTab === "bundles"
+                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                : "text-[#F7F5EE]/70 hover:text-white"
+            }`}
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>Curated Bundles</span>
+          </button>
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/40"/>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Filter catalog by title or author..."
-          className="w-full bg-[#0D1626] border border-[rgba(201,162,39,0.15)] focus:border-primary/50 text-[#F7F5EE] rounded-lg pl-12 pr-4 py-3 text-xs outline-none transition-colors"
-        />
-      </div>
+      {/* ========================================================================= */}
+      {/* TAB 1: BOOKS & PRICE MANAGEMENT */}
+      {/* ========================================================================= */}
+      {adminTab === "catalog" && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="relative max-w-md w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#F7F5EE]/40" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search catalog by volume title or author..."
+                className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] focus:border-[#C9A227] text-[#F7F5EE] rounded-lg pl-12 pr-4 py-3 text-xs outline-none transition-colors"
+              />
+            </div>
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-2 bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-3 rounded-lg font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 shadow-[0_5px_15px_rgba(201,162,39,0.25)] hover:-translate-y-0.5 cursor-pointer font-bold"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Volume</span>
+            </button>
+          </div>
 
-      {/* Catalog Table */}
-      <div className="overflow-x-auto rounded-lg border border-[rgba(201,162,39,0.08)] bg-black/10">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-[#0D1626]/80 text-primary font-display tracking-[0.1em] uppercase border-b border-[rgba(201,162,39,0.15)]">
-              <th className="p-4">Cover</th>
-              <th className="p-4">Title</th>
-              <th className="p-4">Author</th>
-              <th className="p-4">Category</th>
-              <th className="p-4">ISBN</th>
-              <th className="p-4">Stock</th>
-              <th className="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[rgba(201,162,39,0.06)] font-body text-[#F7F5EE]/80">
-            {isLoading ? (
-              <tr>
-                <td colSpan="7" className="p-12 text-center text-on-surface-variant/40 animate-pulse font-display text-[10px] tracking-[0.2em] uppercase">
-                  Fetching Archives...
-                </td>
-              </tr>
-            ) : filteredBooks.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="p-12 text-center text-on-surface-variant/40">
-                  No volumes found matching the query.
-                </td>
-              </tr>
-            ) : (
-              filteredBooks.map((book) => (
-                <tr key={book.id} className="hover:bg-white/2 transition-colors">
-                  <td className="p-4">
-                    <img src={book.coverImage} alt={book.title} className="w-8 h-12 object-cover rounded border border-white/5 shadow"/>
-                  </td>
-                  <td className="p-4 font-semibold text-white">{book.title}</td>
-                  <td className="p-4">{book.author}</td>
-                  <td className="p-4">
-                    <span className="px-2 py-0.5 border border-[#C9A227]/20 rounded bg-[#C9A227]/5 text-[9px] text-[#C9A227] uppercase">
-                      {book.category}
-                    </span>
-                  </td>
-                  <td className="p-4 font-mono text-[#F7F5EE]/60">{book.isbn}</td>
-                  <td className="p-4 font-semibold">{book.stockQuantity}</td>
-                  <td className="p-4 text-right space-x-2">
-                    <button
-                      onClick={() => openEditModal(book)}
-                      className="p-2 border border-[#C9A227]/10 hover:border-[#C9A227]/40 rounded hover:bg-[#C9A227]/5 text-[#C9A227] transition-all cursor-pointer inline-flex items-center"
-                      title="Edit details"
-                    >
-                      <Edit className="w-3.5 h-3.5"/>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(book.id)}
-                      className="p-2 border border-red-500/10 hover:border-red-500/40 rounded hover:bg-red-950/10 text-red-400 transition-all cursor-pointer inline-flex items-center"
-                      title="Delete volume"
-                    >
-                      <Trash2 className="w-3.5 h-3.5"/>
-                    </button>
-                  </td>
+          {/* Catalog Table */}
+          <div className="overflow-x-auto rounded-xl border border-[rgba(201,162,39,0.12)] bg-black/20">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-[#07111F]/90 text-[#C9A227] font-display tracking-[0.1em] uppercase border-b border-[rgba(201,162,39,0.2)]">
+                  <th className="p-4">Cover</th>
+                  <th className="p-4">Title</th>
+                  <th className="p-4">Author</th>
+                  <th className="p-4">Selling Price</th>
+                  <th className="p-4">Stock</th>
+                  <th className="p-4">Featured Hero</th>
+                  <th className="p-4 text-right">Actions</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-[rgba(201,162,39,0.08)] font-body text-[#F7F5EE]/80">
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      className="p-12 text-center text-[#F7F5EE]/40 animate-pulse font-display text-[10px] tracking-[0.2em] uppercase"
+                    >
+                      Fetching Archives...
+                    </td>
+                  </tr>
+                ) : filteredBooks.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="p-12 text-center text-[#F7F5EE]/40">
+                      No volumes found in catalog.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBooks.map((book) => {
+                    const isHero = featuredHeroBookId === book.id;
+                    return (
+                      <tr key={book.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4">
+                          <img
+                            src={book.coverImage}
+                            alt={book.title}
+                            className="w-9 h-13 object-cover rounded border border-white/10 shadow"
+                          />
+                        </td>
+                        <td className="p-4 font-semibold text-white">
+                          <div>{book.title}</div>
+                          <span className="text-[10px] text-[#F7F5EE]/40 font-mono">
+                            ISBN: {book.isbn || "N/A"}
+                          </span>
+                        </td>
+                        <td className="p-4">{book.author}</td>
+                        <td className="p-4 font-bold text-[#C9A227]">
+                          ${book.sellingPrice ? book.sellingPrice.toFixed(2) : "24.99"}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                              book.stockQuantity > 0
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                : "bg-red-500/10 text-red-400 border border-red-500/20"
+                            }`}
+                          >
+                            {book.stockQuantity > 0 ? `${book.stockQuantity} in stock` : "Out of stock"}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleSetHeroBook(book.id, book.title)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-display uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                              isHero
+                                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                                : "bg-[#07111F] text-[#F7F5EE]/60 hover:text-white border border-[#C9A227]/20"
+                            }`}
+                          >
+                            <Star className={`w-3 h-3 ${isHero ? "fill-[#07111F]" : ""}`} />
+                            <span>{isHero ? "Hero Book" : "Set Hero"}</span>
+                          </button>
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => openEditModal(book)}
+                            className="p-2 border border-[#C9A227]/20 hover:border-[#C9A227] rounded-lg hover:bg-[#C9A227]/10 text-[#C9A227] transition-all cursor-pointer inline-flex items-center"
+                            title="Edit book and price"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBook(book.id, book.title)}
+                            className="p-2 border border-red-500/20 hover:border-red-500 rounded-lg hover:bg-red-950/20 text-red-400 transition-all cursor-pointer inline-flex items-center"
+                            title="Delete volume"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* CREATE & EDIT MODAL DIALOG */}
+      {/* ========================================================================= */}
+      {/* TAB 2: HERO & TOP LAYOUT SETTINGS ("WHAT SHOULD APPEAR ABOVE") */}
+      {/* ========================================================================= */}
+      {adminTab === "hero" && (
+        <div className="space-y-8">
+          <div className="bg-[#07111F] border border-[#C9A227]/20 rounded-xl p-6 sm:p-8 space-y-6">
+            <div className="flex items-center gap-3 text-[#C9A227]">
+              <Sparkles className="w-5 h-5" />
+              <h3 className="font-display text-xl uppercase tracking-wider text-white">
+                Featured Hero Book ("What Appears Above")
+              </h3>
+            </div>
+            <p className="text-xs text-[#F7F5EE]/70 leading-relaxed font-body">
+              Select which volume is highlighted prominently at the top of the Library and Sanctuary Hero sections.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {books.map((b) => {
+                const isSelected = featuredHeroBookId === b.id;
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => handleSetHeroBook(b.id, b.title)}
+                    className={`p-4 rounded-xl border transition-all cursor-pointer flex gap-4 items-center ${
+                      isSelected
+                        ? "bg-[#C9A227]/10 border-[#C9A227] shadow-lg shadow-[#C9A227]/10"
+                        : "bg-[#0D1626] border-white/5 hover:border-[#C9A227]/40"
+                    }`}
+                  >
+                    <img
+                      src={b.coverImage}
+                      alt={b.title}
+                      className="w-12 h-16 object-cover rounded border border-white/10 flex-shrink-0"
+                    />
+                    <div className="flex-grow min-w-0">
+                      <h4 className="font-display text-sm text-white truncate">{b.title}</h4>
+                      <p className="text-xs text-[#F7F5EE]/60 font-body truncate">{b.author}</p>
+                      <span className="text-[10px] text-[#C9A227] font-bold mt-1 block">
+                        ${b.sellingPrice ? b.sellingPrice.toFixed(2) : "24.99"}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <CheckCircle className="w-5 h-5 text-[#C9A227] flex-shrink-0" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Announcement Banner Editor */}
+          <form onSubmit={handleSaveAnnouncement} className="bg-[#07111F] border border-[#C9A227]/20 rounded-xl p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-3 text-[#C9A227]">
+              <Megaphone className="w-5 h-5" />
+              <h3 className="font-display text-xl uppercase tracking-wider text-white">
+                Global Sanctuary Announcement Banner
+              </h3>
+            </div>
+            <textarea
+              rows={3}
+              value={announcementText}
+              onChange={(e) => setAnnouncementText(e.target.value)}
+              className="w-full bg-[#0D1626] border border-[#C9A227]/20 focus:border-[#C9A227] text-white rounded-lg p-4 text-sm outline-none font-body leading-relaxed"
+              placeholder="Enter announcement text..."
+            />
+            <button
+              type="submit"
+              className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-3 rounded-lg font-display text-xs tracking-widest uppercase font-bold cursor-pointer transition-all shadow-md"
+            >
+              Save Sanctuary Announcement
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: CURATED BUNDLES MANAGER ("WHAT SHOULD BUNDLE LOOK LIKE") */}
+      {/* ========================================================================= */}
+      {adminTab === "bundles" && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-display text-xl text-white uppercase tracking-wider">
+                Curated Collection Bundles
+              </h3>
+              <p className="text-xs text-[#F7F5EE]/60 font-body mt-1">
+                Design custom volume bundles, select included books, set bundle prices, and control how they render on the Collections Page.
+              </p>
+            </div>
+            <button
+              onClick={openCreateBundleModal}
+              className="flex items-center gap-2 bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-3 rounded-lg font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 font-bold shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create New Bundle</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bundles.map((bundle) => {
+              const includedBooks = books.filter((b) => bundle.bookIds?.includes(b.id));
+
+              return (
+                <div
+                  key={bundle.id}
+                  className="bg-[#07111F] border border-[rgba(201,162,39,0.2)] rounded-xl overflow-hidden shadow-xl flex flex-col justify-between"
+                >
+                  <div className="h-44 w-full overflow-hidden relative">
+                    <img
+                      src={bundle.image}
+                      alt={bundle.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 right-3 bg-[#07111F]/90 text-[#C9A227] px-3 py-1 rounded border border-[#C9A227]/30 font-display text-[10px] uppercase font-bold tracking-widest">
+                      ${bundle.price ? bundle.price.toFixed(2) : "49.99"}
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-3 flex-grow">
+                    <span className="font-display text-[9px] text-[#C9A227] uppercase tracking-[0.2em] block font-bold">
+                      {bundle.subtitle || "Curated Bundle"}
+                    </span>
+                    <h4 className="font-display text-lg text-white tracking-wide">
+                      {bundle.title}
+                    </h4>
+                    <p className="font-body text-xs text-[#F7F5EE]/70 line-clamp-2">
+                      {bundle.description}
+                    </p>
+
+                    {/* Display Selected Included Books */}
+                    {includedBooks.length > 0 && (
+                      <div className="pt-2">
+                        <span className="text-[10px] text-[#C9A227] font-display uppercase tracking-widest block mb-1.5 font-bold">
+                          Included Volumes ({includedBooks.length}):
+                        </span>
+                        <div className="space-y-1">
+                          {includedBooks.map((ib) => (
+                            <div key={ib.id} className="text-[11px] text-[#F7F5EE]/80 flex items-center gap-2 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227] flex-shrink-0" />
+                              <span className="truncate">{ib.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <span className="inline-block text-[10px] text-[#F7F5EE]/50 font-display uppercase tracking-widest pt-2">
+                      {bundle.volumes || `${bundle.bookIds?.length || 3} Volumes Set`}
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-black/20 border-t border-white/5 flex justify-end gap-2">
+                    <button
+                      onClick={() => openEditBundleModal(bundle)}
+                      className="px-3 py-2 border border-[#C9A227]/30 text-[#C9A227] rounded hover:bg-[#C9A227]/10 font-display text-[10px] tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit Bundle</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBundle(bundle.id, bundle.title)}
+                      className="px-3 py-2 border border-red-500/30 text-red-400 rounded hover:bg-red-950/20 font-display text-[10px] tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* CREATE & EDIT BOOK MODAL */}
+      {/* ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="relative w-full max-w-xl bg-[#0D1626] border border-[#C9A227]/30 rounded-xl p-6 sm:p-8 shadow-2xl flex flex-col max-h-[90vh]">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-[#F7F5EE]/40 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5"/>
+              <X className="w-5 h-5" />
             </button>
 
-            <h3 className="font-display text-xl tracking-wider uppercase text-primary mb-6 border-b border-[rgba(201,162,39,0.1)] pb-3">
-              {editingBook ? "Edit Archival Volume" : "Add Archival Volume"}
+            <h3 className="font-display text-xl text-[#F7F5EE] uppercase tracking-[0.05em] mb-4">
+              {editingBook ? "Edit Volume & Pricing" : "Add New Volume"}
             </h3>
 
             {formError && (
-              <div className="p-4 mb-5 bg-red-950/40 border border-red-500/30 text-red-400 text-xs rounded font-body flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0"/>
-                <span>{formError}</span>
+              <div className="mb-4 p-3 bg-red-950/40 border border-red-500/30 text-red-300 text-xs rounded">
+                {formError}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-2 flex-grow">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Title */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                  />
-                  {fieldErrors.title && <p className="text-red-400 text-[10px]">{fieldErrors.title}</p>}
-                </div>
+            <form onSubmit={handleSubmitBook} className="space-y-4 overflow-y-auto pr-2">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Book Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
 
-                {/* ISBN */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">ISBN</label>
-                  <input
-                    type="text"
-                    required
-                    value={isbn}
-                    onChange={(e) => setIsbn(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                  />
-                  {fieldErrors.isbn && <p className="text-red-400 text-[10px]">{fieldErrors.isbn}</p>}
-                </div>
-
-                {/* Publisher */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Publisher</label>
-                  <input
-                    type="text"
-                    required
-                    value={publisher}
-                    onChange={(e) => setPublisher(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                  />
-                </div>
-
-                {/* Language */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Language</label>
-                  <input
-                    type="text"
-                    required
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                  />
-                </div>
-
-                {/* Pub Year */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Publication Year</label>
-                  <input
-                    type="number"
-                    required
-                    value={publicationYear}
-                    onChange={(e) => setPublicationYear(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                  />
-                  {fieldErrors.publicationYear && <p className="text-red-400 text-[10px]">{fieldErrors.publicationYear}</p>}
-                </div>
-
-                {/* Selling Price */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Selling Price ($)</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Selling Price ($) *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     required
                     value={sellingPrice}
                     onChange={(e) => setSellingPrice(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
                   />
-                  {fieldErrors.sellingPrice && <p className="text-red-400 text-[10px]">{fieldErrors.sellingPrice}</p>}
                 </div>
-
-                {/* Stock Quantity */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Stock Quantity</label>
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Physical Stock Quantity *
+                  </label>
                   <input
                     type="number"
                     required
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
                   />
-                  {fieldErrors.stockQuantity && <p className="text-red-400 text-[10px]">{fieldErrors.stockQuantity}</p>}
-                </div>
-
-                {/* Cover Image */}
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Cover Image URL</label>
-                  <input
-                    type="text"
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                    placeholder="https://images.unsplash.com/..."
-                  />
-                  {fieldErrors.coverImage && <p className="text-red-400 text-[10px]">{fieldErrors.coverImage}</p>}
                 </div>
               </div>
 
-              {/* Author Selector */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Author Relation</label>
-                <select
-                  value={selectedAuthorId}
-                  onChange={(e) => setSelectedAuthorId(e.target.value)}
-                  className="w-full bg-black/40 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                >
-                  {authors.map((a) => (
-                    <option key={a.id} value={a.id} className="bg-[#0D1626] text-white">
-                      {a.name} ({a.id.slice(0, 8)}...)
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Author
+                  </label>
+                  <select
+                    value={selectedAuthorId}
+                    onChange={(e) => setSelectedAuthorId(e.target.value)}
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  >
+                    {authors.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Category Selector */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Category Relation</label>
-                <select
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="w-full bg-black/40 border border-outline-variant/20 rounded p-2.5 text-xs text-white"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#0D1626] text-white">
-                      {c.name} ({c.id.slice(0, 8)}...)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-display uppercase tracking-wider text-[#F7F5EE]/60">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows="3"
-                  className="w-full bg-black/30 border border-outline-variant/20 rounded p-2.5 text-xs text-white resize-none"
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Cover Image URL
+                </label>
+                <input
+                  type="url"
+                  value={coverImage}
+                  onChange={(e) => setCoverImage(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
                 />
               </div>
 
-              {/* Actions Footer */}
-              <div className="pt-4 border-t border-[rgba(201,162,39,0.1)] flex justify-end gap-3">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-3 border border-white/10 hover:bg-white/5 rounded font-display text-[9px] tracking-wider uppercase text-white transition-colors cursor-pointer"
+                  className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="px-5 py-3 bg-[#C9A227] hover:bg-[#E5C16B] disabled:bg-gray-700 text-[#07111F] rounded font-display text-[9px] tracking-wider uppercase transition-colors cursor-pointer font-bold"
+                  className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-2.5 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer"
                 >
-                  {submitLoading ? "Submitting..." : editingBook ? "Save Volume" : "Register Volume"}
+                  {submitLoading ? "Saving..." : editingBook ? "Save Changes" : "Create Volume"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* CREATE & EDIT BUNDLE MODAL WITH BOOK SELECTOR */}
+      {/* ========================================================================= */}
+      {isBundleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-[#0D1626] border border-[#C9A227]/30 rounded-xl p-6 sm:p-8 shadow-2xl flex flex-col max-h-[90vh]">
+            <button
+              onClick={() => setIsBundleModalOpen(false)}
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="font-display text-xl text-[#F7F5EE] uppercase tracking-[0.05em] mb-4">
+              {editingBundle ? "Edit Curated Bundle" : "Create New Collection Bundle"}
+            </h3>
+
+            <form onSubmit={handleSaveBundle} className="space-y-4 overflow-y-auto pr-2">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Bundle Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={bundleTitle}
+                  onChange={(e) => setBundleTitle(e.target.value)}
+                  placeholder="e.g. Modern Classics Boxed Set"
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Subtitle / Badge
+                  </label>
+                  <input
+                    type="text"
+                    value={bundleSubtitle}
+                    onChange={(e) => setBundleSubtitle(e.target.value)}
+                    placeholder="e.g. Featured Series"
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Bundle Price ($) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={bundlePrice}
+                    onChange={(e) => setBundlePrice(e.target.value)}
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  />
+                </div>
+              </div>
+
+              {/* MULTI-SELECT INCLUDED BOOKS IN BUNDLE */}
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-2 font-bold flex items-center justify-between">
+                  <span>Select Included Books ({selectedBookIds.length} Selected) *</span>
+                  <span className="text-[#F7F5EE]/50 font-normal">Click to toggle books</span>
+                </label>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-2 border border-[rgba(201,162,39,0.25)] rounded-lg p-3 bg-[#07111F]">
+                  {books.map((b) => {
+                    const isChecked = selectedBookIds.includes(b.id);
+                    return (
+                      <div
+                        key={b.id}
+                        onClick={() => {
+                          if (isChecked) {
+                            setSelectedBookIds(selectedBookIds.filter((id) => id !== b.id));
+                          } else {
+                            setSelectedBookIds([...selectedBookIds, b.id]);
+                          }
+                        }}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all cursor-pointer select-none ${
+                          isChecked
+                            ? "bg-[#C9A227]/15 border-[#C9A227] text-white shadow"
+                            : "bg-[#0D1626] border-white/5 text-[#F7F5EE]/70 hover:border-white/20"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}} // Handled by parent div
+                          className="w-4 h-4 accent-[#C9A227] rounded cursor-pointer"
+                        />
+                        <img
+                          src={b.coverImage}
+                          alt={b.title}
+                          className="w-8 h-11 object-cover rounded border border-white/10 flex-shrink-0"
+                        />
+                        <div className="flex-grow min-w-0">
+                          <p className="text-xs font-semibold truncate">{b.title}</p>
+                          <p className="text-[10px] text-[#F7F5EE]/50 truncate">{b.author}</p>
+                        </div>
+                        <span className="text-[10px] text-[#C9A227] font-bold">
+                          ${b.sellingPrice ? b.sellingPrice.toFixed(2) : "24.99"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Included Volumes Badge / Label
+                </label>
+                <input
+                  type="text"
+                  value={bundleVolumes}
+                  onChange={(e) => setBundleVolumes(e.target.value)}
+                  placeholder="e.g. 3 Volumes Boxed Set"
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Bundle Cover Image URL
+                </label>
+                <input
+                  type="url"
+                  value={bundleImage}
+                  onChange={(e) => setBundleImage(e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Description *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={bundleDescription}
+                  onChange={(e) => setBundleDescription(e.target.value)}
+                  placeholder="Describe what is included in this bundle..."
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsBundleModalOpen(false)}
+                  className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-2.5 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer"
+                >
+                  {editingBundle ? "Save Bundle" : "Create Bundle"}
                 </button>
               </div>
             </form>
@@ -487,4 +1027,5 @@ export const CatalogManager = () => {
     </div>
   );
 };
+
 export default CatalogManager;

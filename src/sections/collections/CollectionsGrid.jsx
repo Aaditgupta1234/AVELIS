@@ -8,8 +8,11 @@ import { useLoans } from "../../context/LoanContext.jsx";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { BookOpen, CheckCircle2, RotateCcw } from "lucide-react";
 
-const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing }) => {
+const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing, allBooks = [] }) => {
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Find exact books selected by Admin for this bundle
+  const selectedBooks = allBooks.filter((b) => item.bookIds?.includes(b.id));
 
   return (
     <motion.div
@@ -21,7 +24,7 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing }) => {
       whileHover="hover"
       initial="rest"
       animate="rest"
-      className="group relative overflow-hidden border border-white/10 glass-panel h-[520px] flex flex-col transition-colors duration-700 hover:border-primary/50 bg-surface/50 rounded-lg"
+      className="group relative overflow-hidden border border-white/10 glass-panel min-h-[540px] flex flex-col transition-colors duration-700 hover:border-primary/50 bg-surface/50 rounded-lg"
     >
       <motion.div
         variants={{
@@ -44,7 +47,7 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing }) => {
         transition={springs.smooth}
         className="flex flex-col h-full relative z-10"
       >
-        <div className="h-[240px] w-full overflow-hidden bg-surface-variant relative">
+        <div className="h-[220px] w-full overflow-hidden bg-surface-variant relative">
           <motion.img
             variants={{
               rest: { scale: 1, filter: "grayscale(100%)" },
@@ -58,12 +61,17 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing }) => {
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
           />
+          {item.price && (
+            <div className="absolute top-3 right-3 bg-[#07111F]/90 text-[#C9A227] px-3 py-1 rounded border border-[#C9A227]/30 font-display text-[10px] uppercase font-bold tracking-widest">
+              ${item.price.toFixed(2)}
+            </div>
+          )}
         </div>
 
         <div className="p-6 flex flex-col justify-between flex-grow bg-surface/80 backdrop-blur-md border-t border-white/5 group-hover:border-primary/20 transition-colors">
-          <div className="space-y-1">
-            <span className="font-display text-[9px] text-primary uppercase tracking-[0.2em] block">
-              {item.subtitle}
+          <div className="space-y-2">
+            <span className="font-display text-[9px] text-primary uppercase tracking-[0.2em] block font-bold">
+              {item.subtitle || "Curated Bundle"}
             </span>
             <h3 className="font-display text-xl text-white tracking-wide">
               {item.title}
@@ -71,12 +79,29 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing }) => {
             <p className="font-body text-white/60 text-xs line-clamp-2">
               {item.description}
             </p>
+
+            {/* Display Selected Admin Books in Bundle */}
+            {selectedBooks.length > 0 && (
+              <div className="pt-2">
+                <span className="text-[9px] text-primary font-display uppercase tracking-widest block mb-1 font-bold">
+                  Included Volumes ({selectedBooks.length}):
+                </span>
+                <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
+                  {selectedBooks.map((b) => (
+                    <div key={b.id} className="text-[11px] text-white/80 flex items-center gap-2 truncate">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                      <span className="truncate">{b.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-4 pt-4 border-t border-white/5">
+          <div className="space-y-4 pt-4 border-t border-white/5 mt-4">
             <div className="flex justify-between items-center text-[10px]">
               <span className="font-display text-white/40 tracking-[0.1em]">
-                {item.volumes || "3 Volumes Bundle"}
+                {item.volumes || `${selectedBooks.length || 3} Volumes Bundle`}
               </span>
               <Link
                 to={`/library?search=${encodeURIComponent(item.title)}`}
@@ -131,30 +156,32 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
     let borrowedCount = 0;
 
     try {
-      // Find candidate books with available physical copies matching the collection category
-      const itemTitleLower = (item.title || "").toLowerCase();
-      const categoryBooks = books.filter(
-        (b) =>
-          b.isBorrowable &&
-          b.copies &&
-          b.copies.some((c) => c.status === "AVAILABLE") &&
-          (b.category?.toLowerCase().includes(itemTitleLower) ||
-            itemTitleLower.includes(b.category?.toLowerCase()) ||
-            b.title.toLowerCase().includes(itemTitleLower))
-      );
+      // Find candidate books based on Admin's selected bookIds for this bundle
+      let bundleBooks = [];
+      if (item.bookIds && Array.isArray(item.bookIds) && item.bookIds.length > 0) {
+        bundleBooks = books.filter((b) => item.bookIds.includes(b.id));
+      } else {
+        const itemTitleLower = (item.title || "").toLowerCase();
+        const categoryBooks = books.filter(
+          (b) =>
+            b.isBorrowable &&
+            b.copies &&
+            b.copies.some((c) => c.status === "AVAILABLE") &&
+            (b.category?.toLowerCase().includes(itemTitleLower) ||
+              itemTitleLower.includes(b.category?.toLowerCase()) ||
+              b.title.toLowerCase().includes(itemTitleLower))
+        );
 
-      const matchingBooks =
-        categoryBooks.length > 0
-          ? categoryBooks
-          : books.filter(
-              (b) =>
-                b.isBorrowable &&
-                b.copies &&
-                b.copies.some((c) => c.status === "AVAILABLE")
-            );
-
-      // Select up to 3 available books for the bundle
-      const bundleBooks = matchingBooks.slice(0, 3);
+        bundleBooks =
+          categoryBooks.length > 0
+            ? categoryBooks
+            : books.filter(
+                (b) =>
+                  b.isBorrowable &&
+                  b.copies &&
+                  b.copies.some((c) => c.status === "AVAILABLE")
+              ).slice(0, 3);
+      }
 
       for (const b of bundleBooks) {
         const availableCopy = b.copies?.find((c) => c.status === "AVAILABLE");
@@ -258,6 +285,7 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
                 index={index}
                 onBorrowBundle={handleBorrowBundle}
                 isBorrowing={borrowingCard === item.title}
+                allBooks={books}
               />
             ))}
           </motion.div>
@@ -283,3 +311,4 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
   );
 };
 
+export default CollectionsGrid;

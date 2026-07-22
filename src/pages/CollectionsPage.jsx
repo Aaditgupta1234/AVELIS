@@ -9,38 +9,70 @@ import { FeaturedAuthor } from "../sections/collections/FeaturedAuthor";
 import { ReadingQuote } from "../sections/collections/ReadingQuote";
 import { CollectionsCTA } from "../sections/collections/CollectionsCTA";
 import { mockCollections } from "../data/collections";
+
 export const CollectionsPage = () => {
-    const [query, setQuery] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [results, setResults] = useState(mockCollections);
-    useEffect(() => {
-        setIsLoading(true);
-        const timer = setTimeout(() => {
-            if (!query.trim()) {
-                setResults(mockCollections);
-            }
-            else {
-                const lower = query.toLowerCase();
-                setResults(mockCollections.filter(c => c.title.toLowerCase().includes(lower) ||
-                    c.description.toLowerCase().includes(lower)));
-            }
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, [query]);
-    return (<div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
+  const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [allBundles, setAllBundles] = useState(() => {
+    try {
+      const custom = localStorage.getItem("avelis_custom_bundles_v1");
+      return custom ? JSON.parse(custom) : mockCollections;
+    } catch {
+      return mockCollections;
+    }
+  });
+  const [results, setResults] = useState(allBundles);
+
+  useEffect(() => {
+    try {
+      const custom = localStorage.getItem("avelis_custom_bundles_v1");
+      if (custom) {
+        setAllBundles(JSON.parse(custom));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      if (!query.trim()) {
+        setResults(allBundles);
+      } else {
+        const lower = query.toLowerCase();
+        setResults(
+          allBundles.filter(
+            (c) =>
+              c.title.toLowerCase().includes(lower) ||
+              c.description.toLowerCase().includes(lower)
+          )
+        );
+      }
+      setIsLoading(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query, allBundles]);
+
+  return (
+    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <Navbar />
-      
+
       <main className="flex-grow pt-20">
         <CollectionsHero />
-        <CollectionsSearch query={query} setQuery={setQuery} resultCount={results.length}/>
-        <CollectionsGrid collections={results} isLoading={isLoading}/>
+        <CollectionsSearch
+          query={query}
+          setQuery={setQuery}
+          resultCount={results.length}
+        />
+        <CollectionsGrid collections={results} isLoading={isLoading} />
         <EditorsPicks />
         <FeaturedAuthor />
         <ReadingQuote />
         <CollectionsCTA />
       </main>
-      
+
       <Footer />
-    </div>);
+    </div>
+  );
 };
+
+export default CollectionsPage;
