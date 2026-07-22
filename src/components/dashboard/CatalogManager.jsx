@@ -3,6 +3,7 @@ import { useBooks } from "../../context/BooksContext.jsx";
 import { createBook, updateBook, deleteBook } from "../../services/book.service.js";
 import { mapBookToUI } from "../../mappers/book.mapper.js";
 import { mockCollections } from "../../data/collections.js";
+import { uploadBookCover, uploadBookPdf } from "../../services/upload.service.js";
 import {
   Trash2,
   Edit,
@@ -19,19 +20,11 @@ import {
   Layers,
   Star,
   Megaphone,
-  CheckSquare
+  CheckSquare,
+  Upload,
+  FileText,
+  Image as ImageIcon
 } from "lucide-react";
-
-// Fallback relation seeds
-const DEFAULT_AUTHORS = [
-  { id: "4809f491-50c3-4b09-9ec3-3d7e3379eef6", name: "J.K. Rowling" },
-  { id: "d6a4423a-c72e-4264-9eb7-39a106736aed", name: "Route Test Author" }
-];
-
-const DEFAULT_CATEGORIES = [
-  { id: "32f7455c-8174-4005-9453-6687849f9ec1", name: "Fantasy" },
-  { id: "b616ec22-1bab-4ca1-bb05-839b6afd1701", name: "General" }
-];
 
 export const CatalogManager = () => {
   const {
@@ -42,6 +35,31 @@ export const CatalogManager = () => {
     optimisticCreate,
     optimisticEdit
   } = useBooks();
+
+  // Dynamic API Relations State
+  const [apiAuthors, setApiAuthors] = useState([]);
+  const [apiCategories, setApiCategories] = useState([]);
+
+  // Fetch live Authors & Categories dynamically from API on mount
+  useEffect(() => {
+    const fetchRelations = async () => {
+      try {
+        const [authRes, catRes] = await Promise.all([
+          fetch('/api/v1/authors').then((r) => r.json()),
+          fetch('/api/v1/categories').then((r) => r.json()),
+        ]);
+        if (authRes.success && Array.isArray(authRes.data)) {
+          setApiAuthors(authRes.data);
+        }
+        if (catRes.success && Array.isArray(catRes.data)) {
+          setApiCategories(catRes.data);
+        }
+      } catch (err) {
+        console.error("Failed to load live authors/categories from API:", err);
+      }
+    };
+    fetchRelations();
+  }, []);
 
   // Admin Hub Main Section Tabs
   const [adminTab, setAdminTab] = useState("catalog"); // "catalog" | "hero" | "bundles"
@@ -63,6 +81,7 @@ export const CatalogManager = () => {
   const [stockQuantity, setStockQuantity] = useState(10);
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [pdfUrl, setPdfUrl] = useState("");
   const [selectedAuthorId, setSelectedAuthorId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
@@ -70,6 +89,64 @@ export const CatalogManager = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitLoading, setSubmitLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  // File Upload State
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverProgress, setCoverProgress] = useState(0);
+  const [coverError, setCoverError] = useState(null);
+
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
+  const [pdfError, setPdfError] = useState(null);
+  const [pdfMetadata, setPdfMetadata] = useState(null);
+
+  // File Selection Upload Handlers
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCoverUploading(true);
+    setCoverProgress(0);
+    setCoverError(null);
+
+    try {
+      const res = await uploadBookCover(file, (percent) => {
+        setCoverProgress(percent);
+      });
+      setCoverImage(res.fileUrl);
+      showToast("Cover image uploaded to Supabase!");
+    } catch (err) {
+      setCoverError(err.message || "Cover upload failed.");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPdfUploading(true);
+    setPdfProgress(0);
+    setPdfError(null);
+    setPdfMetadata({
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(1) + " MB",
+    });
+
+    try {
+      const res = await uploadBookPdf(file, (percent) => {
+        setPdfProgress(percent);
+      });
+      setPdfUrl(res.fileUrl);
+      showToast("PDF document uploaded to Supabase!");
+    } catch (err) {
+      setPdfError(err.message || "PDF upload failed.");
+      setPdfMetadata(null);
+    } finally {
+      setPdfUploading(false);
+    }
+  };
 
   // -------------------------------------------------------------
   // TAB 2: HERO & TOP LAYOUT MANAGER ("WHAT APPEARS ABOVE")
@@ -119,13 +196,13 @@ export const CatalogManager = () => {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  // Helper relation extractor
+  // Helper relation extractor (100% API Driven, zero hardcoded fallback UUIDs)
   const getUniqueRelations = () => {
     const authorsMap = new Map();
     const categoriesMap = new Map();
 
-    DEFAULT_AUTHORS.forEach((a) => authorsMap.set(a.id, a));
-    DEFAULT_CATEGORIES.forEach((c) => categoriesMap.set(c.id, c));
+    apiAuthors.forEach((a) => authorsMap.set(a.id, a));
+    apiCategories.forEach((c) => categoriesMap.set(c.id, c));
 
     books.forEach((b) => {
       if (b.authorsList) b.authorsList.forEach((a) => authorsMap.set(a.id, a));
@@ -152,6 +229,12 @@ export const CatalogManager = () => {
     setStockQuantity(10);
     setDescription("");
     setCoverImage("");
+    setPdfUrl("");
+    setCoverError(null);
+    setCoverProgress(0);
+    setPdfError(null);
+    setPdfProgress(0);
+    setPdfMetadata(null);
     setSelectedAuthorId(authors[0]?.id || "");
     setSelectedCategoryId(categories[0]?.id || "");
     setFormError(null);
@@ -170,6 +253,12 @@ export const CatalogManager = () => {
     setStockQuantity(book.stockQuantity || 10);
     setDescription(book.description || "");
     setCoverImage(book.coverImage || "");
+    setPdfUrl(book.pdfUrl || "");
+    setCoverError(null);
+    setCoverProgress(0);
+    setPdfError(null);
+    setPdfProgress(0);
+    setPdfMetadata(book.pdfUrl ? { name: "Existing PDF Document", size: "Cloud Storage" } : null);
     setSelectedAuthorId(book.authorsList?.[0]?.id || authors[0]?.id || "");
     setSelectedCategoryId(book.categoriesList?.[0]?.id || categories[0]?.id || "");
     setFormError(null);
@@ -196,6 +285,7 @@ export const CatalogManager = () => {
       isForSale: true,
       description,
       coverImage: coverImage || undefined,
+      pdfUrl: pdfUrl || undefined,
       authorIds: [selectedAuthorId],
       categoryIds: [selectedCategoryId]
     };
@@ -211,7 +301,8 @@ export const CatalogManager = () => {
           sellingPrice: parseFloat(sellingPrice),
           stockQuantity: parseInt(stockQuantity, 10),
           description,
-          coverImage
+          coverImage,
+          pdfUrl
         });
 
         const rawUpdated = await updateBook(editingBook.id, payload);
@@ -785,11 +876,15 @@ export const CatalogManager = () => {
                     onChange={(e) => setSelectedAuthorId(e.target.value)}
                     className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
                   >
-                    {authors.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
+                    {authors.length === 0 ? (
+                      <option value="">No Authors Available</option>
+                    ) : (
+                      authors.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name || a.fullName}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 <div>
@@ -801,26 +896,145 @@ export const CatalogManager = () => {
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
                     className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
                   >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
+                    {categories.length === 0 ? (
+                      <option value="">No Categories Available</option>
+                    ) : (
+                      categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
-                  Cover Image URL
-                </label>
-                <input
-                  type="url"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
-                />
+              {/* COVER IMAGE FILE UPLOADER */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] font-semibold">
+                    Cover Image File (Supabase Storage)
+                  </label>
+                  {coverImage && (
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                      <CheckCircle className="w-3 h-3" /> Uploaded to Storage
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4 bg-[#07111F] p-3 rounded-lg border border-[rgba(201,162,39,0.2)]">
+                  {coverImage ? (
+                    <img
+                      src={coverImage}
+                      alt="Cover Preview"
+                      className="w-12 h-16 object-cover rounded border border-[#C9A227]/40 flex-shrink-0 shadow"
+                    />
+                  ) : (
+                    <div className="w-12 h-16 bg-[#0D1626] rounded border border-dashed border-[#C9A227]/30 flex flex-col items-center justify-center text-[#C9A227]/50 flex-shrink-0">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-2">
+                    <label className="cursor-pointer inline-flex items-center gap-2 bg-[#C9A227]/15 hover:bg-[#C9A227]/25 text-[#C9A227] border border-[#C9A227]/40 px-3 py-1.5 rounded text-xs font-display tracking-wider transition-all">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{coverUploading ? `Uploading (${coverProgress}%)...` : "Choose Cover Image"}</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={coverUploading}
+                        onChange={handleCoverUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {coverUploading && (
+                      <div className="w-full bg-[#0D1626] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-[#C9A227] h-full transition-all duration-200"
+                          style={{ width: `${coverProgress}%` }}
+                        />
+                      </div>
+                    )}
+
+                    {coverError && (
+                      <p className="text-[11px] text-rose-400">{coverError}</p>
+                    )}
+
+                    <input
+                      type="url"
+                      value={coverImage}
+                      onChange={(e) => setCoverImage(e.target.value)}
+                      placeholder="Or paste image URL (https://...)"
+                      className="w-full bg-[#0D1626] border border-white/10 text-[#F7F5EE]/70 rounded p-1.5 text-[11px] outline-none focus:border-[#C9A227]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* PDF DOCUMENT FILE UPLOADER */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] font-semibold">
+                    PDF Book File (Digital Reader)
+                  </label>
+                  {pdfUrl && (
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                      <CheckCircle className="w-3 h-3" /> Ready for Reader
+                    </span>
+                  )}
+                </div>
+
+                <div className="bg-[#07111F] p-3 rounded-lg border border-[rgba(201,162,39,0.2)] space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center text-[#C9A227]">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#F7F5EE] font-medium truncate max-w-[200px]">
+                          {pdfMetadata?.name || (pdfUrl ? "PDF Document Linked" : "No PDF selected")}
+                        </p>
+                        {pdfMetadata?.size && (
+                          <span className="text-[10px] text-[#C9A227]/80">{pdfMetadata.size}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <label className="cursor-pointer inline-flex items-center gap-2 bg-[#C9A227]/15 hover:bg-[#C9A227]/25 text-[#C9A227] border border-[#C9A227]/40 px-3 py-1.5 rounded text-xs font-display tracking-wider transition-all">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{pdfUploading ? `Uploading (${pdfProgress}%)...` : "Choose PDF File"}</span>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        disabled={pdfUploading}
+                        onChange={handlePdfUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {pdfUploading && (
+                    <div className="w-full bg-[#0D1626] rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-[#C9A227] h-full transition-all duration-200"
+                        style={{ width: `${pdfProgress}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {pdfError && (
+                    <p className="text-[11px] text-rose-400">{pdfError}</p>
+                  )}
+
+                  <input
+                    type="text"
+                    value={pdfUrl}
+                    onChange={(e) => setPdfUrl(e.target.value)}
+                    placeholder="Or paste direct PDF URL (https://.../book.pdf)"
+                    className="w-full bg-[#0D1626] border border-white/10 text-[#F7F5EE]/70 rounded p-1.5 text-[11px] outline-none focus:border-[#C9A227]"
+                  />
+                </div>
               </div>
 
               <div>

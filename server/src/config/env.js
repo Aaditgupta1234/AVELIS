@@ -107,6 +107,10 @@ export const config = Object.freeze({
   loanDurationDays: parseInt(process.env.LOAN_DURATION_DAYS, 10) || 14,
   renewalLimit: parseInt(process.env.RENEWAL_LIMIT, 10) || 2,
 
+  // Supabase Storage settings
+  supabaseUrl: process.env.SUPABASE_URL,
+  supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
+
   // Pagination settings
   defaultPageSize: parseInt(process.env.DEFAULT_PAGE_SIZE, 10) || 10,
   maxPageSize: parseInt(process.env.MAX_PAGE_SIZE, 10) || 100,

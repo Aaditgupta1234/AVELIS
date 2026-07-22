@@ -19,6 +19,9 @@ import reservationRoutes from './reservation.routes.js';
 import reviewRoutes from '../modules/review/review.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import orderRoutes from './order.routes.js';
+import authorRoutes from './author.routes.js';
+import categoryRoutes from './category.routes.js';
+import uploadRoutes from './upload.routes.js';
 import healthRoutes from './health.routes.js';
 import { noCacheMiddleware } from '../middleware/nocache.middleware.js';
 
@@ -31,6 +34,9 @@ const router = Router();
  *
  * /api/v1/auth         → Auth routes
  * /api/v1/books        → Book routes
+ * /api/v1/authors      → Author routes
+ * /api/v1/categories   → Category routes
+ * /api/v1/uploads      → Upload routes
  * /api/v1/users        → User routes
  * /api/v1/admin        → Admin routes
  * /api/v1/loans        → Loan routes
@@ -40,6 +46,9 @@ const router = Router();
  */
 router.use('/auth', noCacheMiddleware, authRoutes);
 router.use('/books', bookRoutes);
+router.use('/authors', authorRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/uploads', uploadRoutes);
 router.use('/users', noCacheMiddleware, userRoutes);
 router.use('/admin', noCacheMiddleware, adminRoutes);
 router.use('/loans', noCacheMiddleware, loanRoutes);

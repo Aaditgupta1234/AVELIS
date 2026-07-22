@@ -54,25 +54,25 @@ export const createBookValidator = (req, res, next) => {
     req.body.title = title.trim();
   }
 
-  // ISBN validation
-  if (isbn === undefined || isbn === null || typeof isbn !== 'string' || isbn.trim() === '') {
-    errors.push({ field: 'isbn', message: 'ISBN is required and must be a non-empty string.' });
-  } else {
+  // ISBN validation (auto-generate if omitted or empty)
+  if (isbn !== undefined && isbn !== null && typeof isbn === 'string' && isbn.trim() !== '') {
     req.body.isbn = isbn.trim();
+  } else {
+    req.body.isbn = `GEN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
   }
 
-  // Publisher validation
-  if (publisher === undefined || publisher === null || typeof publisher !== 'string' || publisher.trim() === '') {
-    errors.push({ field: 'publisher', message: 'Publisher is required and must be a non-empty string.' });
-  } else {
+  // Publisher validation (default to Archival Press if omitted or empty)
+  if (publisher !== undefined && publisher !== null && typeof publisher === 'string' && publisher.trim() !== '') {
     req.body.publisher = publisher.trim();
+  } else {
+    req.body.publisher = 'Archival Press';
   }
 
-  // Language validation
-  if (language === undefined || language === null || typeof language !== 'string' || language.trim() === '') {
-    errors.push({ field: 'language', message: 'Language is required and must be a non-empty string.' });
-  } else {
+  // Language validation (default to English if omitted or empty)
+  if (language !== undefined && language !== null && typeof language === 'string' && language.trim() !== '') {
     req.body.language = language.trim();
+  } else {
+    req.body.language = 'English';
   }
 
   // Author IDs validation
@@ -120,6 +120,17 @@ export const createBookValidator = (req, res, next) => {
     if (typeof isForSale !== 'boolean') {
       errors.push({ field: 'isForSale', message: 'isForSale must be a boolean.' });
     }
+  }
+
+  // Cover Image & PDF URL sanitization (convert empty string to null)
+  const { coverImage, pdfUrl } = req.body;
+  if (coverImage !== undefined && coverImage !== null && typeof coverImage === 'string') {
+    const trimmed = coverImage.trim();
+    req.body.coverImage = trimmed !== '' ? trimmed : null;
+  }
+  if (pdfUrl !== undefined && pdfUrl !== null && typeof pdfUrl === 'string') {
+    const trimmed = pdfUrl.trim();
+    req.body.pdfUrl = trimmed !== '' ? trimmed : null;
   }
 
   if (errors.length > 0) {
@@ -212,7 +223,7 @@ export const updateBookValidator = (req, res, next) => {
       errors.push({ field: 'coverImage', message: 'Cover image must be a string.' });
     } else {
       const trimmedUrl = coverImage.trim();
-      req.body.coverImage = trimmedUrl;
+      req.body.coverImage = trimmedUrl !== '' ? trimmedUrl : null;
     }
   }
 
@@ -221,7 +232,8 @@ export const updateBookValidator = (req, res, next) => {
     if (typeof pdfUrl !== 'string') {
       errors.push({ field: 'pdfUrl', message: 'PDF URL must be a string.' });
     } else {
-      req.body.pdfUrl = pdfUrl.trim();
+      const trimmedUrl = pdfUrl.trim();
+      req.body.pdfUrl = trimmedUrl !== '' ? trimmedUrl : null;
     }
   }
 
