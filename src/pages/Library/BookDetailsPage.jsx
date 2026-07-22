@@ -13,7 +13,7 @@ import { Navbar } from "../../components/layout/Navbar.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { BackgroundShader } from "../../components/ui/BackgroundShader.jsx";
 import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
-import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2 } from "lucide-react";
 import { revealVariants } from "../../utils/motion.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -92,6 +92,37 @@ export const BookDetailsPage = () => {
     }
   };
 
+  const handleBorrow = async () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: `/book/${id}` } });
+      return;
+    }
+    if (isBorrowedByMe) {
+      navigate("/dashboard");
+      return;
+    }
+    if (!availableCopyId) return;
+
+    setIsBorrowing(true);
+    setBorrowError("");
+    try {
+      await borrowBook(availableCopyId);
+      setBorrowSuccess(true);
+      if (book?.copies) {
+        setBook((prev) => ({
+          ...prev,
+          copies: prev.copies.map((c) =>
+            c.id === availableCopyId ? { ...c, status: "BORROWED" } : c
+          ),
+        }));
+      }
+    } catch (err) {
+      setBorrowError(err.message || "Failed to borrow book");
+    } finally {
+      setIsBorrowing(false);
+    }
+  };
+
   const handleSubmitReview = useCallback(async (e) => {
     e.preventDefault();
     if (!reviewRating) return;
@@ -155,27 +186,6 @@ export const BookDetailsPage = () => {
       controller.abort();
     };
   }, [id, isValidUuid, cacheBookDetails, fetchBookReviews]);
-
-  const handleBorrow = async () => {
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: `/book/${id}` } });
-      return;
-    }
-    if (!availableCopyId) return;
-
-    setIsBorrowing(true);
-    setBorrowError("");
-    try {
-      await borrowBook(availableCopyId);
-      setBorrowSuccess(true);
-      setTimeout(() => setBorrowSuccess(false), 3000);
-    } catch (err) {
-      setBorrowError(err.message || "Borrow request failed.");
-      setTimeout(() => setBorrowError(""), 4000);
-    } finally {
-      setIsBorrowing(false);
-    }
-  };
 
   // 1. Invalid UUID or 404 Not Found Page Layout
   if (!isValidUuid || error?.status === 404) {
