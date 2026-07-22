@@ -3,6 +3,8 @@ import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useLoans } from "../context/LoanContext.jsx";
 import { useReservations } from "../context/ReservationContext.jsx";
+import { useBooks } from "../context/BooksContext.jsx";
+import { useReviews } from "../context/ReviewContext.jsx";
 import { BookCard } from "../components/ui/BookCard.jsx";
 import {
   BookMarked,
@@ -45,6 +47,9 @@ export const DashboardPage = () => {
     isLoading: reservationsLoading,
     cancelReservation
   } = useReservations();
+
+  const { books } = useBooks();
+  const { userReviews } = useReviews();
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -182,19 +187,27 @@ export const DashboardPage = () => {
     }
   ];
 
-  // Curated fallback recently viewed
-  const recentlyViewed = [
-    {
-      title: "Letters from a Stoic",
-      author: "Seneca",
-      image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80"
-    },
-    {
-      title: "Thus Spoke Zarathustra",
-      author: "Friedrich Nietzsche",
-      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=300&q=80"
-    }
-  ];
+  // Dynamic recommendations derived from live catalog books with fallback
+  const liveRecommendations =
+    books.length > 0
+      ? books.slice(0, 3).map((b) => ({
+          title: b.title,
+          author: b.author,
+          image: b.coverImage,
+          category: b.category,
+          readingTime: "12h"
+        }))
+      : recommendations;
+
+  // Dynamic recently visited derived from user's submitted reviews / activity with fallback
+  const liveRecentlyViewed =
+    userReviews.length > 0
+      ? userReviews.slice(0, 2).map((r) => ({
+          title: r.bookTitle || "Archival Codex",
+          author: r.author || "Archival Author",
+          image: r.coverImage || "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80"
+        }))
+      : recentlyViewed;
 
   return (
     <>
@@ -753,7 +766,7 @@ export const DashboardPage = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {recommendations.map((book, i) => (
+                    {liveRecommendations.map((book, i) => (
                       <BookCard
                         key={i}
                         title={book.title}
@@ -774,7 +787,7 @@ export const DashboardPage = () => {
                       Recently Visited
                     </h3>
                     <div className="flex flex-col gap-4">
-                      {recentlyViewed.map((book, i) => (
+                      {liveRecentlyViewed.map((book, i) => (
                         <div
                           key={i}
                           className="flex items-center gap-4 p-3 rounded bg-[#0D1626]/20 border border-transparent hover:border-[#C9A227]/20 hover:bg-[#0D1626]/40 transition-all duration-300"

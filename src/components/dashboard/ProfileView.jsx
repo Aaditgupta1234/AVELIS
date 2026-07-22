@@ -45,8 +45,6 @@ export const ProfileView = ({ showToast }) => {
         setSaving(true);
         setError("");
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
             await updateProfile(name, bio);
             showToast("Profile updated successfully.");
         }
