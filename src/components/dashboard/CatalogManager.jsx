@@ -273,21 +273,29 @@ export const CatalogManager = () => {
     setFieldErrors({});
     setSubmitLoading(true);
 
+    const cleanAuthorIds = selectedAuthorId && selectedAuthorId.trim() !== "" ? [selectedAuthorId.trim()] : undefined;
+    const cleanCategoryIds = selectedCategoryId && selectedCategoryId.trim() !== "" ? [selectedCategoryId.trim()] : undefined;
+
+    const cleanIsbn = isbn?.trim() ? isbn.trim() : undefined;
+    const cleanPublisher = publisher?.trim() ? publisher.trim() : undefined;
+    const cleanLanguage = language?.trim() ? language.trim() : undefined;
+    const cleanDescription = description?.trim() ? description.trim() : undefined;
+
     const payload = {
-      title,
-      isbn,
-      publisher,
-      language,
+      title: title.trim(),
       publicationYear: parseInt(publicationYear, 10),
       sellingPrice: parseFloat(sellingPrice),
       stockQuantity: parseInt(stockQuantity, 10),
       isBorrowable: true,
       isForSale: true,
-      description,
+      ...(cleanIsbn && { isbn: cleanIsbn }),
+      ...(cleanPublisher && { publisher: cleanPublisher }),
+      ...(cleanLanguage && { language: cleanLanguage }),
+      ...(cleanDescription && { description: cleanDescription }),
       coverImage: coverImage || undefined,
       pdfUrl: pdfUrl || undefined,
-      authorIds: [selectedAuthorId],
-      categoryIds: [selectedCategoryId]
+      ...(cleanAuthorIds && { authorIds: cleanAuthorIds }),
+      ...(cleanCategoryIds && { categoryIds: cleanCategoryIds }),
     };
 
     try {

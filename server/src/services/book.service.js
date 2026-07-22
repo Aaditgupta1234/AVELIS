@@ -156,6 +156,8 @@ export const getBooks = async (query) => {
         publicationYear: true,
         language: true,
         coverImage: true,
+        pdfUrl: true,
+        description: true,
         sellingPrice: true,
         stockQuantity: true,
         isBorrowable: true,

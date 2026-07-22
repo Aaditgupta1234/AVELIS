@@ -265,20 +265,27 @@ export const updateBookValidator = (req, res, next) => {
   // Helper for ID array validations (UUID arrays)
   const validateIdArray = (ids, fieldName) => {
     if (ids !== undefined && ids !== null) {
-      if (!Array.isArray(ids) || ids.length === 0) {
-        errors.push({ field: fieldName, message: `${fieldName} must be a non-empty array.` });
-      } else {
-        if (new Set(ids).size !== ids.length) {
-          errors.push({ field: fieldName, message: `${fieldName} cannot contain duplicate IDs.` });
-        }
-        ids.forEach((id, index) => {
-          if (typeof id !== 'string' || id.trim() === '' || !UUID_REGEX.test(id.trim())) {
-            errors.push({ field: `${fieldName}[${index}]`, message: `${fieldName.slice(0, -3)} ID must be a valid UUID string.` });
-          } else {
-            ids[index] = id.trim();
-          }
-        });
+      if (!Array.isArray(ids)) {
+        errors.push({ field: fieldName, message: `${fieldName} must be an array.` });
+        return;
       }
+      const filtered = ids.filter((id) => typeof id === 'string' && id.trim() !== '');
+      if (filtered.length === 0) {
+        // Omit field if array contains no valid IDs
+        delete req.body[fieldName];
+        return;
+      }
+      if (new Set(filtered).size !== filtered.length) {
+        errors.push({ field: fieldName, message: `${fieldName} cannot contain duplicate IDs.` });
+      }
+      filtered.forEach((id, index) => {
+        if (!UUID_REGEX.test(id.trim())) {
+          errors.push({ field: `${fieldName}[${index}]`, message: `${fieldName.slice(0, -3)} ID must be a valid UUID string.` });
+        } else {
+          filtered[index] = id.trim();
+        }
+      });
+      req.body[fieldName] = filtered;
     }
   };
 
