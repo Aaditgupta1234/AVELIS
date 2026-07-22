@@ -58,6 +58,9 @@ export const BookDetailsPage = () => {
   const availableCopy = book?.copies?.find((copy) => copy.status === "AVAILABLE");
   const availableCopyId = availableCopy?.id;
   const hasAvailableCopy = !!availableCopyId;
+  const availableCopiesCount = Array.isArray(book?.copies)
+    ? book.copies.filter((copy) => copy.status === "AVAILABLE").length
+    : (book?.stockQuantity || 0);
   const isReservedByMe = hasActiveReservation(id);
 
   const handleReserve = async () => {
@@ -312,8 +315,8 @@ export const BookDetailsPage = () => {
                 </div>
                 <div>
                   <span className="block font-display text-[9px] tracking-[0.2em] text-[#F7F5EE]/45 uppercase mb-1">Availability</span>
-                  <span className={`font-body text-xs font-semibold ${book.stockQuantity > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                    {book.stockQuantity > 0 ? `${book.stockQuantity} volumes in stock` : "Checked Out"}
+                  <span className={`font-body text-xs font-semibold ${availableCopiesCount > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {availableCopiesCount > 0 ? `${availableCopiesCount} copies available` : "Checked Out"}
                   </span>
                 </div>
                 <div>
