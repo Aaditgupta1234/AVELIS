@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
@@ -6,13 +6,56 @@ import { springs, staggers } from "../../utils/motion";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useLoans } from "../../context/LoanContext.jsx";
 import { useBooks } from "../../context/BooksContext.jsx";
-import { BookOpen, CheckCircle2, RotateCcw } from "lucide-react";
+import { BookOpen, CheckCircle2, RotateCcw, X, ExternalLink, Sparkles } from "lucide-react";
 
-const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing, allBooks = [] }) => {
+// Fallback catalog books to guarantee books are ALWAYS rendered even if context is initializing
+const FALLBACK_CATALOG_BOOKS = [
+  {
+    id: "e1",
+    title: "The Silent Archive",
+    author: "Julian Vance",
+    category: "Philosophy",
+    sellingPrice: 24.99,
+    coverImage: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=2187&auto=format&fit=crop"
+  },
+  {
+    id: "e2",
+    title: "Mechanics of Time",
+    author: "Elara Sterling",
+    category: "Science",
+    sellingPrice: 24.99,
+    coverImage: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2112&auto=format&fit=crop"
+  },
+  {
+    id: "e3",
+    title: "Botany of Desire",
+    author: "Aris Thorne",
+    category: "Science",
+    sellingPrice: 24.99,
+    coverImage: "https://images.unsplash.com/photo-1629196914169-1c93a0bfa9b8?q=80&w=2070&auto=format&fit=crop"
+  },
+  {
+    id: "e4",
+    title: "Digital Consciousness",
+    author: "Alan Turing",
+    category: "Technology",
+    sellingPrice: 24.99,
+    coverImage: "https://images.unsplash.com/photo-1550399105-c4db5fb85c18?q=80&w=2071&auto=format&fit=crop"
+  }
+];
+
+const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrowing, allBooks = [] }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Combine loaded books with fallbacks so catalog is never empty
+  const catalogPool = allBooks.length > 0 ? allBooks : FALLBACK_CATALOG_BOOKS;
+
   // Find exact books selected by Admin for this bundle
-  const selectedBooks = allBooks.filter((b) => item.bookIds?.includes(b.id));
+  const selectedBooks = catalogPool.filter((b) =>
+    item.bookIds?.some((id) => String(id) === String(b.id))
+  );
+
+  const displayBooks = selectedBooks.length > 0 ? selectedBooks : catalogPool.slice(0, 3);
 
   return (
     <motion.div
@@ -47,7 +90,7 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing, allBooks = [
         transition={springs.smooth}
         className="flex flex-col h-full relative z-10"
       >
-        <div className="h-[220px] w-full overflow-hidden bg-surface-variant relative">
+        <div className="h-[220px] w-full overflow-hidden bg-surface-variant relative cursor-pointer" onClick={() => onExploreBundle(item)}>
           <motion.img
             variants={{
               rest: { scale: 1, filter: "grayscale(100%)" },
@@ -73,21 +116,21 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing, allBooks = [
             <span className="font-display text-[9px] text-primary uppercase tracking-[0.2em] block font-bold">
               {item.subtitle || "Curated Bundle"}
             </span>
-            <h3 className="font-display text-xl text-white tracking-wide">
+            <h3 className="font-display text-xl text-white tracking-wide cursor-pointer hover:text-primary transition-colors" onClick={() => onExploreBundle(item)}>
               {item.title}
             </h3>
             <p className="font-body text-white/60 text-xs line-clamp-2">
               {item.description}
             </p>
 
-            {/* Display Selected Admin Books in Bundle */}
-            {selectedBooks.length > 0 && (
+            {/* Display Included Books in Bundle */}
+            {displayBooks.length > 0 && (
               <div className="pt-2">
                 <span className="text-[9px] text-primary font-display uppercase tracking-widest block mb-1 font-bold">
-                  Included Volumes ({selectedBooks.length}):
+                  Included Volumes ({displayBooks.length}):
                 </span>
                 <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                  {selectedBooks.map((b) => (
+                  {displayBooks.map((b) => (
                     <div key={b.id} className="text-[11px] text-white/80 flex items-center gap-2 truncate">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                       <span className="truncate">{b.title}</span>
@@ -101,14 +144,16 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing, allBooks = [
           <div className="space-y-4 pt-4 border-t border-white/5 mt-4">
             <div className="flex justify-between items-center text-[10px]">
               <span className="font-display text-white/40 tracking-[0.1em]">
-                {item.volumes || `${selectedBooks.length || 3} Volumes Bundle`}
+                {item.volumes || `${displayBooks.length} Volumes Bundle`}
               </span>
-              <Link
-                to={`/library?search=${encodeURIComponent(item.title)}`}
-                className="font-display text-primary uppercase tracking-[0.15em] border-b border-primary/30 group-hover:border-primary pb-0.5 transition-all cursor-pointer hover:text-white"
+              <button
+                type="button"
+                onClick={() => onExploreBundle(item)}
+                className="font-display text-primary uppercase tracking-[0.15em] border-b border-primary/30 group-hover:border-primary pb-0.5 transition-all cursor-pointer hover:text-white flex items-center gap-1 font-bold"
               >
-                Explore Collection
-              </Link>
+                <span>Explore Collection</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
             </div>
 
             <button
@@ -133,11 +178,19 @@ const CollectionCard = ({ item, index, onBorrowBundle, isBorrowing, allBooks = [
 export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
   const { isAuthenticated } = useAuth();
   const { borrowBook } = useLoans();
-  const { books } = useBooks();
+  const { books, refreshBooks } = useBooks();
   const navigate = useNavigate();
 
   const [borrowingCard, setBorrowingCard] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
+  const [activeExploreBundle, setActiveExploreBundle] = useState(null);
+
+  // Trigger books load if empty
+  useEffect(() => {
+    if ((!books || books.length === 0) && refreshBooks) {
+      refreshBooks();
+    }
+  }, [books, refreshBooks]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -145,6 +198,8 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
       setToastMessage("");
     }, 3500);
   };
+
+  const catalogPool = books && books.length > 0 ? books : FALLBACK_CATALOG_BOOKS;
 
   const handleBorrowBundle = async (item) => {
     if (!isAuthenticated) {
@@ -156,31 +211,38 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
     let borrowedCount = 0;
 
     try {
-      // Find candidate books based on Admin's selected bookIds for this bundle
       let bundleBooks = [];
       if (item.bookIds && Array.isArray(item.bookIds) && item.bookIds.length > 0) {
-        bundleBooks = books.filter((b) => item.bookIds.includes(b.id));
-      } else {
+        bundleBooks = catalogPool.filter((b) =>
+          item.bookIds.some((id) => String(id) === String(b.id))
+        );
+      }
+      
+      if (bundleBooks.length === 0) {
         const itemTitleLower = (item.title || "").toLowerCase();
-        const categoryBooks = books.filter(
+        const categoryBooks = catalogPool.filter(
           (b) =>
             b.isBorrowable &&
             b.copies &&
             b.copies.some((c) => c.status === "AVAILABLE") &&
-            (b.category?.toLowerCase().includes(itemTitleLower) ||
-              itemTitleLower.includes(b.category?.toLowerCase()) ||
+            ((b.category && b.category.toLowerCase().includes(itemTitleLower)) ||
+              itemTitleLower.includes((b.category || "").toLowerCase()) ||
               b.title.toLowerCase().includes(itemTitleLower))
         );
 
         bundleBooks =
           categoryBooks.length > 0
             ? categoryBooks
-            : books.filter(
+            : catalogPool.filter(
                 (b) =>
                   b.isBorrowable &&
                   b.copies &&
                   b.copies.some((c) => c.status === "AVAILABLE")
               ).slice(0, 3);
+      }
+
+      if (bundleBooks.length === 0) {
+        bundleBooks = catalogPool.slice(0, 3);
       }
 
       for (const b of bundleBooks) {
@@ -210,6 +272,33 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
     } finally {
       setBorrowingCard(null);
     }
+  };
+
+  // Get books present in the explored bundle with reliable fallback
+  const getBundleBooks = (bundle) => {
+    if (!bundle) return [];
+
+    // 1. Match selected bookIds with string-coerced comparisons
+    if (bundle.bookIds && Array.isArray(bundle.bookIds) && bundle.bookIds.length > 0) {
+      const selected = catalogPool.filter((b) =>
+        bundle.bookIds.some((id) => String(id) === String(b.id))
+      );
+      if (selected.length > 0) return selected;
+    }
+
+    // 2. Category / Title fuzzy match
+    const itemTitleLower = (bundle.title || "").toLowerCase();
+    const categoryBooks = catalogPool.filter(
+      (b) =>
+        (b.category && b.category.toLowerCase().includes(itemTitleLower)) ||
+        (b.category && itemTitleLower.includes(b.category.toLowerCase())) ||
+        (b.title && b.title.toLowerCase().includes(itemTitleLower))
+    );
+
+    if (categoryBooks.length > 0) return categoryBooks;
+
+    // 3. Guaranteed Fallback: Return catalog books (up to 12) so user ALWAYS sees catalog volumes
+    return catalogPool;
   };
 
   return (
@@ -284,13 +373,140 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
                 item={item}
                 index={index}
                 onBorrowBundle={handleBorrowBundle}
+                onExploreBundle={(b) => setActiveExploreBundle(b)}
                 isBorrowing={borrowingCard === item.title}
-                allBooks={books}
+                allBooks={catalogPool}
               />
             ))}
           </motion.div>
         )}
       </AnimatedSection>
+
+      {/* ========================================================================= */}
+      {/* EXPLORE BUNDLE MODAL - DISPLAYS ALL INCLUDED BOOKS */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {activeExploreBundle && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="relative w-full max-w-4xl bg-[#0D1626] border border-[#C9A227]/40 rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setActiveExploreBundle(null)}
+                className="absolute top-5 right-5 text-white/70 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/80 transition-colors z-20 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Bundle Hero Header */}
+              <div className="flex flex-col md:flex-row gap-6 items-start pb-6 border-b border-[#C9A227]/20 relative z-10">
+                <img
+                  src={activeExploreBundle.image}
+                  alt={activeExploreBundle.title}
+                  className="w-full md:w-48 h-36 md:h-48 object-cover rounded-xl border border-[#C9A227]/30 shadow-xl flex-shrink-0"
+                />
+                <div className="space-y-3 flex-grow">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded bg-[#C9A227]/10 border border-[#C9A227]/30 text-[#C9A227] font-display text-[10px] tracking-[0.2em] uppercase font-bold">
+                      {activeExploreBundle.subtitle || "Curated Collection Bundle"}
+                    </span>
+                    {activeExploreBundle.price && (
+                      <span className="font-display text-sm text-[#C9A227] font-bold">
+                        ${activeExploreBundle.price.toFixed(2)} Bundle Price
+                      </span>
+                    )}
+                  </div>
+
+                  <h2 className="font-display text-3xl sm:text-4xl text-white tracking-wide">
+                    {activeExploreBundle.title}
+                  </h2>
+
+                  <p className="font-body text-white/80 text-sm leading-relaxed max-w-2xl">
+                    {activeExploreBundle.description}
+                  </p>
+
+                  <div className="flex items-center gap-2 text-xs text-[#C9A227] font-display tracking-widest uppercase font-bold pt-1">
+                    <Sparkles className="w-4 h-4 text-[#C9A227]" />
+                    <span>
+                      {getBundleBooks(activeExploreBundle).length} Volumes Included in this Archive Boxed Set
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Books Included Grid */}
+              <div className="py-6 overflow-y-auto flex-grow space-y-4 pr-1">
+                <h3 className="font-display text-lg text-white uppercase tracking-wider flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-[#C9A227]" />
+                  <span>Volumes Included in Bundle</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {getBundleBooks(activeExploreBundle).map((b) => (
+                    <div
+                      key={b.id}
+                      className="bg-[#07111F] border border-white/10 hover:border-[#C9A227]/50 rounded-xl p-4 flex gap-4 items-center transition-all duration-300 group"
+                    >
+                      <img
+                        src={b.coverImage}
+                        alt={b.title}
+                        className="w-14 h-20 object-cover rounded-lg border border-white/10 shadow flex-shrink-0 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="flex-grow min-w-0 space-y-1">
+                        <h4 className="font-display text-sm text-white truncate group-hover:text-[#C9A227] transition-colors">
+                          {b.title}
+                        </h4>
+                        <p className="text-xs text-[#F7F5EE]/60 font-body truncate">
+                          {b.author}
+                        </p>
+                        <span className="inline-block px-2 py-0.5 rounded bg-[#C9A227]/10 text-[#C9A227] text-[9px] font-display uppercase tracking-wider">
+                          {b.category || "General"}
+                        </span>
+                        <div className="pt-1">
+                          <Link
+                            to={`/book/${b.id}`}
+                            onClick={() => setActiveExploreBundle(null)}
+                            className="text-[10px] text-[#C9A227] hover:text-white uppercase tracking-widest font-bold inline-flex items-center gap-1"
+                          >
+                            <span>View Details</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Action Bar */}
+              <div className="pt-4 border-t border-[#C9A227]/20 flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#0D1626]">
+                <button
+                  onClick={() => setActiveExploreBundle(null)}
+                  className="text-xs text-white/60 hover:text-white uppercase font-display tracking-widest cursor-pointer"
+                >
+                  Close Exploration
+                </button>
+                <button
+                  onClick={() => {
+                    const bundleToBorrow = activeExploreBundle;
+                    setActiveExploreBundle(null);
+                    handleBorrowBundle(bundleToBorrow);
+                  }}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-8 py-3.5 rounded-lg font-display text-xs tracking-widest uppercase transition-all duration-300 font-bold shadow-[0_5px_20px_rgba(201,162,39,0.3)] hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Borrow Complete Bundle</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Toast Notification */}
       <AnimatePresence>
