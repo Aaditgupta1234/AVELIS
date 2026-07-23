@@ -49,6 +49,19 @@ export const deleteReview = async (reviewId, options = {}) => {
 };
 
 /**
+ * Service to update an existing review by ID.
+ *
+ * @param {string} reviewId - The UUID of the review
+ * @param {Object} updateData - { comment, rating }
+ * @param {Object} [options] - Additional request options
+ * @returns {Promise<Object>} The updated review DTO
+ */
+export const updateReview = async (reviewId, updateData, options = {}) => {
+  const response = await apiClient.patch(`/reviews/${reviewId}`, updateData, options);
+  return response.data.data;
+};
+
+/**
  * Service to retrieve all reviews submitted by the current authenticated user.
  *
  * @param {Object} [options] - Additional request options

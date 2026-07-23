@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { easeOut } from "../../utils/motion";
 
-export const ReflectionCard = ({ reflection, isFeatured = false }) => {
+export const ReflectionCard = ({ reflection, isFeatured = false, currentUserId, onEdit, onDelete }) => {
   if (!reflection) return null;
 
   const isPrivate = reflection.visibility === "private";
@@ -9,6 +9,7 @@ export const ReflectionCard = ({ reflection, isFeatured = false }) => {
   const content = reflection.content || "";
   const dateStr = reflection.date || "";
   const authorName = reflection.authorName || (isPrivate ? "Personal Note" : "Community Scholar");
+  const isOwner = isPrivate || (currentUserId && reflection.userId === currentUserId);
 
   return (
     <motion.article
@@ -48,20 +49,61 @@ export const ReflectionCard = ({ reflection, isFeatured = false }) => {
           {/* Featured Content */}
           <div className="flex-grow flex flex-col justify-between">
             <div>
-              <div className="flex flex-wrap items-center gap-3 mb-4 text-primary">
-                <span className="material-symbols-outlined text-sm select-none">public</span>
-                <span className="font-body text-[10px] tracking-[0.2em] uppercase font-bold">
-                  Public Reflection ({authorName})
-                </span>
-                {reflection.readingTime && (
-                  <>
-                    <span className="text-outline-variant/40 select-none">•</span>
-                    <span className="font-body text-[10px] text-on-surface-variant/70 tracking-wider font-semibold uppercase">
-                      {reflection.readingTime}
-                    </span>
-                  </>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3 text-primary">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm select-none">public</span>
+                  <span className="font-body text-[10px] tracking-[0.2em] uppercase font-bold">
+                    Public Reflection ({authorName})
+                  </span>
+                  {reflection.readingTime && (
+                    <>
+                      <span className="text-outline-variant/40 select-none">•</span>
+                      <span className="font-body text-[10px] text-on-surface-variant/70 tracking-wider font-semibold uppercase">
+                        {reflection.readingTime}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Edit & Delete Action Buttons */}
+                {isOwner && (
+                  <div className="flex items-center gap-2">
+                    {onEdit && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(reflection);
+                        }}
+                        className="px-2 py-1 rounded bg-white/10 hover:bg-[#C9A227] text-[#C9A227] hover:text-[#07111F] font-display text-[9px] uppercase font-bold tracking-wider transition-all cursor-pointer flex items-center gap-1"
+                        title="Edit Reflection"
+                      >
+                        <span className="material-symbols-outlined text-xs select-none">edit</span>
+                        <span>Edit</span>
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(reflection);
+                        }}
+                        className="px-2 py-1 rounded bg-white/10 hover:bg-rose-500 text-rose-400 hover:text-white font-display text-[9px] uppercase font-bold tracking-wider transition-all cursor-pointer flex items-center gap-1"
+                        title="Delete Reflection"
+                      >
+                        <span className="material-symbols-outlined text-xs select-none">delete</span>
+                        <span>Delete</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
+
+              {reflection.bookTitle && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#C9A227]/10 border border-[#C9A227]/30 text-[#C9A227] font-display text-[10px] uppercase font-bold tracking-widest mb-3">
+                  <span className="material-symbols-outlined text-xs select-none">menu_book</span>
+                  <span>Volume: {reflection.bookTitle} {reflection.bookAuthor ? `— by ${reflection.bookAuthor}` : ""}</span>
+                </div>
+              )}
 
               <h3 className="font-display text-2xl md:text-3xl text-on-surface mb-4 leading-snug">
                 {title}
@@ -93,23 +135,62 @@ export const ReflectionCard = ({ reflection, isFeatured = false }) => {
         <>
           {/* Standard Grid Card Content */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <span
-                className={`material-symbols-outlined text-sm select-none ${
-                  isPrivate ? "text-on-surface-variant/60" : "text-primary"
-                }`}
-                style={{ fontVariationSettings: isPrivate ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                {isPrivate ? "lock" : "public"}
-              </span>
-              <span
-                className={`font-body text-[10px] tracking-[0.2em] uppercase font-bold ${
-                  isPrivate ? "text-on-surface-variant/60" : "text-primary"
-                }`}
-              >
-                {isPrivate ? "Private Entry" : `Public (${authorName})`}
-              </span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`material-symbols-outlined text-sm select-none ${
+                    isPrivate ? "text-on-surface-variant/60" : "text-primary"
+                  }`}
+                  style={{ fontVariationSettings: isPrivate ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  {isPrivate ? "lock" : "public"}
+                </span>
+                <span
+                  className={`font-body text-[10px] tracking-[0.2em] uppercase font-bold ${
+                    isPrivate ? "text-on-surface-variant/60" : "text-primary"
+                  }`}
+                >
+                  {isPrivate ? "Private Entry" : `Public (${authorName})`}
+                </span>
+              </div>
+
+              {/* Edit & Delete Action Buttons for Standard Card */}
+              {isOwner && (
+                <div className="flex items-center gap-1">
+                  {onEdit && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(reflection);
+                      }}
+                      className="p-1 rounded bg-white/5 hover:bg-[#C9A227]/20 text-[#C9A227] transition-colors cursor-pointer"
+                      title="Edit Reflection"
+                    >
+                      <span className="material-symbols-outlined text-xs select-none">edit</span>
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(reflection);
+                      }}
+                      className="p-1 rounded bg-white/5 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                      title="Delete Reflection"
+                    >
+                      <span className="material-symbols-outlined text-xs select-none">delete</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+
+            {reflection.bookTitle && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#C9A227]/10 border border-[#C9A227]/30 text-[#C9A227] font-display text-[9px] uppercase font-bold tracking-widest mb-3">
+                <span className="material-symbols-outlined text-xs select-none">menu_book</span>
+                <span>{reflection.bookTitle} {reflection.bookAuthor ? `(${reflection.bookAuthor})` : ""}</span>
+              </div>
+            )}
 
             <h3 className="font-display text-lg md:text-xl text-on-surface mb-3 leading-snug">
               {title}

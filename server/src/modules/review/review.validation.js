@@ -32,7 +32,7 @@ export const createReviewValidator = (req, res, next) => {
     errors.push({ field: 'rating', message: 'rating is required.' });
   } else {
     const ratingVal = Number(rating);
-    if (!Number.isInteger(rating) || ratingVal < 1 || ratingVal > 5) {
+    if (!Number.isInteger(ratingVal) || ratingVal < 1 || ratingVal > 5) {
       errors.push({ field: 'rating', message: 'rating must be an integer between 1 and 5.' });
     } else {
       req.body.rating = ratingVal;

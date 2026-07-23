@@ -27,7 +27,17 @@ export const REVIEW_SELECT = {
     select: {
       id: true,
       title: true,
-      isbn: true
+      coverImage: true,
+      isbn: true,
+      authors: {
+        select: {
+          author: {
+            select: {
+              fullName: true
+            }
+          }
+        }
+      }
     }
   }
 };

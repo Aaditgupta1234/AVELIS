@@ -453,6 +453,14 @@ export const BookDetailsPage = () => {
                   <ShoppingBag className="w-4 h-4 text-[#C9A227]" />
                   <span>BUY NOW (${Number(book?.sellingPrice || 24.99).toFixed(2)})</span>
                 </button>
+
+                <button
+                  onClick={() => navigate("/journal", { state: { prefilledBookTitle: book.title } })}
+                  className="flex items-center justify-center gap-2 border border-white/20 hover:border-[#C9A227] text-white/80 hover:text-white bg-white/5 hover:bg-[#C9A227]/10 px-6 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 text-[#C9A227]" />
+                  <span>Write Reflection</span>
+                </button>
               </div>
             </div>
           </div>

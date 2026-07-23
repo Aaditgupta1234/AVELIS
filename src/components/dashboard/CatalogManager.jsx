@@ -5,6 +5,7 @@ import { mapBookToUI } from "../../mappers/book.mapper.js";
 import { mockCollections } from "../../data/collections.js";
 import { uploadBookCover, uploadBookPdf } from "../../services/upload.service.js";
 import { getBundlesApi, createBundleApi, updateBundleApi, deleteBundleApi } from "../../api/bundle.api.js";
+import { getAllPublicReviews, deleteReview } from "../../services/review.service.js";
 import {
   Trash2,
   Edit,
@@ -24,6 +25,8 @@ import {
   CheckSquare,
   Upload,
   FileText,
+  MessageSquare,
+  RotateCcw,
   Image as ImageIcon
 } from "lucide-react";
 
@@ -63,7 +66,66 @@ export const CatalogManager = () => {
   }, []);
 
   // Admin Hub Main Section Tabs
-  const [adminTab, setAdminTab] = useState("catalog"); // "catalog" | "hero" | "bundles"
+  const [adminTab, setAdminTab] = useState("catalog"); // "catalog" | "hero" | "bundles" | "reflections"
+
+  // -------------------------------------------------------------
+  // TAB 4: MEMBER JOURNAL REFLECTIONS MODERATION STATE
+  // -------------------------------------------------------------
+  const [publicReflections, setPublicReflections] = useState([]);
+  const [reflectionsLoading, setReflectionsLoading] = useState(false);
+
+  const fetchPublicReflections = async () => {
+    setReflectionsLoading(true);
+    try {
+      const reviews = await getAllPublicReviews();
+      if (Array.isArray(reviews)) {
+        const mapped = reviews.map((rev) => {
+          const lines = (rev.comment || "").split("\n\n");
+          const titleStr = lines.length > 1 ? lines[0] : (rev.book?.title ? `Meditation: ${rev.book.title}` : "Archival Meditation");
+          const contentStr = lines.length > 1 ? lines.slice(1).join("\n\n") : rev.comment;
+
+          return {
+            id: rev.id,
+            userId: rev.user?.id,
+            authorName: rev.user?.username || "Member Scholar",
+            title: titleStr,
+            content: contentStr || `Rated ${rev.rating}/5 stars.`,
+            bookTitle: rev.book?.title,
+            bookAuthor: rev.book?.authors?.[0]?.author?.fullName,
+            coverImage: rev.book?.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+            date: new Date(rev.createdAt || Date.now()).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            readingTime: `${Math.max(2, Math.ceil((contentStr || "").split(/\s+/).length / 200))} min read`,
+          };
+        });
+        setPublicReflections(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to fetch public reflections for admin:", err);
+    } finally {
+      setReflectionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === "reflections") {
+      fetchPublicReflections();
+    }
+  }, [adminTab]);
+
+  const handleDeleteReflection = async (reviewId) => {
+    if (!window.confirm("Are you sure you want to remove this public reflection post?")) return;
+    try {
+      await deleteReview(reviewId);
+      setPublicReflections((prev) => prev.filter((r) => r.id !== reviewId));
+      showToast("Public reflection removed successfully.");
+    } catch (err) {
+      showToast(`Failed to remove reflection: ${err.message}`);
+    }
+  };
 
   // -------------------------------------------------------------
   // TAB 1: BOOK CATALOG & PRICE MANAGER STATE
@@ -593,6 +655,17 @@ export const CatalogManager = () => {
             <Package className="w-3.5 h-3.5" />
             <span>Curated Bundles</span>
           </button>
+          <button
+            onClick={() => setAdminTab("reflections")}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
+              adminTab === "reflections"
+                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                : "text-[#F7F5EE]/70 hover:text-white"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Journal Reflections</span>
+          </button>
         </div>
       </div>
 
@@ -940,6 +1013,90 @@ export const CatalogManager = () => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: MEMBER JOURNAL REFLECTIONS MODERATION */}
+      {/* ========================================================================= */}
+      {adminTab === "reflections" && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-display text-xl text-white uppercase tracking-wider">
+                Member Journal Reflections Moderation
+              </h3>
+              <p className="text-xs text-[#F7F5EE]/60 font-body mt-1">
+                View all public journal entries posted by scholars, review linked library volumes, and moderate public posts.
+              </p>
+            </div>
+            <button
+              onClick={fetchPublicReflections}
+              className="flex items-center gap-2 bg-[#C9A227]/20 border border-[#C9A227]/40 hover:bg-[#C9A227]/30 text-[#C9A227] px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Refresh Feed</span>
+            </button>
+          </div>
+
+          {reflectionsLoading ? (
+            <div className="p-12 text-center text-xs text-[#F7F5EE]/60">Loading public reflections...</div>
+          ) : publicReflections.length === 0 ? (
+            <div className="p-12 text-center text-xs text-[#F7F5EE]/50 bg-[#07111F] rounded-xl border border-white/5">
+              No public member journal reflections currently posted.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {publicReflections.map((ref) => (
+                <div
+                  key={ref.id}
+                  className="bg-[#07111F] border border-[rgba(201,162,39,0.2)] rounded-xl p-6 shadow-xl flex flex-col justify-between space-y-4"
+                >
+                  <div className="flex gap-4">
+                    {ref.coverImage && (
+                      <img
+                        src={ref.coverImage}
+                        alt={ref.bookTitle || ref.title}
+                        className="w-16 h-24 object-cover rounded border border-white/10 flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0 flex-grow space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-[#C9A227] font-display uppercase tracking-widest font-bold">
+                          By {ref.authorName || "Member Scholar"}
+                        </span>
+                        <span className="text-[10px] text-white/40">{ref.date}</span>
+                      </div>
+
+                      {ref.bookTitle && (
+                        <div className="text-[10px] text-[#C9A227]/90 font-display uppercase tracking-wider truncate font-semibold">
+                          Linked Volume: {ref.bookTitle}
+                        </div>
+                      )}
+
+                      <h4 className="font-display text-base text-white truncate">{ref.title}</h4>
+                      <p className="font-body text-xs text-[#F7F5EE]/70 line-clamp-3 italic">
+                        "{ref.content}"
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/5 flex justify-between items-center">
+                    <span className="text-[10px] text-white/40 uppercase tracking-widest">
+                      {ref.readingTime || "3 min read"}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteReflection(ref.id)}
+                      className="px-3 py-1.5 border border-rose-500/30 text-rose-400 rounded hover:bg-rose-500/10 font-display text-[10px] tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Post</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

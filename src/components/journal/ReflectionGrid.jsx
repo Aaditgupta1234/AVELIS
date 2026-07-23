@@ -4,7 +4,7 @@ import { ReflectionCard } from "./ReflectionCard";
 import { AnimatedSection } from "../ui/AnimatedSection";
 import { springs } from "../../utils/motion";
 
-export const ReflectionGrid = ({ reflections = [], currentUserId }) => {
+export const ReflectionGrid = ({ reflections = [], currentUserId, onEdit, onDelete }) => {
   const [activeFilter, setActiveFilter] = useState("all");
 
   const safeReflections = Array.isArray(reflections) ? reflections.filter(Boolean) : [];
@@ -69,7 +69,13 @@ export const ReflectionGrid = ({ reflections = [], currentUserId }) => {
             const isFeatured = index === 0 && (activeFilter === "all" || ref.visibility === "public");
             return (
               <div key={ref.id || `ref-${index}`} className={isFeatured ? "md:col-span-8" : "md:col-span-4"}>
-                <ReflectionCard reflection={ref} isFeatured={isFeatured} />
+                <ReflectionCard
+                  reflection={ref}
+                  isFeatured={isFeatured}
+                  currentUserId={currentUserId}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
               </div>
             );
           })}
