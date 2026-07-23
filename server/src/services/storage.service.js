@@ -1,165 +1,257 @@
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
+import path from 'path';
 import { supabase } from '../lib/supabase.js';
 import { config } from '../config/index.js';
+import { ApiError } from '../utils/index.js';
+import { logger } from '../config/logger.js';
+
+// Configuration & Validation Rules
+const ALLOWED_MIME_TYPES = {
+  'book-covers': ['image/jpeg', 'image/png', 'image/webp'],
+  'book-pdfs': ['application/pdf'],
+};
+
+const ALLOWED_EXTENSIONS = {
+  'book-covers': ['.jpg', '.jpeg', '.png', '.webp'],
+  'book-pdfs': ['.pdf'],
+};
+
+const MAX_FILE_SIZES = {
+  'book-covers': 5 * 1024 * 1024,   // 5 MB
+  'book-pdfs': 100 * 1024 * 1024,   // 100 MB
+};
+
+let isInitialized = false;
 
 /**
- * Storage Service — Hybrid Supabase Storage with Local Dev Fallback.
+ * Read-Only Server Startup Check.
+ * Verifies Supabase credentials and ensures target storage buckets exist and are accessible.
+ */
+export const initializeStorageService = async () => {
+  const url = config.supabaseUrl;
+  const key = config.supabaseSecretKey;
+
+  if (!url || typeof url !== 'string' || !url.trim() || !key || typeof key !== 'string' || !key.trim()) {
+    const errorMsg = '[StorageService] Supabase configuration missing (SUPABASE_URL or SUPABASE_SECRET_KEY).';
+    logger.error(errorMsg);
+    throw new ApiError(500, errorMsg);
+  }
+
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    if (error) {
+      const errorMsg = `[StorageService] Failed to list Supabase buckets: ${error.message}`;
+      logger.error(errorMsg);
+      throw new ApiError(500, errorMsg);
+    }
+
+    const bucketNames = Array.isArray(buckets) ? buckets.map((b) => b.name || b.id) : [];
+    const requiredBuckets = ['book-covers', 'book-pdfs'];
+    const missingBuckets = requiredBuckets.filter((b) => !bucketNames.includes(b));
+
+    if (missingBuckets.length > 0) {
+      const errorMsg = `[StorageService] Missing required storage bucket(s): ${missingBuckets.join(', ')}. Create them in Supabase Storage.`;
+      logger.error(errorMsg);
+      throw new ApiError(500, errorMsg);
+    }
+
+    isInitialized = true;
+    logger.info('[StorageService] Supabase Storage initialization & read-only bucket verification succeeded.', {
+      buckets: requiredBuckets,
+    });
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    const errorMsg = `[StorageService] Initialization exception: ${err.message}`;
+    logger.error(errorMsg);
+    throw new ApiError(500, errorMsg);
+  }
+};
+
+/**
+ * Storage Service — Pure Supabase Storage Management (No Local Disk Fallback)
  */
 class StorageService {
   /**
-   * Helper to build date-organized path: `folder/YYYY/MM/prefix-uuid.ext`
+   * Helper to build date-organized path: `<bucket>/YYYY/MM/<uuid>.<ext>`
    */
-  generateDateOrganizedPath(folderPrefix, extension) {
+  generateDateOrganizedPath(bucket, extension) {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const uuid = crypto.randomUUID();
-    const ext = extension ? extension.replace(/^\./, '') : 'bin';
+    const ext = extension ? extension.toLowerCase().replace(/^\./, '') : 'bin';
 
-    return `${folderPrefix}/${year}/${month}/${folderPrefix}-${uuid}.${ext}`;
+    return `${bucket}/${year}/${month}/${uuid}.${ext}`;
   }
 
   /**
-   * Check if Supabase URL and Secret Key are configured in environment variables.
+   * Validate file MIME type, extension, and file size server-side.
    */
-  isSupabaseConfigured() {
-    const url = config.supabaseUrl;
-    const key = config.supabaseSecretKey;
-    return (
-      typeof url === 'string' &&
-      url.trim().length > 0 &&
-      typeof key === 'string' &&
-      key.trim().length > 0
-    );
+  validateFile(bucket, mimeType, extension, fileSizeInBytes) {
+    const allowedMimes = ALLOWED_MIME_TYPES[bucket] || ALLOWED_MIME_TYPES['book-covers'];
+    const allowedExts = ALLOWED_EXTENSIONS[bucket] || ALLOWED_EXTENSIONS['book-covers'];
+    const maxSize = MAX_FILE_SIZES[bucket] || MAX_FILE_SIZES['book-covers'];
+
+    const normalizedExt = extension ? (extension.startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`) : '';
+
+    if (mimeType && !allowedMimes.includes(mimeType.toLowerCase())) {
+      throw new ApiError(
+        400,
+        `Invalid file type (${mimeType}) for ${bucket}. Allowed types: ${allowedMimes.join(', ')}`
+      );
+    }
+
+    if (normalizedExt && !allowedExts.includes(normalizedExt)) {
+      throw new ApiError(
+        400,
+        `Invalid file extension (${normalizedExt}) for ${bucket}. Allowed extensions: ${allowedExts.join(', ')}`
+      );
+    }
+
+    if (fileSizeInBytes && fileSizeInBytes > maxSize) {
+      const maxMb = (maxSize / (1024 * 1024)).toFixed(0);
+      throw new ApiError(400, `File size exceeds the limit of ${maxMb} MB for ${bucket}.`);
+    }
   }
 
   /**
-   * Upload a file buffer. Attempts Supabase Storage first, falling back to local disk storage if unconfigured or error occurs.
+   * Safely extract relative storage path from a full CDN URL or path string.
+   */
+  extractPathFromUrl(fileUrl, bucket) {
+    if (!fileUrl || typeof fileUrl !== 'string') return null;
+
+    try {
+      const url = new URL(fileUrl);
+      const marker = `/${bucket}/`;
+      const index = url.pathname.indexOf(marker);
+
+      if (index === -1) return null;
+
+      const extracted = url.pathname
+        .substring(index + marker.length)
+        .replace(/^\/+/, '')
+        .replace(/\\/g, '/');
+
+      return extracted.length > 0 ? extracted : null;
+    } catch (_) {
+      // If it's already a relative path string
+      const marker = `${bucket}/`;
+      if (fileUrl.includes(marker)) {
+        const index = fileUrl.indexOf(marker);
+        return fileUrl.substring(index + marker.length).replace(/^\/+/, '');
+      }
+      return fileUrl.replace(/^\/+/, '');
+    }
+  }
+
+  /**
+   * Upload a file buffer directly to Supabase Storage.
    *
    * @param {string} bucket - Target bucket name ('book-covers' or 'book-pdfs')
-   * @param {Buffer} fileBuffer - In-memory file buffer from Multer
+   * @param {Buffer} fileBuffer - In-memory file buffer
    * @param {string} mimeType - File MIME type
-   * @param {string} extension - Extension without dot
-   * @param {string} folderPrefix - Folder prefix ('cover' or 'pdf')
-   * @returns {Promise<{ bucket: string, path: string, fileUrl: string }>}
+   * @param {string} originalName - Original filename or extension
+   * @returns {Promise<{ bucket: string, path: string, fileUrl: string, coverImage?: string, coverImagePath?: string, pdfUrl?: string, pdfPath?: string }>}
    */
-  async upload(bucket, fileBuffer, mimeType, extension, folderPrefix = 'file') {
-    const relPath = this.generateDateOrganizedPath(folderPrefix, extension);
+  async upload(bucket, fileBuffer, mimeType, originalName) {
+    if (!fileBuffer || !Buffer.isBuffer(fileBuffer)) {
+      throw new ApiError(400, 'Invalid file content provided for upload.');
+    }
 
-    // Attempt Supabase Cloud Storage upload
-    if (this.isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase.storage.from(bucket).upload(relPath, fileBuffer, {
-          contentType: mimeType,
-          upsert: true,
+    const extension = path.extname(originalName || '') || '.bin';
+    this.validateFile(bucket, mimeType, extension, fileBuffer.length);
+
+    const relPath = this.generateDateOrganizedPath(bucket, extension);
+    const cacheControl = process.env.SUPABASE_STORAGE_CACHE_CONTROL || '3600';
+
+    try {
+      const { data, error } = await supabase.storage.from(bucket).upload(relPath, fileBuffer, {
+        contentType: mimeType,
+        upsert: false,
+        cacheControl,
+      });
+
+      if (error) {
+        logger.error(`[UPLOAD_FAILED] Supabase storage upload error in bucket "${bucket}":`, {
+          error: error.message,
+          bucket,
+          path: relPath,
         });
-
-        if (!error && data) {
-          const fileUrl = this.getPublicUrl(bucket, data.path || relPath);
-          console.log(`[StorageService] Uploaded successfully to Supabase Storage bucket "${bucket}": ${fileUrl}`);
-          return {
-            bucket,
-            path: data.path || relPath,
-            fileUrl,
-          };
-        }
-        if (error) {
-          console.warn(`[StorageService] Supabase upload error (${error.message}). Falling back to local storage.`);
-        }
-      } catch (err) {
-        console.warn(`[StorageService] Supabase exception (${err.message}). Falling back to local storage.`);
+        throw new ApiError(500, `File upload to storage failed: ${error.message}`);
       }
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path || relPath);
+      const publicUrl = urlData?.publicUrl;
+
+      if (!publicUrl) {
+        throw new ApiError(500, 'Failed to generate public URL for uploaded file.');
+      }
+
+      logger.info(`[UPLOAD_SUCCESS] Uploaded object to ${bucket}`, {
+        bucket,
+        path: relPath,
+        publicUrl,
+      });
+
+      const isCover = bucket === 'book-covers';
+      return {
+        bucket,
+        path: relPath,
+        fileUrl: publicUrl,
+        ...(isCover
+          ? { coverImage: publicUrl, coverImagePath: relPath }
+          : { pdfUrl: publicUrl, pdfPath: relPath }),
+      };
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      logger.error(`[UPLOAD_FAILED] Storage upload exception in bucket "${bucket}":`, {
+        error: err.message,
+        bucket,
+      });
+      throw new ApiError(500, `Storage upload error: ${err.message}`);
     }
-
-    // Local Storage Fallback (for local development or if bucket does not exist)
-    const localDir = path.join(process.cwd(), 'uploads', bucket, path.dirname(relPath));
-    fs.mkdirSync(localDir, { recursive: true });
-
-    const fullLocalPath = path.join(process.cwd(), 'uploads', bucket, relPath);
-    fs.writeFileSync(fullLocalPath, fileBuffer);
-
-    const hostUrl = config.clientUrl ? config.clientUrl.replace(/:[0-9]+$/, `:${config.port}`) : `http://localhost:${config.port}`;
-    const fileUrl = `${hostUrl}/uploads/${bucket}/${relPath.replace(/\\/g, '/')}`;
-
-    console.log(`[StorageService] Uploaded to Local Fallback: ${fileUrl}`);
-
-    return {
-      bucket,
-      path: relPath,
-      fileUrl,
-    };
   }
 
   /**
-   * Delete an object from storage.
+   * Delete an object from Supabase Storage by path or URL.
+   *
+   * @param {string} bucket - Target bucket name ('book-covers' or 'book-pdfs')
+   * @param {string} urlOrPath - Storage path or full public URL
+   * @returns {Promise<{ success: boolean, reason?: string }>} Status object
    */
-  async delete(bucket, relPath) {
-    if (!relPath) return false;
-
-    if (this.isSupabaseConfigured()) {
-      try {
-        const { error } = await supabase.storage.from(bucket).remove([relPath]);
-        if (!error) return true;
-      } catch (_) {}
+  async delete(bucket, urlOrPath) {
+    if (!urlOrPath || typeof urlOrPath !== 'string') {
+      return { success: true };
     }
 
-    // Local deletion fallback
-    const fullLocalPath = path.join(process.cwd(), 'uploads', bucket, relPath);
-    if (fs.existsSync(fullLocalPath)) {
-      try {
-        fs.unlinkSync(fullLocalPath);
-        return true;
-      } catch (_) {}
-    }
-    return false;
-  }
+    const relPath = urlOrPath.includes('/') ? this.extractPathFromUrl(urlOrPath, bucket) || urlOrPath : urlOrPath;
+    const normalizedPath = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
 
-  /**
-   * Check if object exists in storage.
-   */
-  async exists(bucket, relPath) {
-    if (!relPath) return false;
+    try {
+      const { error } = await supabase.storage.from(bucket).remove([normalizedPath]);
 
-    if (this.isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase.storage.from(bucket).list(relPath.substring(0, relPath.lastIndexOf('/')), {
-          search: relPath.substring(relPath.lastIndexOf('/') + 1),
+      if (!error || error?.status === 404 || error?.code === 'NotFound' || error?.message?.toLowerCase().includes('not found')) {
+        logger.info(`[DELETE_SUCCESS] Removed object from ${bucket}`, {
+          bucket,
+          path: normalizedPath,
         });
-        if (!error && data && data.length > 0) return true;
-      } catch (_) {}
+        return { success: true };
+      }
+
+      logger.warn(`[DELETE_FAILED] Could not delete object from ${bucket}`, {
+        bucket,
+        path: normalizedPath,
+        reason: error?.message,
+      });
+      return { success: false, reason: error?.message || 'Supabase deletion failed' };
+    } catch (err) {
+      logger.warn(`[DELETE_FAILED] Exception deleting object from ${bucket}`, {
+        bucket,
+        path: normalizedPath,
+        reason: err.message,
+      });
+      return { success: false, reason: err.message };
     }
-
-    const fullLocalPath = path.join(process.cwd(), 'uploads', bucket, relPath);
-    return fs.existsSync(fullLocalPath);
-  }
-
-  /**
-   * Retrieve public URL.
-   */
-  getPublicUrl(bucket, relPath) {
-    if (this.isSupabaseConfigured()) {
-      const { data } = supabase.storage.from(bucket).getPublicUrl(relPath);
-      if (data?.publicUrl) return data.publicUrl;
-    }
-
-    const hostUrl = config.clientUrl ? config.clientUrl.replace(/:[0-9]+$/, `:${config.port}`) : `http://localhost:${config.port}`;
-    return `${hostUrl}/uploads/${bucket}/${relPath.replace(/\\/g, '/')}`;
-  }
-
-  /**
-   * Retrieve signed URL.
-   */
-  async getSignedUrl(bucket, relPath, expiresInSeconds = 3600) {
-    if (this.isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase.storage.from(bucket).createSignedUrl(relPath, expiresInSeconds);
-        if (!error && data?.signedUrl) return data.signedUrl;
-      } catch (_) {}
-    }
-
-    return this.getPublicUrl(bucket, relPath);
   }
 }
 

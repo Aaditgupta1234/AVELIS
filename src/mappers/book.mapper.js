@@ -42,7 +42,9 @@ export const mapBookToUI = (book) => {
     authorsList,
     categoriesList,
     coverImage: book.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+    coverImagePath: book.coverImagePath || null,
     pdfUrl: book.pdfUrl || null,
+    pdfPath: book.pdfPath || null,
     publicationYear: book.publicationYear || null,
     year: book.publicationYear || null, // Mock UI compatibility key
     publisher: book.publisher || "Archival Press",

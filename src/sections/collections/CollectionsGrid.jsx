@@ -103,6 +103,7 @@ const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrow
             src={item.image}
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
+            onError={() => setIsLoaded(true)}
           />
           {item.price && (
             <div className="absolute top-3 right-3 bg-[#07111F]/90 text-[#C9A227] px-3 py-1 rounded border border-[#C9A227]/30 font-display text-[10px] uppercase font-bold tracking-widest">

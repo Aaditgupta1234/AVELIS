@@ -1,6 +1,55 @@
+import path from 'path';
 import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/index.js';
+import { logger } from '../config/logger.js';
+import { storageService } from './storage.service.js';
 import { BOOK_SELECT, BOOK_PUBLIC_INCLUDE } from '../shared/selects/book.select.js';
+
+const PROTECTED_ASSET_REGEX = /^default-|^placeholder-|\/defaults\//i;
+
+/**
+ * Helper to safely purge a replaced or deleted file asset from storage.
+ *
+ * @param {Object} params
+ * @param {string} params.bucket - Storage bucket ('book-covers' | 'book-pdfs')
+ * @param {string} params.oldUrl - Previous file URL
+ * @param {string} [params.newUrl] - New file URL (optional, omitted on book deletion)
+ */
+const cleanupStoredFile = async ({ bucket, oldPath, oldUrl, newPath, newUrl }) => {
+  const targetPath = oldPath || (oldUrl ? storageService.extractPathFromUrl(oldUrl, bucket) : null);
+  const currentPath = newPath || (newUrl ? storageService.extractPathFromUrl(newUrl, bucket) : null);
+
+  if (!targetPath || typeof targetPath !== 'string') return;
+  if (currentPath && targetPath === currentPath) return; // Skip if path did not change
+
+  const fileName = path.basename(targetPath);
+  if (PROTECTED_ASSET_REGEX.test(fileName)) return;
+
+  try {
+    const { success, reason } = await storageService.delete(bucket, targetPath);
+    if (success) {
+      logger.info(`[DELETE_SUCCESS] Purged asset from ${bucket}`, {
+        bucket,
+        relativePath: targetPath,
+        operation: 'storage_cleanup'
+      });
+    } else {
+      logger.warn(`[DELETE_FAILED] Could not purge asset from ${bucket}`, {
+        bucket,
+        relativePath: targetPath,
+        operation: 'storage_cleanup',
+        reason
+      });
+    }
+  } catch (err) {
+    logger.warn(`[DELETE_FAILED] Exception during asset cleanup in ${bucket}`, {
+      bucket,
+      relativePath: targetPath,
+      operation: 'storage_cleanup',
+      reason: err.message
+    });
+  }
+};
 
 /**
  * Helper to retrieve a book and verify its existence.
@@ -72,7 +121,9 @@ export const createBook = async (bookData) => {
         language: language ?? 'English',
         description: description ?? null,
         coverImage: coverImage ?? null,
+        coverImagePath: bookData.coverImagePath || (coverImage ? storageService.extractPathFromUrl(coverImage, 'book-covers') : null),
         pdfUrl: pdfUrl ?? null,
+        pdfPath: bookData.pdfPath || (pdfUrl ? storageService.extractPathFromUrl(pdfUrl, 'book-pdfs') : null),
         sellingPrice: sellingPrice ?? 0,
         stockQuantity: stockQuantity ?? 0,
         isBorrowable: isBorrowable ?? true,
@@ -239,9 +290,18 @@ export const getBookById = async (id) => {
  * @throws {ApiError} 404 if book not found, 409 if ISBN exists, 400 if invalid author/category IDs
  */
 export const updateBook = async (id, bookData) => {
-  return await prisma.$transaction(async (tx) => {
+  let previousCoverPath = null;
+  let previousCoverUrl = null;
+  let previousPdfPath = null;
+  let previousPdfUrl = null;
+
+  const updatedBook = await prisma.$transaction(async (tx) => {
     // 1. Find Existing Book
     const existingBook = await getBookOrThrow(tx, id);
+    previousCoverPath = existingBook.coverImagePath;
+    previousCoverUrl = existingBook.coverImage;
+    previousPdfPath = existingBook.pdfPath;
+    previousPdfUrl = existingBook.pdfUrl;
 
     // 2. ISBN Conflict Check
     const isbn = typeof bookData.isbn === 'string' ? bookData.isbn.trim() : bookData.isbn;
@@ -283,13 +343,22 @@ export const updateBook = async (id, bookData) => {
     // 5. Build Partial Update Object
     const updateData = {};
     if (bookData.title !== undefined) updateData.title = typeof bookData.title === 'string' ? bookData.title.trim() : bookData.title;
-    if (bookData.isbn !== undefined) updateData.isbn = isbn;
+    if (bookData.isbn !== undefined) updateData.isbn = typeof bookData.isbn === 'string' ? bookData.isbn.trim() : bookData.isbn;
     if (bookData.publisher !== undefined) updateData.publisher = typeof bookData.publisher === 'string' ? bookData.publisher.trim() : bookData.publisher;
     if (bookData.publicationYear !== undefined) updateData.publicationYear = bookData.publicationYear;
     if (bookData.language !== undefined) updateData.language = typeof bookData.language === 'string' ? bookData.language.trim() : bookData.language;
     if (bookData.description !== undefined) updateData.description = typeof bookData.description === 'string' ? bookData.description.trim() : bookData.description;
-    if (bookData.coverImage !== undefined) updateData.coverImage = typeof bookData.coverImage === 'string' ? bookData.coverImage.trim() : bookData.coverImage;
-    if (bookData.pdfUrl !== undefined) updateData.pdfUrl = typeof bookData.pdfUrl === 'string' ? bookData.pdfUrl.trim() : bookData.pdfUrl;
+    
+    if (bookData.coverImage !== undefined) {
+      updateData.coverImage = typeof bookData.coverImage === 'string' ? bookData.coverImage.trim() : bookData.coverImage;
+      updateData.coverImagePath = bookData.coverImagePath || (updateData.coverImage ? storageService.extractPathFromUrl(updateData.coverImage, 'book-covers') : null);
+    }
+    
+    if (bookData.pdfUrl !== undefined) {
+      updateData.pdfUrl = typeof bookData.pdfUrl === 'string' ? bookData.pdfUrl.trim() : bookData.pdfUrl;
+      updateData.pdfPath = bookData.pdfPath || (updateData.pdfUrl ? storageService.extractPathFromUrl(updateData.pdfUrl, 'book-pdfs') : null);
+    }
+
     if (bookData.sellingPrice !== undefined) updateData.sellingPrice = bookData.sellingPrice;
     if (bookData.stockQuantity !== undefined) updateData.stockQuantity = bookData.stockQuantity;
     if (bookData.isBorrowable !== undefined) updateData.isBorrowable = bookData.isBorrowable;
@@ -309,15 +378,21 @@ export const updateBook = async (id, bookData) => {
       };
     }
 
-    // 6. Update Database and return consistent response
-    const updatedBook = await tx.book.update({
+    const result = await tx.book.update({
       where: { id },
       data: updateData,
       include: BOOK_PUBLIC_INCLUDE
     });
-
-    return updatedBook;
+    return result;
   }, { maxWait: 5000, timeout: 10000 });
+
+  // Post-Transaction Asset Cleanup
+  await Promise.allSettled([
+    cleanupStoredFile({ bucket: 'book-covers', oldPath: previousCoverPath, oldUrl: previousCoverUrl, newPath: updatedBook.coverImagePath, newUrl: updatedBook.coverImage }),
+    cleanupStoredFile({ bucket: 'book-pdfs', oldPath: previousPdfPath, oldUrl: previousPdfUrl, newPath: updatedBook.pdfPath, newUrl: updatedBook.pdfUrl })
+  ]);
+
+  return updatedBook;
 };
 
 /**
@@ -362,11 +437,24 @@ export const softDeleteBook = async (bookId) => {
  * @throws {ApiError} 404 if book not found, 400 if book is not soft-deleted
  */
 export const permanentDeleteBook = async (bookId) => {
+  const existingBook = await prisma.book.findUnique({
+    where: { id: bookId }
+  });
+
   try {
-    return await prisma.book.delete({
+    const deletedBook = await prisma.book.delete({
       where: { id: bookId, isDeleted: true },
       include: BOOK_PUBLIC_INCLUDE
     });
+
+    if (existingBook) {
+      await Promise.allSettled([
+        cleanupStoredFile({ bucket: 'book-covers', oldPath: existingBook.coverImagePath, oldUrl: existingBook.coverImage }),
+        cleanupStoredFile({ bucket: 'book-pdfs', oldPath: existingBook.pdfPath, oldUrl: existingBook.pdfUrl })
+      ]);
+    }
+
+    return deletedBook;
   } catch (error) {
     if (error.code === 'P2025') {
       const book = await prisma.book.findUnique({

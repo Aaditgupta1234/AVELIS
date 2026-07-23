@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, useMotionValue, useMotionTemplate } from "framer-motion";
 import { durations, easeOut } from "../../utils/motion.js";
 
+const DEFAULT_COVER = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80";
+
 export const BookCard = ({ book, viewMode }) => {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [imgSrc, setImgSrc] = useState(book?.coverImage || DEFAULT_COVER);
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+
+    useEffect(() => {
+        setImgSrc(book?.coverImage || DEFAULT_COVER);
+    }, [book?.coverImage]);
     
     const handleMouseMove = ({ currentTarget, clientX, clientY }) => {
         const { left, top } = currentTarget.getBoundingClientRect();
@@ -42,8 +49,14 @@ export const BookCard = ({ book, viewMode }) => {
             <Link to={`/book/${book.id}`} className="w-28 h-40 flex-shrink-0 rounded-lg overflow-hidden relative shadow-md z-10 block">
               <img
                 alt={`${book.title} cover`}
-                src={book.coverImage}
+                src={imgSrc}
                 onLoad={() => setIsLoaded(true)}
+                onError={() => {
+                  if (imgSrc !== DEFAULT_COVER) {
+                    setImgSrc(DEFAULT_COVER);
+                  }
+                  setIsLoaded(true);
+                }}
                 loading="lazy"
                 className={`w-full h-full object-cover transition-all duration-700 ${
                   isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
@@ -138,8 +151,14 @@ export const BookCard = ({ book, viewMode }) => {
           >
             <img
               alt={`${book.title} cover`}
-              src={book.coverImage}
+              src={imgSrc}
               onLoad={() => setIsLoaded(true)}
+              onError={() => {
+                if (imgSrc !== DEFAULT_COVER) {
+                  setImgSrc(DEFAULT_COVER);
+                }
+                setIsLoaded(true);
+              }}
               loading="lazy"
               className={`w-full h-full object-cover transition-all duration-700 ${
                 isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"

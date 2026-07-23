@@ -7,6 +7,8 @@ import { useAuth } from "../../hooks/useAuth.js";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { BookOpen, CheckCircle2 } from "lucide-react";
 
+const DEFAULT_COVER = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80";
+
 export const BookCard = ({
   id,
   image,
@@ -21,8 +23,13 @@ export const BookCard = ({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [imgSrc, setImgSrc] = React.useState(image || DEFAULT_COVER);
   const [isBorrowing, setIsBorrowing] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  React.useEffect(() => {
+    setImgSrc(image || DEFAULT_COVER);
+  }, [image]);
 
   const { isAuthenticated } = useAuth();
   const { borrowBook, activeLoans } = useLoans();
@@ -137,7 +144,13 @@ export const BookCard = ({
             className="w-full h-full object-cover transition-opacity duration-700"
             style={{ opacity: isLoaded ? 1 : 0 }}
             onLoad={() => setIsLoaded(true)}
-            src={image}
+            onError={() => {
+              if (imgSrc !== DEFAULT_COVER) {
+                setImgSrc(DEFAULT_COVER);
+              }
+              setIsLoaded(true);
+            }}
+            src={imgSrc}
             loading="lazy"
             variants={{
               rest: { scale: 1 },

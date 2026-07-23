@@ -54,10 +54,6 @@ app.use(express.json({ limit: requestLimitConfig.jsonLimit }));
 /** Parse URL-encoded request bodies */
 app.use(express.urlencoded({ extended: true, limit: requestLimitConfig.urlEncodedLimit }));
 
-/** Serve uploads directory statically for local development fallback */
-import path from 'path';
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
 // ---------------------------------------------------------------------------
 // Request Normalization Middleware
 // ---------------------------------------------------------------------------

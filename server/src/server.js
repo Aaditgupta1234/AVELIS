@@ -15,12 +15,13 @@
 import { config, logger } from './config/index.js';
 import app from './app.js';
 import { prisma } from './lib/prisma.js';
+import { initializeStorageService } from './services/storage.service.js';
 
 /**
  * Start the application server.
  *
- * Verifies database connectivity, starts listening for HTTP requests,
- * and registers graceful shutdown handlers.
+ * Verifies database connectivity, verifies storage initialization,
+ * starts listening for HTTP requests, and registers graceful shutdown handlers.
  */
 const startServer = async () => {
   // 1. Verify Prisma connection cleanly on startup
@@ -29,6 +30,14 @@ const startServer = async () => {
     logger.info('Database connection established successfully');
   } catch (err) {
     logger.error('Failed to establish database connection on startup:', err);
+    process.exit(1);
+  }
+
+  // 2. Verify Supabase Storage buckets (read-only verification)
+  try {
+    await initializeStorageService();
+  } catch (err) {
+    logger.error('Failed to initialize storage service on startup:', err.message);
     process.exit(1);
   }
 
