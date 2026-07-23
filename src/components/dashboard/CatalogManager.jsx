@@ -72,11 +72,25 @@ export const CatalogManager = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
 
-  // Form state
+  // Form & Filtering state
+  const BOOK_TYPES = [
+    "Hardcover",
+    "Paperback",
+    "E-Book",
+    "Audiobook",
+    "Collector's Edition",
+    "Archival Codex",
+    "Journal",
+    "Reference"
+  ];
+
   const [title, setTitle] = useState("");
   const [isbn, setIsbn] = useState("");
   const [publisher, setPublisher] = useState("");
   const [language, setLanguage] = useState("English");
+  const [bookType, setBookType] = useState("Hardcover");
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState("ALL");
+  const [sortField, setSortField] = useState("title");
   const [publicationYear, setPublicationYear] = useState(new Date().getFullYear());
   const [sellingPrice, setSellingPrice] = useState(24.99);
   const [stockQuantity, setStockQuantity] = useState(10);
@@ -250,6 +264,7 @@ export const CatalogManager = () => {
     setIsbn("");
     setPublisher("Archival Press");
     setLanguage("English");
+    setBookType("Hardcover");
     setPublicationYear(new Date().getFullYear());
     setSellingPrice(24.99);
     setStockQuantity(10);
@@ -274,6 +289,7 @@ export const CatalogManager = () => {
     setIsbn(book.isbn || "");
     setPublisher(book.publisher || "Archival Press");
     setLanguage(book.language || "English");
+    setBookType(book.bookType || "Hardcover");
     setPublicationYear(book.publicationYear || new Date().getFullYear());
     setSellingPrice(book.sellingPrice || 24.99);
     setStockQuantity(book.stockQuantity || 10);
@@ -314,6 +330,7 @@ export const CatalogManager = () => {
       stockQuantity: parseInt(stockQuantity, 10),
       isBorrowable: true,
       isForSale: true,
+      bookType: bookType || "Hardcover",
       ...(cleanIsbn && { isbn: cleanIsbn }),
       ...(cleanPublisher && { publisher: cleanPublisher }),
       ...(cleanLanguage && { language: cleanLanguage }),
@@ -331,6 +348,7 @@ export const CatalogManager = () => {
           isbn,
           publisher,
           language,
+          bookType,
           publicationYear: parseInt(publicationYear, 10),
           sellingPrice: parseFloat(sellingPrice),
           stockQuantity: parseInt(stockQuantity, 10),
@@ -479,11 +497,26 @@ export const CatalogManager = () => {
     }
   };
 
-  const filteredBooks = books.filter(
-    (b) =>
-      b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.author.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBooks = books
+    .filter((b) => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        b.title.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q) ||
+        (b.bookType || "").toLowerCase().includes(q);
+      const matchesType =
+        selectedTypeFilter === "ALL" || (b.bookType || "Hardcover") === selectedTypeFilter;
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      if (sortField === "type") {
+        return (a.bookType || "Hardcover").localeCompare(b.bookType || "Hardcover");
+      }
+      if (sortField === "price") {
+        return (a.sellingPrice || 0) - (b.sellingPrice || 0);
+      }
+      return a.title.localeCompare(b.title);
+    });
 
   return (
     <div className="space-y-8 bg-[#0D1626]/40 border border-[rgba(201,162,39,0.15)] rounded-xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
@@ -554,24 +587,52 @@ export const CatalogManager = () => {
       {/* ========================================================================= */}
       {adminTab === "catalog" && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative max-w-md w-full">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+            <div className="relative flex-1 max-w-md w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#F7F5EE]/40" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search catalog by volume title or author..."
+                placeholder="Search catalog by title, author, or book type..."
                 className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] focus:border-[#C9A227] text-[#F7F5EE] rounded-lg pl-12 pr-4 py-3 text-xs outline-none transition-colors"
               />
             </div>
-            <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-3 rounded-lg font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 shadow-[0_5px_15px_rgba(201,162,39,0.25)] hover:-translate-y-0.5 cursor-pointer font-bold"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Volume</span>
-            </button>
+
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              {/* Filter by Book Type */}
+              <select
+                value={selectedTypeFilter}
+                onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                className="bg-[#07111F] border border-[rgba(201,162,39,0.25)] focus:border-[#C9A227] text-[#C9A227] rounded-lg px-3 py-3 text-xs outline-none cursor-pointer font-display uppercase tracking-wider font-bold"
+              >
+                <option value="ALL">All Book Types</option>
+                {BOOK_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+
+              {/* Sort selector */}
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value)}
+                className="bg-[#07111F] border border-[rgba(201,162,39,0.25)] focus:border-[#C9A227] text-[#F7F5EE] rounded-lg px-3 py-3 text-xs outline-none cursor-pointer font-display uppercase tracking-wider font-semibold"
+              >
+                <option value="title">Sort by Title</option>
+                <option value="type">Sort by Book Type</option>
+                <option value="price">Sort by Price</option>
+              </select>
+
+              <button
+                onClick={openCreateModal}
+                className="flex items-center gap-2 bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-3 rounded-lg font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 shadow-[0_5px_15px_rgba(201,162,39,0.25)] hover:-translate-y-0.5 cursor-pointer font-bold flex-shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Volume</span>
+              </button>
+            </div>
           </div>
 
           {/* Catalog Table */}
@@ -579,20 +640,21 @@ export const CatalogManager = () => {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-[#07111F]/90 text-[#C9A227] font-display tracking-[0.1em] uppercase border-b border-[rgba(201,162,39,0.2)]">
-                  <th className="p-4">Cover</th>
-                  <th className="p-4">Title</th>
-                  <th className="p-4">Author</th>
-                  <th className="p-4">Selling Price</th>
-                  <th className="p-4">Stock</th>
-                  <th className="p-4">Featured Hero</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 text-left">Cover</th>
+                  <th className="p-4 text-left">Title</th>
+                  <th className="p-4 text-left">Author</th>
+                  <th className="p-4 text-center whitespace-nowrap">Type / Format</th>
+                  <th className="p-4 text-center whitespace-nowrap">Selling Price</th>
+                  <th className="p-4 text-center whitespace-nowrap">Stock</th>
+                  <th className="p-4 text-center whitespace-nowrap">Featured Hero</th>
+                  <th className="p-4 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[rgba(201,162,39,0.08)] font-body text-[#F7F5EE]/80">
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan="8"
                       className="p-12 text-center text-[#F7F5EE]/40 animate-pulse font-display text-[10px] tracking-[0.2em] uppercase"
                     >
                       Fetching Archives...
@@ -600,16 +662,16 @@ export const CatalogManager = () => {
                   </tr>
                 ) : filteredBooks.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="p-12 text-center text-[#F7F5EE]/40">
-                      No volumes found in catalog.
+                    <td colSpan="8" className="p-12 text-center text-[#F7F5EE]/40">
+                      No volumes found matching criteria.
                     </td>
                   </tr>
                 ) : (
                   filteredBooks.map((book) => {
                     const isHero = featuredHeroBookId === book.id;
                     return (
-                      <tr key={book.id} className="hover:bg-white/5 transition-colors">
-                        <td className="p-4">
+                      <tr key={book.id} className="hover:bg-white/5 transition-colors align-middle">
+                        <td className="p-4 align-middle">
                           <img
                             src={book.coverImage}
                             alt={book.title}
@@ -619,19 +681,24 @@ export const CatalogManager = () => {
                             className="w-9 h-13 object-cover rounded border border-white/10 shadow"
                           />
                         </td>
-                        <td className="p-4 font-semibold text-white">
+                        <td className="p-4 align-middle font-semibold text-white">
                           <div>{book.title}</div>
                           <span className="text-[10px] text-[#F7F5EE]/40 font-mono">
                             ISBN: {book.isbn || "N/A"}
                           </span>
                         </td>
-                        <td className="p-4">{book.author}</td>
-                        <td className="p-4 font-bold text-[#C9A227]">
+                        <td className="p-4 align-middle">{book.author}</td>
+                        <td className="p-4 align-middle text-center">
+                          <span className="inline-block px-2.5 py-1 rounded bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/30 text-[10px] font-display uppercase tracking-wider font-bold whitespace-nowrap">
+                            {book.bookType || "Hardcover"}
+                          </span>
+                        </td>
+                        <td className="p-4 align-middle text-center font-bold text-[#C9A227] whitespace-nowrap">
                           ${book.sellingPrice ? book.sellingPrice.toFixed(2) : "24.99"}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 align-middle text-center">
                           <span
-                            className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                            className={`inline-flex items-center justify-center px-3 py-1 rounded text-[10px] font-bold whitespace-nowrap ${
                               (book.availableCopiesCount ?? book.stockQuantity) > 0
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                                 : "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -642,10 +709,10 @@ export const CatalogManager = () => {
                               : "Out of stock"}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 align-middle text-center">
                           <button
                             onClick={() => handleSetHeroBook(book.id, book.title)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-display uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-display uppercase tracking-wider transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                               isHero
                                 ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
                                 : "bg-[#07111F] text-[#F7F5EE]/60 hover:text-white border border-[#C9A227]/20"
@@ -655,21 +722,23 @@ export const CatalogManager = () => {
                             <span>{isHero ? "Hero Book" : "Set Hero"}</span>
                           </button>
                         </td>
-                        <td className="p-4 text-right space-x-2">
-                          <button
-                            onClick={() => openEditModal(book)}
-                            className="p-2 border border-[#C9A227]/20 hover:border-[#C9A227] rounded-lg hover:bg-[#C9A227]/10 text-[#C9A227] transition-all cursor-pointer inline-flex items-center"
-                            title="Edit book and price"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBook(book.id, book.title)}
-                            className="p-2 border border-red-500/20 hover:border-red-500 rounded-lg hover:bg-red-950/20 text-red-400 transition-all cursor-pointer inline-flex items-center"
-                            title="Delete volume"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <td className="p-4 align-middle text-right">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEditModal(book)}
+                              className="p-2 border border-[#C9A227]/20 hover:border-[#C9A227] rounded-lg hover:bg-[#C9A227]/10 text-[#C9A227] transition-all cursor-pointer inline-flex items-center justify-center"
+                              title="Edit book and price"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(book.id, book.title)}
+                              className="p-2 border border-red-500/20 hover:border-red-500 rounded-lg hover:bg-red-950/20 text-red-400 transition-all cursor-pointer inline-flex items-center justify-center"
+                              title="Delete volume"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -960,6 +1029,37 @@ export const CatalogManager = () => {
                       ))
                     )}
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1 font-bold">
+                    Book Type / Format *
+                  </label>
+                  <select
+                    value={bookType}
+                    onChange={(e) => setBookType(e.target.value)}
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.25)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  >
+                    {BOOK_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                    Language
+                  </label>
+                  <input
+                    type="text"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    placeholder="e.g. English"
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  />
                 </div>
               </div>
 

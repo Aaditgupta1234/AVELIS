@@ -49,6 +49,7 @@ export const mapBookToUI = (book) => {
     year: book.publicationYear || null, // Mock UI compatibility key
     publisher: book.publisher || "Archival Press",
     language: book.language || "English",
+    bookType: book.bookType || "Hardcover",
     description: book.description || "",
     sellingPrice: Number(book.sellingPrice || 0),
     stockQuantity: Number(book.stockQuantity || 0),

@@ -103,6 +103,7 @@ model Book {
   publisher       String?
   publicationYear Int?
   language        String         @default("English")
+  bookType        String?        @default("Hardcover")
   description     String?
   coverImage      String?
   coverImagePath  String?

@@ -119,6 +119,7 @@ export const createBook = async (bookData) => {
         publisher,
         publicationYear: publicationYear ?? null,
         language: language ?? 'English',
+        bookType: bookData.bookType ?? 'Hardcover',
         description: description ?? null,
         coverImage: coverImage ?? null,
         coverImagePath: bookData.coverImagePath || (coverImage ? storageService.extractPathFromUrl(coverImage, 'book-covers') : null),
@@ -347,6 +348,7 @@ export const updateBook = async (id, bookData) => {
     if (bookData.publisher !== undefined) updateData.publisher = typeof bookData.publisher === 'string' ? bookData.publisher.trim() : bookData.publisher;
     if (bookData.publicationYear !== undefined) updateData.publicationYear = bookData.publicationYear;
     if (bookData.language !== undefined) updateData.language = typeof bookData.language === 'string' ? bookData.language.trim() : bookData.language;
+    if (bookData.bookType !== undefined) updateData.bookType = typeof bookData.bookType === 'string' ? bookData.bookType.trim() : bookData.bookType;
     if (bookData.description !== undefined) updateData.description = typeof bookData.description === 'string' ? bookData.description.trim() : bookData.description;
     
     if (bookData.coverImage !== undefined) {

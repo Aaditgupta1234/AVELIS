@@ -18,6 +18,7 @@ export const BOOK_SELECT = {
   publisher: true,
   publicationYear: true,
   language: true,
+  bookType: true,
   description: true,
   coverImage: true,
   coverImagePath: true,
