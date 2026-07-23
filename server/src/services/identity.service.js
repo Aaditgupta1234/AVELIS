@@ -48,8 +48,8 @@ export const syncOAuthProfile = async (user, { providerId, picture, provider = '
     updates.emailVerified = true;
   }
 
-  // Auto-refresh OAuth avatar if user has NOT uploaded a custom avatar
-  if (!user.isCustomAvatar && picture && user.avatarUrl !== picture) {
+  // Auto-refresh OAuth avatar if user has NOT uploaded a custom avatar or currently has no avatarUrl
+  if ((!user.isCustomAvatar || !user.avatarUrl) && picture && user.avatarUrl !== picture) {
     updates.avatarUrl = picture;
   }
 

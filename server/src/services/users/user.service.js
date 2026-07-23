@@ -16,6 +16,8 @@ export const getUserProfile = async (userId) => {
       username: true,
       email: true,
       role: true,
+      avatarUrl: true,
+      isCustomAvatar: true,
       isActive: true,
       createdAt: true,
       updatedAt: true,
@@ -33,11 +35,15 @@ export const getUserProfile = async (userId) => {
     );
   }
 
+  console.log('[GET_ME DEBUG] Returned profile for:', user.email, 'avatarUrl:', user.avatarUrl);
+
   return {
     id: user.id,
     username: user.username,
     email: user.email,
     role: user.role,
+    avatarUrl: user.avatarUrl,
+    isCustomAvatar: user.isCustomAvatar,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -61,6 +67,8 @@ export const updateUserProfile = async (userId, updateData) => {
       isActive: true,
       email: true,
       role: true,
+      avatarUrl: true,
+      isCustomAvatar: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -87,6 +95,8 @@ export const updateUserProfile = async (userId, updateData) => {
       username: user.username,
       email: user.email,
       role: user.role,
+      avatarUrl: user.avatarUrl,
+      isCustomAvatar: user.isCustomAvatar,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -111,6 +121,8 @@ export const updateUserProfile = async (userId, updateData) => {
       username: true,
       email: true,
       role: true,
+      avatarUrl: true,
+      isCustomAvatar: true,
       createdAt: true,
       updatedAt: true,
     },

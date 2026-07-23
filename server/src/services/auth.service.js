@@ -130,6 +130,9 @@ export const getCurrentUser = async (userId) => {
       email: true,
       role: true,
       isActive: true,
+      avatarUrl: true,
+      isCustomAvatar: true,
+      emailVerified: true,
     },
   });
 
@@ -151,6 +154,7 @@ export const getCurrentUser = async (userId) => {
     role: user.role,
     isActive: user.isActive,
     avatarUrl: user.avatarUrl,
+    isCustomAvatar: user.isCustomAvatar,
     emailVerified: user.emailVerified,
   };
 };
@@ -184,13 +188,29 @@ export const oauthAuthService = async ({ supabaseToken }) => {
     throw new ApiError(400, 'OAuth token does not contain a valid email address.');
   }
 
-  const metadata = supabaseUser.user_metadata || {};
+  const metadata = supabaseUser.user_metadata || supabaseUser.raw_user_meta_data || {};
   const rawName = metadata.full_name || metadata.name || email.split('@')[0];
-  const picture = metadata.avatar_url || metadata.picture || null;
+  
+  // Extract picture across all known Supabase identity & metadata formats
+  const identityData = supabaseUser.identities?.[0]?.identity_data || {};
+  const picture =
+    metadata.avatar_url ||
+    metadata.picture ||
+    identityData.avatar_url ||
+    identityData.picture ||
+    identityData.photo ||
+    null;
+
   const rawProvider = (supabaseUser.app_metadata?.provider || 'GOOGLE').toUpperCase();
   const provider = ['GOOGLE', 'GITHUB', 'APPLE', 'MICROSOFT'].includes(rawProvider)
     ? rawProvider
     : 'GOOGLE';
+
+  console.log('[OAUTH DEBUG] Supabase metadata:', {
+    user_metadata: supabaseUser.user_metadata,
+    identities: supabaseUser.identities?.[0]?.identity_data,
+    extractedPicture: picture,
+  });
 
   // 2. Look up account: priority 1 by providerId, priority 2 by email
   let user = await prisma.user.findUnique({
