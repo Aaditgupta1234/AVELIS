@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn, ZoomOut, Maximize, Minimize, BookOpen, ChevronLeft, ChevronRight, FileText, Download } from "lucide-react";
 
 export const BookReaderModal = ({ isOpen, onClose, book }) => {
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(60);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 

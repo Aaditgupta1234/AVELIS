@@ -46,6 +46,9 @@ export const LOAN_SELECT = {
           title: true,
           isbn: true,
           coverImage: true,
+          coverImagePath: true,
+          pdfUrl: true,
+          pdfPath: true,
           authors: {
             select: {
               author: {

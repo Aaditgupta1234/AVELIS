@@ -44,8 +44,15 @@ const FALLBACK_CATALOG_BOOKS = [
   }
 ];
 
+const DEFAULT_BUNDLE_IMAGE = "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2190&auto=format&fit=crop";
+
 const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrowing, allBooks = [] }) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [imgSrc, setImgSrc] = useState(item?.image || DEFAULT_BUNDLE_IMAGE);
+
+  useEffect(() => {
+    setImgSrc(item?.image || DEFAULT_BUNDLE_IMAGE);
+  }, [item?.image]);
 
   // Combine loaded books with fallbacks so catalog is never empty
   const catalogPool = allBooks.length > 0 ? allBooks : FALLBACK_CATALOG_BOOKS;
@@ -100,10 +107,15 @@ const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrow
             className="w-full h-full object-cover transition-opacity duration-700"
             style={{ opacity: isLoaded ? 1 : 0 }}
             alt={item.title}
-            src={item.image}
+            src={imgSrc}
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
-            onError={() => setIsLoaded(true)}
+            onError={() => {
+              if (imgSrc !== DEFAULT_BUNDLE_IMAGE) {
+                setImgSrc(DEFAULT_BUNDLE_IMAGE);
+              }
+              setIsLoaded(true);
+            }}
           />
           {item.price && (
             <div className="absolute top-3 right-3 bg-[#07111F]/90 text-[#C9A227] px-3 py-1 rounded border border-[#C9A227]/30 font-display text-[10px] uppercase font-bold tracking-widest">

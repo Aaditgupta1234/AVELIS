@@ -9,27 +9,48 @@ import { FeaturedAuthor } from "../sections/collections/FeaturedAuthor";
 import { ReadingQuote } from "../sections/collections/ReadingQuote";
 import { CollectionsCTA } from "../sections/collections/CollectionsCTA";
 import { mockCollections } from "../data/collections";
+import { getBundlesApi } from "../api/bundle.api";
 
 export const CollectionsPage = () => {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [allBundles, setAllBundles] = useState(() => {
+  const loadCustomBundles = () => {
     try {
       const custom = localStorage.getItem("avelis_custom_bundles_v1");
       return custom ? JSON.parse(custom) : mockCollections;
     } catch {
       return mockCollections;
     }
-  });
-  const [results, setResults] = useState(allBundles);
+  };
+
+  const [allBundles, setAllBundles] = useState(loadCustomBundles);
+  const [results, setResults] = useState(loadCustomBundles);
 
   useEffect(() => {
-    try {
-      const custom = localStorage.getItem("avelis_custom_bundles_v1");
-      if (custom) {
-        setAllBundles(JSON.parse(custom));
-      }
-    } catch {}
+    const fetchServerBundles = async () => {
+      try {
+        const res = await getBundlesApi();
+        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          setAllBundles(res.data);
+          localStorage.setItem("avelis_custom_bundles_v1", JSON.stringify(res.data));
+        }
+      } catch (_) {}
+    };
+
+    fetchServerBundles();
+
+    const handleSync = () => {
+      const updated = loadCustomBundles();
+      setAllBundles(updated);
+    };
+
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("avelis_bundles_updated", handleSync);
+
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("avelis_bundles_updated", handleSync);
+    };
   }, []);
 
   useEffect(() => {

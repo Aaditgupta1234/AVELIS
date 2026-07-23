@@ -4,6 +4,7 @@ import { createBook, updateBook, deleteBook } from "../../services/book.service.
 import { mapBookToUI } from "../../mappers/book.mapper.js";
 import { mockCollections } from "../../data/collections.js";
 import { uploadBookCover, uploadBookPdf } from "../../services/upload.service.js";
+import { getBundlesApi, createBundleApi, updateBundleApi, deleteBundleApi } from "../../api/bundle.api.js";
 import {
   Trash2,
   Edit,
@@ -181,13 +182,38 @@ export const CatalogManager = () => {
   const [bundleVolumes, setBundleVolumes] = useState("3 Volumes");
   const [bundlePrice, setBundlePrice] = useState(49.99);
   const [bundleImage, setBundleImage] = useState("");
+  const [bundleCoverUploading, setBundleCoverUploading] = useState(false);
+  const [bundleCoverProgress, setBundleCoverProgress] = useState(0);
+  const [bundleCoverError, setBundleCoverError] = useState(null);
   const [selectedBookIds, setSelectedBookIds] = useState([]);
+
+  const handleBundleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBundleCoverUploading(true);
+    setBundleCoverProgress(0);
+    setBundleCoverError(null);
+
+    try {
+      const res = await uploadBookCover(file, (percent) => {
+        setBundleCoverProgress(percent);
+      });
+      setBundleImage(res.fileUrl);
+      showToast("Bundle cover image uploaded to Supabase Storage!");
+    } catch (err) {
+      setBundleCoverError(err.message || "Bundle cover upload failed.");
+    } finally {
+      setBundleCoverUploading(false);
+    }
+  };
 
   // Save Bundles & Layout to LocalStorage
   const saveBundlesToStorage = (updatedBundles) => {
     setBundles(updatedBundles);
     try {
       localStorage.setItem("avelis_custom_bundles_v1", JSON.stringify(updatedBundles));
+      window.dispatchEvent(new CustomEvent("avelis_bundles_updated"));
     } catch {}
   };
 
@@ -374,6 +400,9 @@ export const CatalogManager = () => {
     setBundleVolumes("3 Volumes Boxed Set");
     setBundlePrice(49.99);
     setBundleImage("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2228&auto=format&fit=crop");
+    setBundleCoverError(null);
+    setBundleCoverProgress(0);
+    setBundleCoverUploading(false);
     setSelectedBookIds(books.slice(0, 3).map((b) => b.id));
     setIsBundleModalOpen(true);
   };
@@ -386,56 +415,68 @@ export const CatalogManager = () => {
     setBundleVolumes(bundle.volumes || `${bundle.bookIds?.length || 3} Volumes Set`);
     setBundlePrice(bundle.price || 49.99);
     setBundleImage(bundle.image || "");
+    setBundleCoverError(null);
+    setBundleCoverProgress(0);
+    setBundleCoverUploading(false);
     setSelectedBookIds(bundle.bookIds || books.slice(0, 3).map((b) => b.id));
     setIsBundleModalOpen(true);
   };
 
-  const handleSaveBundle = (e) => {
+  useEffect(() => {
+    getBundlesApi()
+      .then((res) => {
+        if (res?.success && Array.isArray(res.data)) {
+          saveBundlesToStorage(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveBundle = async (e) => {
     e.preventDefault();
     if (!bundleTitle.trim() || !bundleDescription.trim()) return;
 
     const volumesLabel = bundleVolumes || `${selectedBookIds.length} Volumes Included`;
+    const payload = {
+      title: bundleTitle,
+      subtitle: bundleSubtitle,
+      description: bundleDescription,
+      volumes: volumesLabel,
+      price: parseFloat(bundlePrice),
+      image: bundleImage || "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2190&auto=format&fit=crop",
+      bookIds: selectedBookIds
+    };
 
-    if (editingBundle) {
-      const updated = bundles.map((b) =>
-        b.id === editingBundle.id
-          ? {
-              ...b,
-              title: bundleTitle,
-              subtitle: bundleSubtitle,
-              description: bundleDescription,
-              volumes: volumesLabel,
-              price: parseFloat(bundlePrice),
-              image: bundleImage,
-              bookIds: selectedBookIds
-            }
-          : b
-      );
-      saveBundlesToStorage(updated);
-      showToast(`Bundle "${bundleTitle}" updated with ${selectedBookIds.length} selected books!`);
-    } else {
-      const newBundle = {
-        id: `bundle-${Date.now()}`,
-        title: bundleTitle,
-        subtitle: bundleSubtitle,
-        description: bundleDescription,
-        volumes: volumesLabel,
-        price: parseFloat(bundlePrice),
-        image: bundleImage || "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2190&auto=format&fit=crop",
-        bookIds: selectedBookIds
-      };
-      const updated = [newBundle, ...bundles];
-      saveBundlesToStorage(updated);
-      showToast(`New Bundle "${bundleTitle}" created with ${selectedBookIds.length} books at $${bundlePrice}!`);
+    try {
+      if (editingBundle) {
+        const res = await updateBundleApi(editingBundle.id, payload);
+        const updatedItem = res?.data || { ...editingBundle, ...payload };
+        const updated = bundles.map((b) => (b.id === editingBundle.id ? updatedItem : b));
+        saveBundlesToStorage(updated);
+        showToast(`Bundle "${bundleTitle}" updated!`);
+      } else {
+        const res = await createBundleApi(payload);
+        const newBundle = res?.data || { id: `bundle-${Date.now()}`, ...payload };
+        const updated = [newBundle, ...bundles];
+        saveBundlesToStorage(updated);
+        showToast(`New Bundle "${bundleTitle}" created!`);
+      }
+    } catch (err) {
+      showToast(`Error saving bundle: ${err.message}`);
     }
     setIsBundleModalOpen(false);
   };
 
-  const handleDeleteBundle = (bundleId, bTitle) => {
+  const handleDeleteBundle = async (bundleId, bTitle) => {
     if (!window.confirm(`Delete bundle "${bTitle}"?`)) return;
-    const updated = bundles.filter((b) => b.id !== bundleId);
-    saveBundlesToStorage(updated);
-    showToast(`Bundle "${bTitle}" deleted.`);
+    try {
+      await deleteBundleApi(bundleId);
+      const updated = bundles.filter((b) => b.id !== bundleId);
+      saveBundlesToStorage(updated);
+      showToast(`Bundle "${bTitle}" deleted.`);
+    } catch (err) {
+      showToast(`Error deleting bundle: ${err.message}`);
+    }
   };
 
   const filteredBooks = books.filter(
@@ -1206,16 +1247,57 @@ export const CatalogManager = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
-                  Bundle Cover Image URL
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-2 font-bold">
+                  Bundle Cover Image Page
                 </label>
-                <input
-                  type="url"
-                  value={bundleImage}
-                  onChange={(e) => setBundleImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
-                />
+                <div className="flex items-center gap-4 bg-[#07111F] p-3 rounded-lg border border-[rgba(201,162,39,0.2)]">
+                  {bundleImage ? (
+                    <img
+                      src={bundleImage}
+                      alt="Bundle Cover Preview"
+                      className="w-12 h-16 object-cover rounded border border-[#C9A227]/40 flex-shrink-0 shadow"
+                    />
+                  ) : (
+                    <div className="w-12 h-16 bg-[#0D1626] rounded border border-dashed border-[#C9A227]/30 flex flex-col items-center justify-center text-[#C9A227]/50 flex-shrink-0">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-2">
+                    <label className="cursor-pointer inline-flex items-center gap-2 bg-[#C9A227]/15 hover:bg-[#C9A227]/25 text-[#C9A227] border border-[#C9A227]/40 px-3 py-1.5 rounded text-xs font-display tracking-wider transition-all">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{bundleCoverUploading ? `Uploading (${bundleCoverProgress}%)...` : "Upload Cover Image File"}</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={bundleCoverUploading}
+                        onChange={handleBundleCoverUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {bundleCoverUploading && (
+                      <div className="w-full bg-[#0D1626] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-[#C9A227] h-full transition-all duration-200"
+                          style={{ width: `${bundleCoverProgress}%` }}
+                        />
+                      </div>
+                    )}
+
+                    {bundleCoverError && (
+                      <p className="text-[11px] text-rose-400">{bundleCoverError}</p>
+                    )}
+
+                    <input
+                      type="url"
+                      value={bundleImage}
+                      onChange={(e) => setBundleImage(e.target.value)}
+                      placeholder="Or paste image URL (https://...)"
+                      className="w-full bg-[#0D1626] border border-white/10 text-[#F7F5EE]/70 rounded p-1.5 text-[11px] outline-none focus:border-[#C9A227]"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
