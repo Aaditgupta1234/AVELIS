@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
 import { springs, staggers } from "../../utils/motion";
@@ -23,8 +23,8 @@ const FALLBACK_CATALOG_BOOKS = [
     title: "Mechanics of Time",
     author: "Elara Sterling",
     category: "Science",
-    sellingPrice: 24.99,
-    coverImage: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2112&auto=format&fit=crop"
+    sellingPrice: 29.99,
+    coverImage: "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=2187&auto=format&fit=crop"
   },
   {
     id: "e3",
@@ -124,55 +124,55 @@ const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrow
           )}
         </div>
 
-        <div className="p-6 flex flex-col justify-between flex-grow bg-surface/80 backdrop-blur-md border-t border-white/5 group-hover:border-primary/20 transition-colors">
-          <div className="space-y-2">
-            <span className="font-display text-[9px] text-primary uppercase tracking-[0.2em] block font-bold">
-              {item.subtitle || "Curated Bundle"}
-            </span>
+        <div className="p-8 flex flex-col justify-between flex-grow">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="font-display text-[9px] tracking-[0.25em] text-[#C9A227] uppercase font-bold">
+                {item.subtitle || "Curated Bundle"}
+              </span>
+            </div>
+
             <h3 className="font-display text-xl text-white tracking-wide cursor-pointer hover:text-primary transition-colors" onClick={() => onExploreBundle(item)}>
               {item.title}
             </h3>
-            <p className="font-body text-white/60 text-xs line-clamp-2">
+
+            <p className="font-body text-xs text-white/60 mt-3 leading-relaxed line-clamp-2">
               {item.description}
             </p>
 
             {/* Display Included Books in Bundle */}
-            {displayBooks.length > 0 && (
-              <div className="pt-2">
-                <span className="text-[9px] text-primary font-display uppercase tracking-widest block mb-1 font-bold">
-                  Included Volumes ({displayBooks.length}):
-                </span>
-                <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                  {displayBooks.map((b) => (
-                    <div key={b.id} className="text-[11px] text-white/80 flex items-center gap-2 truncate">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                      <span className="truncate">{b.title}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="mt-5 space-y-2 border-t border-white/10 pt-4">
+              <p className="font-display text-[9px] uppercase tracking-widest text-[#C9A227]/80">
+                Included Volumes:
+              </p>
+              <div className="space-y-1.5">
+                {displayBooks.slice(0, 3).map((b) => (
+                  <div key={b.id} className="flex items-center gap-2 text-xs text-white/80">
+                    <BookOpen className="w-3 h-3 text-[#C9A227] flex-shrink-0" />
+                    <span className="truncate">{b.title}</span>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
-          <div className="space-y-4 pt-4 border-t border-white/5 mt-4">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="font-display text-white/40 tracking-[0.1em]">
+          <div className="pt-6 border-t border-white/10 flex flex-col gap-3 mt-6">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-[10px] uppercase tracking-[0.2em] text-white/50">
                 {item.volumes || `${displayBooks.length} Volumes Bundle`}
               </span>
               <button
-                type="button"
+                className="font-display text-[10px] uppercase tracking-[0.2em] text-primary hover:text-white transition-colors cursor-pointer"
                 onClick={() => onExploreBundle(item)}
-                className="font-display text-primary uppercase tracking-[0.15em] border-b border-primary/30 group-hover:border-primary pb-0.5 transition-all cursor-pointer hover:text-white flex items-center gap-1 font-bold"
               >
-                <span>Explore Collection</span>
-                <ExternalLink className="w-3 h-3" />
+                EXPLORE BUNDLE ↗
               </button>
             </div>
 
             <button
-              onClick={() => onBorrowBundle(item)}
               disabled={isBorrowing}
-              className="w-full flex items-center justify-center gap-2 text-[#07111F] bg-[#C9A227] hover:bg-[#E5C16B] disabled:opacity-50 px-4 py-2.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all duration-300 shadow-[0_4px_15px_rgba(201,162,39,0.25)] hover:shadow-[0_6px_20px_rgba(201,162,39,0.4)] cursor-pointer"
+              onClick={() => onBorrowBundle(item)}
+              className="w-full flex items-center justify-center gap-2 bg-[#C9A227]/10 hover:bg-[#C9A227] border border-[#C9A227]/40 text-[#C9A227] hover:text-[#07111F] px-4 py-2.5 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 font-bold disabled:opacity-50 cursor-pointer"
             >
               {isBorrowing ? (
                 <RotateCcw className="w-3.5 h-3.5 animate-spin" />
@@ -193,6 +193,7 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
   const { borrowBook } = useLoans();
   const { books, refreshBooks } = useBooks();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [borrowingCard, setBorrowingCard] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
@@ -207,6 +208,13 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
       refreshBooks();
     }
   }, [books, refreshBooks]);
+
+  // Automatically reopen bundle modal if returning from BookDetailsPage
+  useEffect(() => {
+    if (location.state?.openBundle) {
+      setActiveExploreBundle(location.state.openBundle);
+    }
+  }, [location.state]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -486,8 +494,8 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
                         <div className="pt-1">
                           <Link
                             to={`/book/${b.id}`}
-                            onClick={() => setActiveExploreBundle(null)}
-                            className="text-[10px] text-[#C9A227] hover:text-white uppercase tracking-widest font-bold inline-flex items-center gap-1"
+                            state={{ fromBundle: activeExploreBundle }}
+                            className="text-[10px] text-[#C9A227] hover:text-white uppercase tracking-widest font-bold inline-flex items-center gap-1 cursor-pointer"
                           >
                             <span>View Details</span>
                             <ExternalLink className="w-2.5 h-2.5" />

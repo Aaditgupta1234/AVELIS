@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { useLoans } from "../../context/LoanContext.jsx";
@@ -13,7 +13,7 @@ import { Navbar } from "../../components/layout/Navbar.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { BackgroundShader } from "../../components/ui/BackgroundShader.jsx";
 import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
-import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2, ShoppingBag, Layers } from "lucide-react";
 import { BuyBookModal } from "../../components/checkout/BuyBookModal.jsx";
 import { revealVariants } from "../../utils/motion.js";
 
@@ -22,6 +22,8 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export const BookDetailsPage = () => {
   const id = useParams().id;
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBundle = location.state?.fromBundle;
   const { getCachedBook, cacheBookDetails, books } = useBooks();
   const { borrowBook, activeLoans } = useLoans();
   const { isAuthenticated } = useAuth();
@@ -315,10 +317,20 @@ export const BookDetailsPage = () => {
       <main className="pt-32 pb-24 relative z-10 flex-grow">
         <div className="max-w-container-max mx-auto px-6 sm:px-12">
           {/* Back Navigation Link */}
-          <Link to="/library" className="inline-flex items-center gap-2 text-on-surface-variant/60 hover:text-primary transition-colors font-display text-[10px] tracking-[0.15em] uppercase mb-12">
-            <ArrowLeft className="w-3.5 h-3.5"/>
-            <span>Back to Catalog</span>
-          </Link>
+          {fromBundle ? (
+            <button
+              onClick={() => navigate("/collections", { state: { openBundle: fromBundle } })}
+              className="inline-flex items-center gap-2 bg-[#C9A227]/15 hover:bg-[#C9A227]/30 text-[#C9A227] border border-[#C9A227]/40 px-4 py-2 rounded-lg font-display text-[10px] tracking-[0.15em] uppercase font-bold transition-all shadow-[0_4px_15px_rgba(201,162,39,0.2)] hover:-translate-y-0.5 cursor-pointer mb-12"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Return to Bundle: {fromBundle.title}</span>
+            </button>
+          ) : (
+            <Link to="/library" className="inline-flex items-center gap-2 text-on-surface-variant/60 hover:text-primary transition-colors font-display text-[10px] tracking-[0.15em] uppercase mb-12">
+              <ArrowLeft className="w-3.5 h-3.5"/>
+              <span>Back to Catalog</span>
+            </Link>
+          )}
 
           {/* Details Panel layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
