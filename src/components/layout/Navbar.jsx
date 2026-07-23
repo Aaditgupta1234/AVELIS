@@ -65,7 +65,7 @@ export const Navbar = () => {
             <AnimatePresence mode="wait">
               {isAuthenticated ? (<motion.div key="user-profile" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }} className="relative">
                   <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-3 focus:outline-none cursor-pointer group" aria-expanded={isProfileOpen} aria-haspopup="true">
-                    <img src={user?.avatar} alt={user?.name} className="w-8 h-8 rounded-full border border-primary/30 group-hover:border-primary transition-colors"/>
+                    <img src={user?.avatar} alt={user?.name} className="w-8 h-8 rounded-full object-cover border border-primary/30 group-hover:border-primary transition-colors"/>
                     <span className="hidden sm:inline font-display text-[10px] tracking-[0.2em] text-[#F7F5EE]/80 group-hover:text-primary uppercase transition-colors">
                       {user?.name}
                     </span>

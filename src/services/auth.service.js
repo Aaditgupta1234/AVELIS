@@ -39,3 +39,16 @@ export const getMe = async (options = {}) => {
   const response = await apiClient.get('/auth/me', options);
   return response.data.data; // Extracts user object { id, name, email, role, isActive }
 };
+
+/**
+ * Service to execute OAuth authentication via backend bridge.
+ *
+ * @param {Object} payload
+ * @param {string} payload.token - Supabase access token
+ * @param {Object} [options] - Additional request options
+ * @returns {Promise<{ token: string, user: Object }>}
+ */
+export const oauthUser = async ({ token }, options = {}) => {
+  const response = await apiClient.post('/auth/oauth', { token }, options);
+  return response.data.data; // Extracts { token, user }
+};

@@ -1,22 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
-import { config } from '../config/index.js';
+import dotenv from 'dotenv';
 
-const rawUrl = config.supabaseUrl ? String(config.supabaseUrl).trim().replace(/^["']|["']$/g, '') : '';
-const rawKey = config.supabaseSecretKey ? String(config.supabaseSecretKey).trim().replace(/^["']|["']$/g, '') : '';
+dotenv.config();
 
-const validUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://') ? rawUrl : 'https://placeholder.supabase.co';
-const validKey = rawKey.length > 0 ? rawKey : 'placeholder-key';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_ANON_KEY;
 
-if (!config.supabaseUrl || !config.supabaseSecretKey) {
-  console.warn('⚠️ Supabase credentials (SUPABASE_URL / SUPABASE_SECRET_KEY) are missing in environment variables.');
+if (!supabaseUrl) {
+  console.warn('[Supabase Admin] Warning: SUPABASE_URL environment variable is missing.');
 }
 
-/**
- * Singleton Supabase Client for Storage & Services.
- */
-export const supabase = createClient(validUrl, validKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
+if (!supabaseServiceKey) {
+  console.warn('[Supabase Admin] Warning: SUPABASE_SERVICE_ROLE_KEY environment variable is missing.');
+}
+
+export const supabaseAdmin = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseServiceKey || 'placeholder_key',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
+export const supabase = supabaseAdmin;
+export default supabaseAdmin;

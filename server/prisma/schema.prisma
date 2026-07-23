@@ -60,21 +60,38 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  GITHUB
+  APPLE
+  MICROSOFT
+}
+
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  email        String   @unique
-  passwordHash String
-  phone        String?
-  avatar       String?
-  role         UserRole @default(MEMBER)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  loans        Loan[]
-  orders       Order[]
-  reviews      Review[]
-  reservations Reservation[]
+  id                String        @id @default(uuid())
+  username          String        @unique
+  email             String        @unique
+  passwordHash      String
+  phone             String?
+  avatarUrl         String?
+  isCustomAvatar    Boolean       @default(false)
+  signupProvider    AuthProvider  @default(LOCAL)
+  providerId        String?       @unique
+  emailVerified     Boolean       @default(false)
+  lastLoginAt       DateTime?
+  lastLoginProvider AuthProvider?
+  role              UserRole      @default(MEMBER)
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  loans             Loan[]
+  orders            Order[]
+  reviews           Review[]
+  reservations      Reservation[]
+
+  @@index([providerId])
+  @@index([email])
 }
 
 model Author {

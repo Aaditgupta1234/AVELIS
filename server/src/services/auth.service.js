@@ -1,6 +1,8 @@
 import { prisma } from '../lib/prisma.js';
 import { ApiError, hashPassword, comparePassword, generateToken } from '../utils/index.js';
-import { UserRole } from '@prisma/client';
+import { UserRole, AuthProvider } from '@prisma/client';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { generateFormattedUsername, syncOAuthProfile } from './identity.service.js';
 
 /**
  * Register a new user and persist them in the database.
@@ -148,5 +150,104 @@ export const getCurrentUser = async (userId) => {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    avatarUrl: user.avatarUrl,
+    emailVerified: user.emailVerified,
+  };
+};
+
+/**
+ * Provider-agnostic OAuth authentication service.
+ * Verifies Supabase OAuth token, resolves user via providerId/email,
+ * syncs profile & audit fields, and returns native JWT.
+ *
+ * @param {Object} params - Input parameters
+ * @param {string} params.supabaseToken - Access token issued by Supabase Auth
+ * @returns {Promise<Object>} Object containing native JWT token and sanitized user
+ * @throws {ApiError} If verification fails or user account is inactive
+ */
+export const oauthAuthService = async ({ supabaseToken }) => {
+  if (!supabaseToken) {
+    throw new ApiError(400, 'OAuth access token is required.');
+  }
+
+  // 1. Strictly verify Supabase token with Supabase Admin API
+  const { data, error } = await supabaseAdmin.auth.getUser(supabaseToken);
+  if (error || !data?.user) {
+    throw new ApiError(401, 'Invalid or expired OAuth token.');
+  }
+
+  const supabaseUser = data.user;
+  const providerId = supabaseUser.id;
+  const email = (supabaseUser.email || '').trim().toLowerCase();
+  
+  if (!email) {
+    throw new ApiError(400, 'OAuth token does not contain a valid email address.');
+  }
+
+  const metadata = supabaseUser.user_metadata || {};
+  const rawName = metadata.full_name || metadata.name || email.split('@')[0];
+  const picture = metadata.avatar_url || metadata.picture || null;
+  const rawProvider = (supabaseUser.app_metadata?.provider || 'GOOGLE').toUpperCase();
+  const provider = ['GOOGLE', 'GITHUB', 'APPLE', 'MICROSOFT'].includes(rawProvider)
+    ? rawProvider
+    : 'GOOGLE';
+
+  // 2. Look up account: priority 1 by providerId, priority 2 by email
+  let user = await prisma.user.findUnique({
+    where: { providerId },
+  });
+
+  if (!user) {
+    user = await prisma.user.findUnique({
+      where: { email },
+    });
+  }
+
+  // 3. Account resolution & sync
+  if (user) {
+    if (!user.isActive) {
+      throw new ApiError(403, 'Your account is inactive. Please contact an administrator.');
+    }
+    user = await syncOAuthProfile(user, { providerId, picture, provider });
+  } else {
+    // 4. Create new user for first-time OAuth sign in
+    const username = await generateFormattedUsername(rawName);
+    const randomPassword = `OAuth_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    const passwordHash = await hashPassword(randomPassword);
+
+    user = await prisma.user.create({
+      data: {
+        username,
+        email,
+        passwordHash,
+        avatarUrl: picture,
+        isCustomAvatar: false,
+        signupProvider: AuthProvider[provider] ? provider : AuthProvider.GOOGLE,
+        providerId,
+        emailVerified: true,
+        lastLoginAt: new Date(),
+        lastLoginProvider: provider,
+        role: UserRole.MEMBER,
+      },
+    });
+  }
+
+  // 5. Issue application native JWT token
+  const token = generateToken({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.username,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      emailVerified: user.emailVerified,
+    },
   };
 };

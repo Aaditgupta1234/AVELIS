@@ -8,7 +8,7 @@
  */
 
 import { sendSuccess } from '../utils/response.js';
-import { registerUser, loginUser, getCurrentUser } from '../services/auth.service.js';
+import { registerUser, loginUser, getCurrentUser, oauthAuthService } from '../services/auth.service.js';
 import { logger } from '../config/logger.js';
 
 /**
@@ -64,6 +64,32 @@ export const login = async (req, res, next) => {
 };
 
 /**
+ * Handle OAuth login request.
+ *
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ */
+export const oauthLogin = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    const authData = await oauthAuthService({ supabaseToken: token });
+
+    logger.info(`[AUTH] OAuth login successful: userId=${authData.user?.id}`);
+
+    return sendSuccess(
+      res,
+      200,
+      authData,
+      'OAuth authentication successful.'
+    );
+  } catch (error) {
+    logger.warn(`[AUTH] OAuth authentication failed: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
  * Handle get current user request.
  *
  * @param {import('express').Request} req - Express request
@@ -99,7 +125,7 @@ export const logout = async (req, res, next) => {
       res,
       200,
       null,
-      'Authentication endpoint scaffolded. Implementation will be added in Phase 6.2.'
+      'Logout successful.'
     );
   } catch (error) {
     next(error);

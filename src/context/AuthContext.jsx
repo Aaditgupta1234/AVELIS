@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { STORAGE_KEYS } from "../constants/storage.js";
-import { loginUser, registerUser, getMe } from "../services/auth.service.js";
+import { loginUser, registerUser, getMe, oauthUser } from "../services/auth.service.js";
 import { apiClient } from "../api/client.js";
 import { normalizeError } from "../utils/error.js";
+import { supabase } from "../lib/supabase.js";
 
 const AuthContext = createContext(undefined);
 
@@ -29,8 +30,13 @@ export const AuthProvider = ({ children }) => {
     error: null,
   });
 
-  // Idempotent logout utility
-  const logout = () => {
+  // Race-free logout utility (clears Supabase session first, then application state & storage)
+  // useCallback([]) — closes over: supabase (module-level), localStorage (global), setAuthState (stable setter)
+  const logout = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
     localStorage.removeItem("avelis_custom_avatar");
@@ -44,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       isLoading: false,
       error: null,
     });
-  };
+  }, []);
 
   // Restores user session on reload (source of truth check)
   useEffect(() => {
@@ -60,10 +66,10 @@ export const AuthProvider = ({ children }) => {
       try {
         const backendUser = await getMe({ signal: controller.signal });
         
-        // Merge DB profile with mockable UI-only local variables (avatar/bio) to prevent UI breakage
+        // Merge DB profile with local avatar/bio fallbacks
         const mergedUser = {
           ...backendUser,
-          avatar: localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
+          avatar: backendUser.avatarUrl || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
           biography: localStorage.getItem("avelis_biography") || "",
           memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
             month: "long",
@@ -83,11 +89,9 @@ export const AuthProvider = ({ children }) => {
           error: null,
         });
       } catch (err) {
-        // If aborted, do not update state
         if (err.name === "CanceledError" || err.name === "AbortError") {
           return;
         }
-        // Fail gracefully on invalid/expired token or server issues
         logout();
       }
     };
@@ -103,7 +107,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === STORAGE_KEYS.TOKEN && !e.newValue) {
-        // Token was cleared in another tab
         logout();
       }
     };
@@ -111,7 +114,8 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  const login = async (email, password) => {
+  // useCallback([]) — closes over: setAuthState (stable setter), loginUser (imported), normalizeError (imported), localStorage (global)
+  const login = useCallback(async (email, password) => {
     setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const data = await loginUser({ email, password });
@@ -121,7 +125,7 @@ export const AuthProvider = ({ children }) => {
 
       const mergedUser = {
         ...backendUser,
-        avatar: localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
+        avatar: backendUser.avatarUrl || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
         biography: localStorage.getItem("avelis_biography") || "",
         memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
           month: "long",
@@ -152,13 +156,71 @@ export const AuthProvider = ({ children }) => {
       }));
       throw normalized;
     }
-  };
+  }, []);
 
-  const register = async (name, email, password) => {
+  // useCallback([]) — closes over: supabase (module-level), setAuthState (stable setter), normalizeError (imported)
+  const loginWithGoogle = useCallback(async () => {
+    setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const redirectUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      const normalized = normalizeError(err);
+      setAuthState((prev) => ({ ...prev, isLoading: false, error: normalized }));
+      throw normalized;
+    }
+  }, []);
+
+  // useCallback([]) — closes over: setAuthState (stable setter), oauthUser (imported), normalizeError (imported), localStorage (global)
+  const loginWithOAuthToken = useCallback(async (supabaseAccessToken) => {
+    setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const data = await oauthUser({ token: supabaseAccessToken });
+      const token = data.token;
+      const backendUser = data.user;
+
+      const mergedUser = {
+        ...backendUser,
+        avatar: backendUser.avatarUrl || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
+        biography: localStorage.getItem("avelis_biography") || "",
+        memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric"
+        }),
+      };
+
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mergedUser));
+
+      setAuthState({
+        user: mergedUser,
+        token,
+        isAuthenticated: true,
+        isInitializing: false,
+        isLoading: false,
+        error: null,
+      });
+
+      return { user: mergedUser, token };
+    } catch (err) {
+      const normalized = normalizeError(err);
+      setAuthState((prev) => ({ ...prev, isLoading: false, error: normalized }));
+      throw normalized;
+    }
+  }, []);
+
+  // useCallback([login]) — closes over: setAuthState (stable setter), registerUser (imported), normalizeError (imported), login (stable via useCallback)
+  const register = useCallback(async (name, email, password) => {
     setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       await registerUser({ name, email, password });
-      // Authenticate directly after registration
       return await login(email, password);
     } catch (err) {
       const normalized = normalizeError(err);
@@ -169,17 +231,14 @@ export const AuthProvider = ({ children }) => {
       }));
       throw normalized;
     }
-  };
+  }, [login]);
 
-  // Preserves existing profile modification components using API pings
   const updateProfile = async (name, biography) => {
     if (!authState.user) return;
     try {
-      // 1. Sync name (username) to the backend database
       const response = await apiClient.patch("/users/me", { username: name });
       const updatedBackendUser = response.data.data;
 
-      // 2. Persist bio locally since backend schema omits bio
       localStorage.setItem("avelis_biography", biography || "");
 
       const updatedUser = {
@@ -201,6 +260,7 @@ export const AuthProvider = ({ children }) => {
     const updatedUser = {
       ...authState.user,
       avatar: dataUrl,
+      avatarUrl: dataUrl,
     };
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
     setAuthState((prev) => ({ ...prev, user: updatedUser }));
@@ -212,6 +272,7 @@ export const AuthProvider = ({ children }) => {
     const updatedUser = {
       ...authState.user,
       avatar: createDefaultAvatar(authState.user.name),
+      avatarUrl: null,
     };
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
     setAuthState((prev) => ({ ...prev, user: updatedUser }));
@@ -227,6 +288,8 @@ export const AuthProvider = ({ children }) => {
         isLoading: authState.isLoading,
         error: authState.error,
         login,
+        loginWithGoogle,
+        loginWithOAuthToken,
         register,
         logout,
         updateProfile,

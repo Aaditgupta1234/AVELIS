@@ -6,6 +6,7 @@ import { LibraryPage } from "./pages/Library/LibraryPage";
 import { BookDetailsPage } from "./pages/Library/BookDetailsPage";
 import { ReadingJournalPage } from "./pages/ReadingJournal/ReadingJournalPage";
 import { LoginPage } from "./pages/LoginPage";
+import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PageWrapper } from "./components/ui/PageWrapper";
 import { ScrollToTop } from "./components/ui/ScrollToTop";
@@ -25,6 +26,7 @@ const AnimatedRoutes = () => {
         <Route path="/book/:id" element={<PageWrapper><BookDetailsPage /></PageWrapper>}/>
         <Route path="/journal" element={<PageWrapper><ReadingJournalPage /></PageWrapper>}/>
         <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>}/>
+        <Route path="/auth/callback" element={<PageWrapper><AuthCallbackPage /></PageWrapper>}/>
         <Route path="/dashboard" element={<ProtectedRoute>
               <PageWrapper>
                 <DashboardPage />
