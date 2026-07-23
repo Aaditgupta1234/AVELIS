@@ -188,10 +188,21 @@ export const CatalogManager = () => {
     }
   });
 
+  const BUNDLE_CATEGORIES = [
+    "Fiction",
+    "Philosophy",
+    "Business",
+    "Science",
+    "History",
+    "Literature",
+    "Technology"
+  ];
+
   const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
   const [editingBundle, setEditingBundle] = useState(null);
   const [bundleTitle, setBundleTitle] = useState("");
   const [bundleSubtitle, setBundleSubtitle] = useState("");
+  const [bundleCategory, setBundleCategory] = useState("Fiction");
   const [bundleDescription, setBundleDescription] = useState("");
   const [bundleVolumes, setBundleVolumes] = useState("3 Volumes");
   const [bundlePrice, setBundlePrice] = useState(49.99);
@@ -414,6 +425,7 @@ export const CatalogManager = () => {
     setEditingBundle(null);
     setBundleTitle("");
     setBundleSubtitle("Curated Collection");
+    setBundleCategory("Fiction");
     setBundleDescription("");
     setBundleVolumes("3 Volumes Boxed Set");
     setBundlePrice(49.99);
@@ -429,6 +441,7 @@ export const CatalogManager = () => {
     setEditingBundle(bundle);
     setBundleTitle(bundle.title);
     setBundleSubtitle(bundle.subtitle || "Curated Series");
+    setBundleCategory(bundle.category || "Fiction");
     setBundleDescription(bundle.description || "");
     setBundleVolumes(bundle.volumes || `${bundle.bookIds?.length || 3} Volumes Set`);
     setBundlePrice(bundle.price || 49.99);
@@ -458,6 +471,7 @@ export const CatalogManager = () => {
     const payload = {
       title: bundleTitle,
       subtitle: bundleSubtitle,
+      category: bundleCategory || "Fiction",
       description: bundleDescription,
       volumes: volumesLabel,
       price: parseFloat(bundlePrice),
@@ -869,9 +883,14 @@ export const CatalogManager = () => {
                   </div>
 
                   <div className="p-6 space-y-3 flex-grow">
-                    <span className="font-display text-[9px] text-[#C9A227] uppercase tracking-[0.2em] block font-bold">
-                      {bundle.subtitle || "Curated Bundle"}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-display text-[9px] text-[#C9A227] uppercase tracking-[0.2em] font-bold">
+                        {bundle.subtitle || "Curated Bundle"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-[#C9A227]/15 text-[#C9A227] border border-[#C9A227]/30 text-[9px] font-display uppercase tracking-wider font-bold">
+                        {bundle.category || "General"}
+                      </span>
+                    </div>
                     <h4 className="font-display text-lg text-white tracking-wide">
                       {bundle.title}
                     </h4>
@@ -1256,7 +1275,7 @@ export const CatalogManager = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
                     Subtitle / Badge
@@ -1270,8 +1289,24 @@ export const CatalogManager = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1 font-bold">
+                    Category *
+                  </label>
+                  <select
+                    value={bundleCategory}
+                    onChange={(e) => setBundleCategory(e.target.value)}
+                    className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.25)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                  >
+                    {BUNDLE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
-                    Bundle Price ($) *
+                    Price ($) *
                   </label>
                   <input
                     type="number"

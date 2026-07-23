@@ -126,9 +126,12 @@ const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrow
 
         <div className="p-8 flex flex-col justify-between flex-grow">
           <div>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className="font-display text-[9px] tracking-[0.25em] text-[#C9A227] uppercase font-bold">
                 {item.subtitle || "Curated Bundle"}
+              </span>
+              <span className="px-2 py-0.5 rounded bg-[#C9A227]/15 text-[#C9A227] border border-[#C9A227]/30 text-[9px] font-display uppercase tracking-wider font-bold">
+                {item.category || "General"}
               </span>
             </div>
 
@@ -435,9 +438,12 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
                   className="w-full md:w-48 h-36 md:h-48 object-cover rounded-xl border border-[#C9A227]/30 shadow-xl flex-shrink-0"
                 />
                 <div className="space-y-3 flex-grow">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <span className="px-3 py-1 rounded bg-[#C9A227]/10 border border-[#C9A227]/30 text-[#C9A227] font-display text-[10px] tracking-[0.2em] uppercase font-bold">
                       {activeExploreBundle.subtitle || "Curated Collection Bundle"}
+                    </span>
+                    <span className="px-3 py-1 rounded bg-[#C9A227]/25 border border-[#C9A227]/40 text-[#C9A227] font-display text-[10px] tracking-[0.2em] uppercase font-bold">
+                      {activeExploreBundle.category || "General"}
                     </span>
                     {activeExploreBundle.price && (
                       <span className="font-display text-sm text-[#C9A227] font-bold">

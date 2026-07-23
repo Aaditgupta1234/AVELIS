@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { AnimatedSection } from "../../components/ui/AnimatedSection";
 import { SEARCH_CATEGORIES, SORT_OPTIONS } from "../../utils/constants";
-export const CollectionsSearch = ({ query = "", setQuery = (_q) => { }, resultCount = 124 }) => {
+export const CollectionsSearch = ({
+  query = "",
+  setQuery = (_q) => { },
+  categoryFilter = "ALL",
+  setCategoryFilter = (_c) => { },
+  sortOrder = "DEFAULT",
+  setSortOrder = (_s) => { },
+  resultCount = 124
+}) => {
     const [isFocused, setIsFocused] = useState(false);
     return (<AnimatedSection variant="B" className="px-gutter max-w-container-max mx-auto mb-24">
       <div className={`glass-panel border flex flex-col md:flex-row gap-4 items-center justify-between p-6 relative z-10 transition-all duration-300 ${isFocused ? 'border-primary shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'border-white/10'}`}>
@@ -14,13 +22,23 @@ export const CollectionsSearch = ({ query = "", setQuery = (_q) => { }, resultCo
         </div>
         
         <div className="flex gap-4 w-full md:w-auto">
-          <select aria-label="Select Category" className="bg-transparent border-b border-white/10 focus:border-primary outline-none py-3 px-4 font-display text-[10px] uppercase tracking-[0.2em] text-on-background w-full md:w-40 appearance-none cursor-pointer transition-colors">
-            <option className="bg-background">Categories</option>
-            {SEARCH_CATEGORIES.map(cat => <option key={cat} className="bg-background">{cat}</option>)}
+          <select
+            aria-label="Select Category"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-transparent border-b border-white/10 focus:border-primary outline-none py-3 px-4 font-display text-[10px] uppercase tracking-[0.2em] text-on-background w-full md:w-44 appearance-none cursor-pointer transition-colors"
+          >
+            <option value="ALL" className="bg-background">All Categories</option>
+            {SEARCH_CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-background">{cat}</option>)}
           </select>
-          <select aria-label="Sort By" className="bg-transparent border-b border-white/10 focus:border-primary outline-none py-3 px-4 font-display text-[10px] uppercase tracking-[0.2em] text-on-background w-full md:w-40 appearance-none cursor-pointer transition-colors">
-            <option className="bg-background">Sort By</option>
-            {SORT_OPTIONS.map(opt => <option key={opt} className="bg-background">{opt}</option>)}
+          <select
+            aria-label="Sort By"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="bg-transparent border-b border-white/10 focus:border-primary outline-none py-3 px-4 font-display text-[10px] uppercase tracking-[0.2em] text-on-background w-full md:w-40 appearance-none cursor-pointer transition-colors"
+          >
+            <option value="DEFAULT" className="bg-background">Sort By</option>
+            {SORT_OPTIONS.map(opt => <option key={opt} value={opt} className="bg-background">{opt}</option>)}
           </select>
         </div>
         

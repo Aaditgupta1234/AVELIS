@@ -5,9 +5,13 @@ export const NAVIGATION_LINKS = [
     { name: "Journal", path: "/journal" }
 ];
 export const SEARCH_CATEGORIES = [
+    "Fiction",
     "Philosophy",
     "Business",
-    "Science"
+    "Science",
+    "History",
+    "Literature",
+    "Technology"
 ];
 export const SORT_OPTIONS = [
     "Newest",

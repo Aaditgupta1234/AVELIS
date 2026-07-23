@@ -13,6 +13,8 @@ import { getBundlesApi } from "../api/bundle.api";
 
 export const CollectionsPage = () => {
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState("DEFAULT");
   const [isLoading, setIsLoading] = useState(false);
   const loadCustomBundles = () => {
     try {
@@ -56,22 +58,35 @@ export const CollectionsPage = () => {
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
-      if (!query.trim()) {
-        setResults(allBundles);
-      } else {
+      let filtered = [...allBundles];
+
+      if (query.trim()) {
         const lower = query.toLowerCase();
-        setResults(
-          allBundles.filter(
-            (c) =>
-              c.title.toLowerCase().includes(lower) ||
-              c.description.toLowerCase().includes(lower)
-          )
+        filtered = filtered.filter(
+          (c) =>
+            c.title.toLowerCase().includes(lower) ||
+            (c.description || "").toLowerCase().includes(lower) ||
+            (c.category || "").toLowerCase().includes(lower)
         );
       }
+
+      if (categoryFilter !== "ALL") {
+        filtered = filtered.filter(
+          (c) => (c.category || "General").toLowerCase() === categoryFilter.toLowerCase()
+        );
+      }
+
+      if (sortOrder === "A-Z") {
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortOrder === "Newest") {
+        filtered.reverse();
+      }
+
+      setResults(filtered);
       setIsLoading(false);
-    }, 400);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [query, allBundles]);
+  }, [query, categoryFilter, sortOrder, allBundles]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
@@ -82,6 +97,10 @@ export const CollectionsPage = () => {
         <CollectionsSearch
           query={query}
           setQuery={setQuery}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          sortOrder={sortOrder}
+          setSortOrder={setSortOrder}
           resultCount={results.length}
         />
         <CollectionsGrid collections={results} isLoading={isLoading} />
