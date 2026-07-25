@@ -2,109 +2,236 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn, ZoomOut, Maximize, Minimize, BookOpen, ChevronLeft, ChevronRight, Pencil, Trash2, StickyNote, Highlighter, Eraser, Undo2, Redo2, Type, AlignLeft, ExternalLink } from "lucide-react";
 
-const PageCanvasOverlay = ({ pageNum, activeTool, penColor, penWidth, inkOpacity = 35, drawings, setDrawings, onSaveHistory }) => {
+const PageCanvasOverlay = ({
+  pageNum,
+  activeTool,
+  penColor,
+  penWidth,
+  inkOpacity = 35,
+  highlightMode = "word",
+  annotations,
+  onAddStroke,
+  onEraseStroke,
+}) => {
   const canvasRef = useRef(null);
-  const isDrawing = useRef(false);
+  const isPointerDown = useRef(false);
+  const currentStrokeRef = useRef(null);
+  const animFrameId = useRef(null);
 
-  useEffect(() => {
+  const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const dataUrl = drawings[pageNum];
-
-    if (dataUrl) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = dataUrl;
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  }, [pageNum, drawings]);
-
-  const saveCanvas = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const url = canvas.toDataURL();
-      setDrawings((prev) => ({ ...prev, [pageNum]: url }));
-      if (onSaveHistory) {
-        onSaveHistory(pageNum, url);
-      }
-    }
-  };
-
-  const getPos = (e) => {
-    const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+
+    const dpr = window.devicePixelRatio || 1;
+    const targetWidth = Math.round(rect.width * dpr);
+    const targetHeight = Math.round(rect.height * dpr);
+
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+    }
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const pageStrokes = annotations[pageNum] || [];
+    const allStrokes = currentStrokeRef.current
+      ? [...pageStrokes, currentStrokeRef.current]
+      : pageStrokes;
+
+    allStrokes.forEach((stroke) => {
+      if (!stroke.points || stroke.points.length === 0) return;
+
+      ctx.save();
+      ctx.beginPath();
+
+      const scale = width / 800;
+      const baseWidth = (stroke.width || 3) * scale;
+
+      if (stroke.tool === "highlighter") {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = stroke.color || "#FDE047";
+        ctx.globalAlpha = (stroke.opacity || 35) / 100;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        if (stroke.mode === "line") {
+          ctx.lineWidth = Math.max(26 * scale, baseWidth * 6);
+        } else {
+          ctx.lineWidth = Math.max(12 * scale, baseWidth * 3);
+        }
+      } else {
+        // Pen tool
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = stroke.color || "#C9A227";
+        ctx.globalAlpha = 1.0;
+        ctx.lineWidth = baseWidth * 1.8;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      }
+
+      const pts = stroke.points;
+      if (pts.length === 1) {
+        const x = pts[0].x * width;
+        const y = pts[0].y * height;
+        ctx.arc(x, y, ctx.lineWidth / 2, 0, Math.PI * 2);
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+      } else {
+        ctx.moveTo(pts[0].x * width, pts[0].y * height);
+        for (let i = 1; i < pts.length - 1; i++) {
+          const xc = (pts[i].x * width + pts[i + 1].x * width) / 2;
+          const yc = (pts[i].y * height + pts[i + 1].y * height) / 2;
+          ctx.quadraticCurveTo(pts[i].x * width, pts[i].y * height, xc, yc);
+        }
+        ctx.lineTo(
+          pts[pts.length - 1].x * width,
+          pts[pts.length - 1].y * height
+        );
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    });
+  }, [pageNum, annotations]);
+
+  useEffect(() => {
+    renderCanvas();
+  }, [renderCanvas]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      renderCanvas();
     };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [renderCanvas]);
+
+  const getNormalizedPos = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    return { x, y };
   };
 
-  const startDrawing = (e) => {
-    if (activeTool === "none") return;
-    isDrawing.current = true;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const pos = getPos(e);
+  const distanceToSegment = (px, py, x1, y1, x2, y2) => {
+    const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+    if (l2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+  };
 
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+  const performEraserHitTest = (normPos) => {
+    const pageStrokes = annotations[pageNum] || [];
+    if (pageStrokes.length === 0) return;
+
+    const eraserThreshold = 0.04;
+    let strokeErased = false;
+
+    for (let i = pageStrokes.length - 1; i >= 0; i--) {
+      const stroke = pageStrokes[i];
+      const pts = stroke.points || [];
+      for (let j = 0; j < pts.length - 1; j++) {
+        const dist = distanceToSegment(
+          normPos.x,
+          normPos.y,
+          pts[j].x,
+          pts[j].y,
+          pts[j + 1].x,
+          pts[j + 1].y
+        );
+        if (dist < eraserThreshold) {
+          onEraseStroke(pageNum, stroke.id);
+          strokeErased = true;
+          break;
+        }
+      }
+      if (strokeErased) break;
+    }
+  };
+
+  const handlePointerDown = (e) => {
+    if (activeTool === "none") return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    isPointerDown.current = true;
+    const pos = getNormalizedPos(e);
 
     if (activeTool === "eraser") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = penWidth * 6;
-      ctx.globalAlpha = 1.0;
-      ctx.lineCap = "round";
-    } else if (activeTool === "highlighter") {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = penColor || "#FDE047";
-      ctx.lineWidth = penWidth * 5;
-      ctx.globalAlpha = (inkOpacity || 35) / 100;
-      ctx.lineCap = "square";
-    } else {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = penColor || "#C9A227";
-      ctx.lineWidth = penWidth;
-      ctx.globalAlpha = (inkOpacity || 100) / 100;
-      ctx.lineCap = "round";
+      performEraserHitTest(pos);
+      return;
+    }
+
+    currentStrokeRef.current = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      tool: activeTool,
+      color: activeTool === "highlighter" ? penColor || "#FDE047" : penColor || "#C9A227",
+      width: penWidth,
+      opacity: activeTool === "highlighter" ? inkOpacity : 100,
+      mode: highlightMode,
+      points: [pos],
+    };
+
+    renderCanvas();
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isPointerDown.current || activeTool === "none") return;
+    const pos = getNormalizedPos(e);
+
+    if (activeTool === "eraser") {
+      performEraserHitTest(pos);
+      return;
+    }
+
+    if (currentStrokeRef.current) {
+      currentStrokeRef.current.points.push(pos);
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+      animFrameId.current = requestAnimationFrame(() => {
+        renderCanvas();
+      });
     }
   };
 
-  const draw = (e) => {
-    if (!isDrawing.current || activeTool === "none") return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const pos = getPos(e);
+  const handlePointerUp = (e) => {
+    if (!isPointerDown.current) return;
+    isPointerDown.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (_) {}
 
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    if (currentStrokeRef.current && activeTool !== "eraser") {
+      const finishedStroke = currentStrokeRef.current;
+      currentStrokeRef.current = null;
+      onAddStroke(pageNum, finishedStroke);
+    }
   };
 
-  const stopDrawing = () => {
-    if (isDrawing.current) {
-      isDrawing.current = false;
-      saveCanvas();
-    }
+  const getCursorStyle = () => {
+    if (activeTool === "none") return "pointer-events-none";
+    if (activeTool === "pen") return "cursor-crosshair pointer-events-auto";
+    if (activeTool === "highlighter") return "cursor-crosshair pointer-events-auto";
+    if (activeTool === "eraser") return "cursor-pointer pointer-events-auto";
+    return "pointer-events-none";
   };
 
   return (
     <canvas
       ref={canvasRef}
-      width={800}
-      height={1050}
-      onMouseDown={startDrawing}
-      onMouseMove={draw}
-      onMouseUp={stopDrawing}
-      onMouseLeave={stopDrawing}
-      className={`absolute inset-0 w-full h-full z-10 ${
-        activeTool === "none" ? "pointer-events-none" : "cursor-crosshair pointer-events-auto"
-      }`}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      className={`absolute inset-0 w-full h-full z-20 ${getCursorStyle()}`}
     />
   );
 };
@@ -204,59 +331,162 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
   const [activeHighlightColor, setActiveHighlightColor] = useState("#FDE047");
   const [pageNotes, setPageNotes] = useState({});
 
-  // Canvas Freehand Drawing State
+  // Canvas Freehand Vector Drawing State
   const [activeTool, setActiveTool] = useState("none"); // 'pen' | 'highlighter' | 'eraser' | 'none'
   const [penColor, setPenColor] = useState("#C9A227");
   const [penWidth, setPenWidth] = useState(3);
   const [inkOpacity, setInkOpacity] = useState(35);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [drawings, setDrawings] = useState({});
+  const [highlightMode, setHighlightMode] = useState("word"); // 'word' | 'line'
 
-  // Drawing History (Undo / Redo) and Text Highlight Mode
-  const [drawingHistory, setDrawingHistory] = useState({});
-  const [highlightMode, setHighlightMode] = useState("word"); // 'word' | 'line' | 'selection'
+  // Vector Annotations Data Model: { [pageNumber]: [ { id, tool, color, width, opacity, mode, points } ] }
+  const [annotations, setAnnotations] = useState(() => {
+    if (book?.id) {
+      try {
+        const saved = localStorage.getItem(`avelis_annotations_${book.id}`);
+        if (saved) return JSON.parse(saved);
+      } catch (_) {}
+    }
+    return {};
+  });
 
-  const pushDrawingHistory = (pageNum, dataUrl) => {
-    setDrawingHistory((prev) => {
-      const pageHist = prev[pageNum] || { history: [], index: -1 };
-      const newHist = pageHist.history.slice(0, pageHist.index + 1);
-      newHist.push(dataUrl);
-      return {
-        ...prev,
-        [pageNum]: { history: newHist, index: newHist.length - 1 },
-      };
-    });
-  };
+  // Per-page Undo and Redo Stack history
+  const [undoStack, setUndoStack] = useState({});
+  const [redoStack, setRedoStack] = useState({});
 
+  // Restore & Save Annotations per Book ID
+  useEffect(() => {
+    if (book?.id) {
+      try {
+        const saved = localStorage.getItem(`avelis_annotations_${book.id}`);
+        if (saved) {
+          setAnnotations(JSON.parse(saved));
+        } else {
+          setAnnotations({});
+        }
+      } catch (_) {}
+      setUndoStack({});
+      setRedoStack({});
+    }
+  }, [book?.id]);
+
+  useEffect(() => {
+    if (book?.id) {
+      try {
+        localStorage.setItem(`avelis_annotations_${book.id}`, JSON.stringify(annotations));
+      } catch (_) {}
+    }
+  }, [annotations, book?.id]);
+
+  // Push current page state to Undo Stack
+  const pushToUndo = useCallback(
+    (pageNum) => {
+      setUndoStack((prev) => {
+        const pageUndo = prev[pageNum] || [];
+        const currentStrokes = annotations[pageNum] || [];
+        return {
+          ...prev,
+          [pageNum]: [...pageUndo, JSON.parse(JSON.stringify(currentStrokes))],
+        };
+      });
+      setRedoStack((prev) => ({ ...prev, [pageNum]: [] }));
+    },
+    [annotations]
+  );
+
+  // Add new stroke
+  const handleAddStroke = useCallback(
+    (pageNum, stroke) => {
+      pushToUndo(pageNum);
+      setAnnotations((prev) => {
+        const pageStrokes = prev[pageNum] || [];
+        return {
+          ...prev,
+          [pageNum]: [...pageStrokes, stroke],
+        };
+      });
+    },
+    [pushToUndo]
+  );
+
+  // Erase stroke
+  const handleEraseStroke = useCallback(
+    (pageNum, strokeId) => {
+      pushToUndo(pageNum);
+      setAnnotations((prev) => {
+        const pageStrokes = prev[pageNum] || [];
+        return {
+          ...prev,
+          [pageNum]: pageStrokes.filter((s) => s.id !== strokeId),
+        };
+      });
+    },
+    [pushToUndo]
+  );
+
+  // Undo action
   const handleUndo = (pageNum) => {
     const targetPage = pageNum || currentPage;
-    setDrawingHistory((prev) => {
-      const pageHist = prev[targetPage] || { history: [], index: -1 };
-      if (pageHist.index > 0) {
-        const newIndex = pageHist.index - 1;
-        const prevUrl = pageHist.history[newIndex];
-        setDrawings((d) => ({ ...d, [targetPage]: prevUrl }));
-        return { ...prev, [targetPage]: { ...pageHist, index: newIndex } };
-      } else if (pageHist.index === 0) {
-        setDrawings((d) => ({ ...d, [targetPage]: null }));
-        return { ...prev, [targetPage]: { ...pageHist, index: -1 } };
-      }
-      return prev;
-    });
+    const pageUndo = undoStack[targetPage] || [];
+    if (pageUndo.length === 0) return;
+
+    const previousState = pageUndo[pageUndo.length - 1];
+    const newUndo = pageUndo.slice(0, pageUndo.length - 1);
+
+    setRedoStack((prev) => ({
+      ...prev,
+      [targetPage]: [...(prev[targetPage] || []), JSON.parse(JSON.stringify(annotations[targetPage] || []))],
+    }));
+
+    setUndoStack((prev) => ({
+      ...prev,
+      [targetPage]: newUndo,
+    }));
+
+    setAnnotations((prev) => ({
+      ...prev,
+      [targetPage]: previousState,
+    }));
   };
 
+  // Redo action
   const handleRedo = (pageNum) => {
     const targetPage = pageNum || currentPage;
-    setDrawingHistory((prev) => {
-      const pageHist = prev[targetPage] || { history: [], index: -1 };
-      if (pageHist.index < pageHist.history.length - 1) {
-        const newIndex = pageHist.index + 1;
-        const nextUrl = pageHist.history[newIndex];
-        setDrawings((d) => ({ ...d, [targetPage]: nextUrl }));
-        return { ...prev, [targetPage]: { ...pageHist, index: newIndex } };
-      }
-      return prev;
-    });
+    const pageRedo = redoStack[targetPage] || [];
+    if (pageRedo.length === 0) return;
+
+    const nextState = pageRedo[pageRedo.length - 1];
+    const newRedo = pageRedo.slice(0, pageRedo.length - 1);
+
+    setUndoStack((prev) => ({
+      ...prev,
+      [targetPage]: [...(prev[targetPage] || []), JSON.parse(JSON.stringify(annotations[targetPage] || []))],
+    }));
+
+    setRedoStack((prev) => ({
+      ...prev,
+      [targetPage]: newRedo,
+    }));
+
+    setAnnotations((prev) => ({
+      ...prev,
+      [targetPage]: nextState,
+    }));
+  };
+
+  // Clear page drawings
+  const handleClearPage = (pageNum) => {
+    const targetPage = pageNum || currentPage;
+    const pageStrokes = annotations[targetPage] || [];
+    if (pageStrokes.length === 0) return;
+
+    if (window.confirm(`Are you sure you want to clear all drawings and highlights on Page ${targetPage}?`)) {
+      pushToUndo(targetPage);
+      setAnnotations((prev) => ({
+        ...prev,
+        [targetPage]: [],
+      }));
+    }
   };
 
   const viewportRef = useRef(null);
@@ -304,20 +534,30 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
   };
   const rawPdfUrl = book?.pdfUrl || null;
   const pdfSource = rawPdfUrl
-    ? `${rawPdfUrl.split('#')[0]}#toolbar=0&navpanes=0&statusbar=0&messages=0&view=FitH&page=${currentPage}&zoom=${zoom}`
+    ? `${rawPdfUrl.split('#')[0]}#toolbar=0&navpanes=0&statusbar=0&messages=0&view=Fit&page=${currentPage}`
     : null;
 
-  // Wheel / trackpad scroll listener to sync page count when scrolling over reader viewport
+  // Wheel / trackpad scroll listener to allow smooth scrolling and sync page count at boundaries
   const handleWheel = useCallback(
     (e) => {
       if (isScrollingByButton.current) return;
-      wheelAccumulator.current += e.deltaY;
-      if (Math.abs(wheelAccumulator.current) > 80) {
-        if (wheelAccumulator.current > 0) {
-          setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-        } else {
-          setCurrentPage((prev) => Math.max(prev - 1, 1));
+      const container = viewportRef.current;
+      if (!container) return;
+
+      const isAtTop = container.scrollTop <= 2;
+      const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+
+      if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+        wheelAccumulator.current += e.deltaY;
+        if (Math.abs(wheelAccumulator.current) > 350) {
+          if (wheelAccumulator.current > 0) {
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+          } else {
+            setCurrentPage((prev) => Math.max(prev - 1, 1));
+          }
+          wheelAccumulator.current = 0;
         }
+      } else {
         wheelAccumulator.current = 0;
       }
     },
@@ -402,7 +642,11 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
   // Sync iframe src when page or zoom changes to navigate PDF view
   useEffect(() => {
     if (iframeRef.current && pdfSource) {
-      iframeRef.current.src = pdfSource;
+      try {
+        iframeRef.current.contentWindow?.location?.replace(pdfSource);
+      } catch (_) {
+        iframeRef.current.src = pdfSource;
+      }
     }
   }, [currentPage, zoom, pdfSource]);
 
@@ -413,14 +657,23 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
     }
   }, [currentPage, isEditingPage]);
 
-  // Reset scroll and page when modal opens or book changes
+  // Reset scroll, active tools, and page when modal opens or book changes
   useEffect(() => {
     if (isOpen) {
       setCurrentPage(1);
+      setActiveTool("none");
+      setIsDropdownOpen(false);
+      setIsAnnotating(false);
+      document.body.style.overflow = "hidden";
       if (viewportRef.current) {
         viewportRef.current.scrollTop = 0;
       }
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen, book]);
 
   // Handle scroll detection to sync page count header automatically
@@ -748,8 +1001,14 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
               <div className="relative">
                 <button
                   onClick={() => {
-                    setIsDropdownOpen((prev) => !prev);
-                    setIsAnnotating(true);
+                    if (isDropdownOpen) {
+                      setIsDropdownOpen(false);
+                      setActiveTool("none");
+                      setIsAnnotating(false);
+                    } else {
+                      setIsDropdownOpen(true);
+                      setIsAnnotating(true);
+                    }
                   }}
                   className={`p-2 border rounded transition-all cursor-pointer flex items-center gap-2 px-3.5 ${
                     activeTool !== "none" || isDropdownOpen
@@ -781,7 +1040,14 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
                     >
                       <div className="flex justify-between items-center border-b border-white/10 pb-2 text-[10px] text-[#C9A227] uppercase tracking-wider font-semibold">
                         <span>Pen, Highlight & Eraser Tools</span>
-                        <button onClick={() => setIsDropdownOpen(false)} className="text-white/60 hover:text-white cursor-pointer">
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            setActiveTool("none");
+                            setIsAnnotating(false);
+                          }}
+                          className="text-white/60 hover:text-white cursor-pointer"
+                        >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -944,9 +1210,7 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
                       {/* Clear Actions */}
                       <div className="pt-2 border-t border-white/10 flex justify-between gap-2">
                         <button
-                          onClick={() => {
-                            setDrawings((prev) => ({ ...prev, [currentPage]: null }));
-                          }}
+                          onClick={() => handleClearPage(currentPage)}
                           className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded border border-rose-500/30 text-rose-400 hover:bg-rose-950/30 text-[9px] uppercase tracking-wider cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -1091,12 +1355,41 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
             className="flex-1 bg-[#07111F] overflow-y-auto flex flex-col items-center p-4 sm:p-8 gap-8 relative scroll-smooth h-full"
           >
             {rawPdfUrl ? (
-              <div className="w-full h-full flex flex-col items-center justify-center p-0 relative min-h-[70vh] flex-1">
+              <div
+                className="relative shadow-2xl rounded-lg overflow-hidden border border-[#C9A227]/30 flex-shrink-0 transition-all duration-200"
+                style={{
+                  width: `${Math.round(850 * (zoom / 100))}px`,
+                  height: `${Math.round(1120 * (zoom / 100))}px`,
+                }}
+              >
+                <PageCanvasOverlay
+                  pageNum={currentPage}
+                  activeTool={activeTool}
+                  penColor={penColor}
+                  penWidth={penWidth}
+                  inkOpacity={inkOpacity}
+                  highlightMode={highlightMode}
+                  annotations={annotations}
+                  onAddStroke={handleAddStroke}
+                  onEraseStroke={handleEraseStroke}
+                />
+                <div
+                  className="absolute inset-0 z-10"
+                  style={{ pointerEvents: activeTool === "none" ? "auto" : "none" }}
+                  onWheel={(e) => {
+                    if (viewportRef.current) {
+                      viewportRef.current.scrollTop += e.deltaY;
+                    }
+                  }}
+                />
                 <iframe
+                  key={`${pdfSource}-${zoom}`}
                   ref={iframeRef}
                   src={pdfSource}
                   title={book.title || "PDF Document Reader"}
-                  className="w-full h-full min-h-[75vh] rounded-lg border border-[#C9A227]/30 shadow-2xl bg-white"
+                  className="w-full h-full border-none bg-white relative z-0 pointer-events-auto overflow-hidden"
+                  style={{ width: "100%", height: "100%", overflow: "hidden" }}
+                  scrolling="no"
                 />
               </div>
             ) : (
@@ -1116,9 +1409,10 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
                     penColor={penColor}
                     penWidth={penWidth}
                     inkOpacity={inkOpacity}
-                    drawings={drawings}
-                    setDrawings={setDrawings}
-                    onSaveHistory={(p, url) => pushDrawingHistory(p, url)}
+                    highlightMode={highlightMode}
+                    annotations={annotations}
+                    onAddStroke={handleAddStroke}
+                    onEraseStroke={handleEraseStroke}
                   />
                   {renderPageCardContent(pageNum)}
                 </div>
