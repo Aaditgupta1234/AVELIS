@@ -27,6 +27,7 @@ import {
   FileText,
   MessageSquare,
   RotateCcw,
+  Save,
   Image as ImageIcon
 } from "lucide-react";
 
@@ -532,19 +533,25 @@ export const CatalogManager = () => {
           return prev;
         }
         updated = prev.filter((id) => id !== bookId);
-        showToast(`"${bookTitle}" removed from Hero Showcase (${updated.length}/6).`);
       } else {
         if (prev.length >= 6) {
           showToast("Maximum 6 Hero books allowed. Deselect a book first.");
           return prev;
         }
         updated = [...prev, bookId];
-        showToast(`"${bookTitle}" added to Hero Showcase (${updated.length}/6).`);
       }
-      localStorage.setItem("avelis_hero_book_ids", JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent("avelis_hero_updated"));
       return updated;
     });
+  };
+
+  const handleSaveHeroShowcase = () => {
+    if (!featuredHeroIds || featuredHeroIds.length === 0) {
+      showToast("Select at least 1 volume for the Hero Showcase.");
+      return;
+    }
+    localStorage.setItem("avelis_hero_book_ids", JSON.stringify(featuredHeroIds));
+    window.dispatchEvent(new CustomEvent("avelis_hero_updated"));
+    showToast(`Hero Showcase Banner saved successfully! (${featuredHeroIds.length} volumes active in carousel).`);
   };
 
   const handleSaveAnnouncement = (e) => {
@@ -806,7 +813,6 @@ export const CatalogManager = () => {
                   <th className="p-4 text-center whitespace-nowrap">Type / Format</th>
                   <th className="p-4 text-center whitespace-nowrap">Selling Price</th>
                   <th className="p-4 text-center whitespace-nowrap">Stock</th>
-                  <th className="p-4 text-center whitespace-nowrap">Featured Hero</th>
                   <th className="p-4 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
@@ -814,7 +820,7 @@ export const CatalogManager = () => {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan="8"
+                      colSpan="7"
                       className="p-12 text-center text-[#F7F5EE]/40 animate-pulse font-display text-[10px] tracking-[0.2em] uppercase"
                     >
                       Fetching Archives...
@@ -822,14 +828,12 @@ export const CatalogManager = () => {
                   </tr>
                 ) : filteredBooks.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="p-12 text-center text-[#F7F5EE]/40">
+                    <td colSpan="7" className="p-12 text-center text-[#F7F5EE]/40">
                       No volumes found matching criteria.
                     </td>
                   </tr>
                 ) : (
                   filteredBooks.map((book) => {
-                    const heroIndex = featuredHeroIds.indexOf(book.id);
-                    const isHero = heroIndex !== -1;
                     return (
                       <tr key={book.id} className="hover:bg-white/5 transition-colors align-middle">
                         <td className="p-4 align-middle">
@@ -870,20 +874,6 @@ export const CatalogManager = () => {
                               : "Out of stock"}
                           </span>
                         </td>
-                        <td className="p-4 align-middle text-center">
-                          <button
-                            onClick={() => handleToggleHeroBook(book.id, book.title)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-display uppercase tracking-wider transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                              isHero
-                                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
-                                : "bg-[#07111F] text-[#F7F5EE]/60 hover:text-white border border-[#C9A227]/20"
-                            }`}
-                            title={isHero ? "Click to remove from Hero Showcase" : "Click to add to Hero Showcase (Up to 6)"}
-                          >
-                            <Star className={`w-3 h-3 ${isHero ? "fill-[#07111F]" : ""}`} />
-                            <span>{isHero ? `Hero (${heroIndex + 1}/6)` : "Set Hero"}</span>
-                          </button>
-                        </td>
                         <td className="p-4 align-middle text-right">
                           <div className="inline-flex items-center justify-end gap-2">
                             <button
@@ -918,19 +908,24 @@ export const CatalogManager = () => {
       {adminTab === "hero" && (
         <div className="space-y-8">
           <div className="bg-[#07111F] border border-[#C9A227]/20 rounded-xl p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div className="flex items-center gap-3 text-[#C9A227]">
                 <Sparkles className="w-5 h-5" />
                 <h3 className="font-display text-xl uppercase tracking-wider text-white">
                   Featured Hero Books ({featuredHeroIds.length}/6 Selected)
                 </h3>
               </div>
-              <span className="font-display text-[10px] tracking-[0.15em] text-[#C9A227] uppercase bg-[#C9A227]/10 px-3 py-1 rounded border border-[#C9A227]/30">
-                Up to 6 Books Carousel
-              </span>
+              <button
+                type="button"
+                onClick={handleSaveHeroShowcase}
+                className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-2.5 rounded-lg font-display text-xs tracking-widest uppercase font-bold cursor-pointer transition-all shadow-md flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Hero Showcase Banner</span>
+              </button>
             </div>
             <p className="text-xs text-[#F7F5EE]/70 leading-relaxed font-body">
-              Click books below to select up to 6 volumes that will appear in the 1/6 carousel at the top of the Library Hero banner section.
+              Click books below to select up to 6 volumes that will appear in the 1/6 carousel at the top of the Library Hero banner section. Click "Save Hero Showcase Banner" to update the Library page immediately.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -972,6 +967,17 @@ export const CatalogManager = () => {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveHeroShowcase}
+                className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-3 rounded-lg font-display text-xs tracking-widest uppercase font-bold cursor-pointer transition-all shadow-md flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Hero Showcase Banner</span>
+              </button>
             </div>
           </div>
 
