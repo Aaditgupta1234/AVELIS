@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ZoomIn, ZoomOut, Maximize, Minimize, BookOpen, ChevronLeft, ChevronRight, Pencil, Trash2, StickyNote, Highlighter, Eraser, Undo2, Redo2, Type, AlignLeft } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Maximize, Minimize, BookOpen, ChevronLeft, ChevronRight, Pencil, Trash2, StickyNote, Highlighter, Eraser, Undo2, Redo2, Type, AlignLeft, ExternalLink } from "lucide-react";
 
 const PageCanvasOverlay = ({ pageNum, activeTool, penColor, penWidth, inkOpacity = 35, drawings, setDrawings, onSaveHistory }) => {
   const canvasRef = useRef(null);
@@ -340,9 +340,9 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
 
   // Auto-detect exact page count from loaded PDF document bytes
   useEffect(() => {
+    setDetectedPdfPages(null);
     const rawUrl = book?.pdfUrl;
     if (!rawUrl) {
-      setDetectedPdfPages(null);
       return;
     }
 
@@ -357,17 +357,42 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
     fetch(actualPdfUrl)
       .then((res) => {
         if (!res.ok) throw new Error("Fetch failed");
-        return res.text();
+        return res.arrayBuffer();
       })
-      .then((text) => {
-        const countMatches = text.match(/\/Count\s+(\d+)/g);
+      .then((arrayBuffer) => {
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunkSize, bytes.length)));
+        }
+
+        const rootPagesMatches = binary.match(/\/Type\s*\/Pages[^]*?\/Count\s+(\d+)/g) ||
+                                 binary.match(/\/Count\s+(\d+)[^]*?\/Type\s*\/Pages/g);
+        if (rootPagesMatches && rootPagesMatches.length > 0) {
+          const counts = rootPagesMatches.map((m) => {
+            const match = m.match(/\/Count\s+(\d+)/);
+            return match ? parseInt(match[1], 10) : 0;
+          }).filter((n) => n > 0);
+          if (counts.length > 0) {
+            setDetectedPdfPages(Math.max(...counts));
+            return;
+          }
+        }
+
+        const pageObjMatches = binary.match(/\/Type\s*\/Page\b/g);
+        if (pageObjMatches && pageObjMatches.length > 0) {
+          setDetectedPdfPages(pageObjMatches.length);
+          return;
+        }
+
+        const countMatches = binary.match(/\/Count\s+(\d+)/g);
         if (countMatches && countMatches.length > 0) {
           const pageNumbers = countMatches
             .map((m) => parseInt(m.replace(/\/Count\s+/, ""), 10))
             .filter((n) => !isNaN(n) && n > 0 && n < 5000);
           if (pageNumbers.length > 0) {
-            const maxPages = Math.max(...pageNumbers);
-            setDetectedPdfPages(maxPages);
+            setDetectedPdfPages(Math.max(...pageNumbers));
           }
         }
       })
@@ -1063,31 +1088,42 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
             ref={viewportRef}
             onScroll={handleScroll}
             onWheel={handleWheel}
-            className="flex-1 bg-[#07111F] overflow-y-auto flex flex-col items-center p-4 sm:p-8 gap-8 relative scroll-smooth"
+            className="flex-1 bg-[#07111F] overflow-y-auto flex flex-col items-center p-4 sm:p-8 gap-8 relative scroll-smooth h-full"
           >
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <div
-                key={pageNum}
-                data-page={pageNum}
-                className="bg-[#FAF9F5] text-neutral-900 border border-[#C9A227]/30 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] transition-all duration-200 flex flex-col overflow-hidden p-6 sm:p-10 flex-shrink-0 relative"
-                style={{
-                  width: `${Math.round(800 * (zoom / 100))}px`,
-                  minHeight: `${Math.round(1050 * (zoom / 100))}px`,
-                }}
-              >
-                <PageCanvasOverlay
-                  pageNum={pageNum}
-                  activeTool={activeTool}
-                  penColor={penColor}
-                  penWidth={penWidth}
-                  inkOpacity={inkOpacity}
-                  drawings={drawings}
-                  setDrawings={setDrawings}
-                  onSaveHistory={(p, url) => pushDrawingHistory(p, url)}
+            {rawPdfUrl ? (
+              <div className="w-full h-full flex flex-col items-center justify-center p-0 relative min-h-[70vh] flex-1">
+                <iframe
+                  ref={iframeRef}
+                  src={pdfSource}
+                  title={book.title || "PDF Document Reader"}
+                  className="w-full h-full min-h-[75vh] rounded-lg border border-[#C9A227]/30 shadow-2xl bg-white"
                 />
-                {renderPageCardContent(pageNum)}
               </div>
-            ))}
+            ) : (
+              Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <div
+                  key={pageNum}
+                  data-page={pageNum}
+                  className="bg-[#FAF9F5] text-neutral-900 border border-[#C9A227]/30 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] transition-all duration-200 flex flex-col overflow-hidden p-6 sm:p-10 flex-shrink-0 relative"
+                  style={{
+                    width: `${Math.round(800 * (zoom / 100))}px`,
+                    minHeight: `${Math.round(1050 * (zoom / 100))}px`,
+                  }}
+                >
+                  <PageCanvasOverlay
+                    pageNum={pageNum}
+                    activeTool={activeTool}
+                    penColor={penColor}
+                    penWidth={penWidth}
+                    inkOpacity={inkOpacity}
+                    drawings={drawings}
+                    setDrawings={setDrawings}
+                    onSaveHistory={(p, url) => pushDrawingHistory(p, url)}
+                  />
+                  {renderPageCardContent(pageNum)}
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
       </div>

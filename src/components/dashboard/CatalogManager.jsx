@@ -206,9 +206,48 @@ export const CatalogManager = () => {
     setPdfUploading(true);
     setPdfProgress(0);
     setPdfError(null);
+
+    let clientPageCount = null;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunkSize, bytes.length)));
+      }
+
+      const rootPagesMatches = binary.match(/\/Type\s*\/Pages[^]*?\/Count\s+(\d+)/g) || 
+                               binary.match(/\/Count\s+(\d+)[^]*?\/Type\s*\/Pages/g);
+      if (rootPagesMatches && rootPagesMatches.length > 0) {
+        const counts = rootPagesMatches.map((m) => {
+          const match = m.match(/\/Count\s+(\d+)/);
+          return match ? parseInt(match[1], 10) : 0;
+        }).filter((n) => n > 0);
+        if (counts.length > 0) clientPageCount = Math.max(...counts);
+      }
+
+      if (!clientPageCount) {
+        const pageObjMatches = binary.match(/\/Type\s*\/Page\b/g);
+        if (pageObjMatches && pageObjMatches.length > 0) {
+          clientPageCount = pageObjMatches.length;
+        }
+      }
+
+      if (!clientPageCount) {
+        const countMatches = binary.match(/\/Count\s+(\d+)/g);
+        if (countMatches && countMatches.length > 0) {
+          const counts = countMatches
+            .map((m) => parseInt(m.replace(/\/Count\s+/, ""), 10))
+            .filter((n) => !isNaN(n) && n > 0 && n < 5000);
+          if (counts.length > 0) clientPageCount = Math.max(...counts);
+        }
+      }
+    } catch (_) {}
+
     setPdfMetadata({
       name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(1) + " MB",
+      size: (file.size / (1024 * 1024)).toFixed(1) + " MB" + (clientPageCount ? ` • ${clientPageCount} Pages` : ""),
     });
 
     try {
@@ -216,7 +255,12 @@ export const CatalogManager = () => {
         setPdfProgress(percent);
       });
       setPdfUrl(res.fileUrl);
-      showToast("PDF document uploaded to Supabase!");
+      const totalP = res.pageCount || res.totalPages || clientPageCount;
+      if (totalP) {
+        showToast(`PDF uploaded successfully (${totalP} pages detected)!`);
+      } else {
+        showToast("PDF document uploaded to Supabase!");
+      }
     } catch (err) {
       setPdfError(err.message || "PDF upload failed.");
       setPdfMetadata(null);
@@ -228,8 +272,19 @@ export const CatalogManager = () => {
   // -------------------------------------------------------------
   // TAB 2: HERO & TOP LAYOUT MANAGER ("WHAT APPEARS ABOVE")
   // -------------------------------------------------------------
-  const [featuredHeroBookId, setFeaturedHeroBookId] = useState(() => {
-    return localStorage.getItem("avelis_hero_book_id") || books[0]?.id || "";
+  const [featuredHeroIds, setFeaturedHeroIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("avelis_hero_book_ids");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      const single = localStorage.getItem("avelis_hero_book_id");
+      if (single) return [single];
+      return books.slice(0, 6).map((b) => b.id);
+    } catch {
+      return books.slice(0, 6).map((b) => b.id);
+    }
   });
   const [announcementText, setAnnouncementText] = useState(() => {
     return (
@@ -466,12 +521,30 @@ export const CatalogManager = () => {
   };
 
   // -------------------------------------------------------------
-  // TAB 2: HERO & LAYOUT ACTIONS
+  // TAB 2: HERO & LAYOUT ACTIONS (UP TO 6 HERO BOOKS)
   // -------------------------------------------------------------
-  const handleSetHeroBook = (bookId, bookTitle) => {
-    setFeaturedHeroBookId(bookId);
-    localStorage.setItem("avelis_hero_book_id", bookId);
-    showToast(`"${bookTitle}" is now set as the Featured Hero Book at the top of the site!`);
+  const handleToggleHeroBook = (bookId, bookTitle) => {
+    setFeaturedHeroIds((prev) => {
+      let updated;
+      if (prev.includes(bookId)) {
+        if (prev.length <= 1) {
+          showToast("At least 1 book must remain in the Hero Showcase.");
+          return prev;
+        }
+        updated = prev.filter((id) => id !== bookId);
+        showToast(`"${bookTitle}" removed from Hero Showcase (${updated.length}/6).`);
+      } else {
+        if (prev.length >= 6) {
+          showToast("Maximum 6 Hero books allowed. Deselect a book first.");
+          return prev;
+        }
+        updated = [...prev, bookId];
+        showToast(`"${bookTitle}" added to Hero Showcase (${updated.length}/6).`);
+      }
+      localStorage.setItem("avelis_hero_book_ids", JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent("avelis_hero_updated"));
+      return updated;
+    });
   };
 
   const handleSaveAnnouncement = (e) => {
@@ -755,7 +828,8 @@ export const CatalogManager = () => {
                   </tr>
                 ) : (
                   filteredBooks.map((book) => {
-                    const isHero = featuredHeroBookId === book.id;
+                    const heroIndex = featuredHeroIds.indexOf(book.id);
+                    const isHero = heroIndex !== -1;
                     return (
                       <tr key={book.id} className="hover:bg-white/5 transition-colors align-middle">
                         <td className="p-4 align-middle">
@@ -798,15 +872,16 @@ export const CatalogManager = () => {
                         </td>
                         <td className="p-4 align-middle text-center">
                           <button
-                            onClick={() => handleSetHeroBook(book.id, book.title)}
+                            onClick={() => handleToggleHeroBook(book.id, book.title)}
                             className={`px-3 py-1.5 rounded-lg text-[10px] font-display uppercase tracking-wider transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                               isHero
                                 ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
                                 : "bg-[#07111F] text-[#F7F5EE]/60 hover:text-white border border-[#C9A227]/20"
                             }`}
+                            title={isHero ? "Click to remove from Hero Showcase" : "Click to add to Hero Showcase (Up to 6)"}
                           >
                             <Star className={`w-3 h-3 ${isHero ? "fill-[#07111F]" : ""}`} />
-                            <span>{isHero ? "Hero Book" : "Set Hero"}</span>
+                            <span>{isHero ? `Hero (${heroIndex + 1}/6)` : "Set Hero"}</span>
                           </button>
                         </td>
                         <td className="p-4 align-middle text-right">
@@ -843,27 +918,33 @@ export const CatalogManager = () => {
       {adminTab === "hero" && (
         <div className="space-y-8">
           <div className="bg-[#07111F] border border-[#C9A227]/20 rounded-xl p-6 sm:p-8 space-y-6">
-            <div className="flex items-center gap-3 text-[#C9A227]">
-              <Sparkles className="w-5 h-5" />
-              <h3 className="font-display text-xl uppercase tracking-wider text-white">
-                Featured Hero Book ("What Appears Above")
-              </h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-[#C9A227]">
+                <Sparkles className="w-5 h-5" />
+                <h3 className="font-display text-xl uppercase tracking-wider text-white">
+                  Featured Hero Books ({featuredHeroIds.length}/6 Selected)
+                </h3>
+              </div>
+              <span className="font-display text-[10px] tracking-[0.15em] text-[#C9A227] uppercase bg-[#C9A227]/10 px-3 py-1 rounded border border-[#C9A227]/30">
+                Up to 6 Books Carousel
+              </span>
             </div>
             <p className="text-xs text-[#F7F5EE]/70 leading-relaxed font-body">
-              Select which volume is highlighted prominently at the top of the Library and Sanctuary Hero sections.
+              Click books below to select up to 6 volumes that will appear in the 1/6 carousel at the top of the Library Hero banner section.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {books.map((b) => {
-                const isSelected = featuredHeroBookId === b.id;
+                const heroIndex = featuredHeroIds.indexOf(b.id);
+                const isSelected = heroIndex !== -1;
                 return (
                   <div
                     key={b.id}
-                    onClick={() => handleSetHeroBook(b.id, b.title)}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer flex gap-4 items-center ${
+                    onClick={() => handleToggleHeroBook(b.id, b.title)}
+                    className={`p-4 rounded-xl border transition-all cursor-pointer flex gap-4 items-center relative ${
                       isSelected
                         ? "bg-[#C9A227]/10 border-[#C9A227] shadow-lg shadow-[#C9A227]/10"
-                        : "bg-[#0D1626] border-white/5 hover:border-[#C9A227]/40"
+                        : "bg-[#0D1626] border-white/5 hover:border-[#C9A227]/40 opacity-70 hover:opacity-100"
                     }`}
                   >
                     <img
@@ -878,8 +959,15 @@ export const CatalogManager = () => {
                         ${b.sellingPrice ? b.sellingPrice.toFixed(2) : "24.99"}
                       </span>
                     </div>
-                    {isSelected && (
-                      <CheckCircle className="w-5 h-5 text-[#C9A227] flex-shrink-0" />
+                    {isSelected ? (
+                      <div className="flex items-center gap-1.5 bg-[#C9A227] text-[#07111F] text-[10px] font-display font-bold px-2.5 py-1 rounded-full flex-shrink-0">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>#{heroIndex + 1}</span>
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0 text-white/30 text-xs">
+                        +
+                      </div>
                     )}
                   </div>
                 );

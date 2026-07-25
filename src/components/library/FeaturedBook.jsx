@@ -10,8 +10,53 @@ export const FeaturedBook = () => {
     const navigate = useNavigate();
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Merge real database catalog books with fallback
-    const featuredList = Array.isArray(books) && books.length > 0 ? books : [defaultFeatured];
+    const [heroIds, setHeroIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem("avelis_hero_book_ids");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+            const single = localStorage.getItem("avelis_hero_book_id");
+            return single ? [single] : [];
+        } catch {
+            return [];
+        }
+    });
+
+    useEffect(() => {
+        const handleHeroUpdate = () => {
+            try {
+                const saved = localStorage.getItem("avelis_hero_book_ids");
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        setHeroIds(parsed);
+                        return;
+                    }
+                }
+                const single = localStorage.getItem("avelis_hero_book_id");
+                if (single) setHeroIds([single]);
+            } catch {}
+        };
+        window.addEventListener("avelis_hero_updated", handleHeroUpdate);
+        window.addEventListener("storage", handleHeroUpdate);
+        return () => {
+            window.removeEventListener("avelis_hero_updated", handleHeroUpdate);
+            window.removeEventListener("storage", handleHeroUpdate);
+        };
+    }, []);
+
+    // Filter books matching admin-selected heroIds (up to 6)
+    const selectedHeroBooks = Array.isArray(heroIds) && heroIds.length > 0
+        ? heroIds.map((id) => books.find((b) => b.id === id)).filter(Boolean)
+        : [];
+
+    const featuredList = selectedHeroBooks.length > 0
+        ? selectedHeroBooks
+        : Array.isArray(books) && books.length > 0
+        ? books.slice(0, 6)
+        : [defaultFeatured];
 
     // Ensure index stays in valid range
     const activeIndex = currentIndex % featuredList.length;
