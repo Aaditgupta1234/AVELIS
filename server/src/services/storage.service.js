@@ -226,9 +226,17 @@ class StorageService {
 
     const relPath = urlOrPath.includes('/') ? this.extractPathFromUrl(urlOrPath, bucket) || urlOrPath : urlOrPath;
     const normalizedPath = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    const cleanPath = normalizedPath.replace(new RegExp(`^${bucket}/`), '');
+
+    const candidates = Array.from(new Set([
+      normalizedPath,
+      cleanPath,
+      `${bucket}/${cleanPath}`,
+      `pdf/${cleanPath}`
+    ])).filter(Boolean);
 
     try {
-      const { error } = await supabase.storage.from(bucket).remove([normalizedPath]);
+      const { error } = await supabase.storage.from(bucket).remove(candidates);
 
       if (!error || error?.status === 404 || error?.code === 'NotFound' || error?.message?.toLowerCase().includes('not found')) {
         logger.info(`[DELETE_SUCCESS] Removed object from ${bucket}`, {

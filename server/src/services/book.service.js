@@ -16,7 +16,8 @@ const PROTECTED_ASSET_REGEX = /^default-|^placeholder-|\/defaults\//i;
  * @param {string} [params.newUrl] - New file URL (optional, omitted on book deletion)
  */
 const cleanupStoredFile = async ({ bucket, oldPath, oldUrl, newPath, newUrl }) => {
-  const targetPath = oldPath || (oldUrl ? storageService.extractPathFromUrl(oldUrl, bucket) : null);
+  if (oldUrl && newUrl && oldUrl === newUrl) return; // Skip if URL did not change
+  const targetPath = oldPath || (oldUrl ? (storageService.extractPathFromUrl(oldUrl, bucket) || oldUrl) : null);
   const currentPath = newPath || (newUrl ? storageService.extractPathFromUrl(newUrl, bucket) : null);
 
   if (!targetPath || typeof targetPath !== 'string') return;
