@@ -193,7 +193,7 @@ const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrow
 
 export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
   const { isAuthenticated } = useAuth();
-  const { borrowBook } = useLoans();
+  const { borrowBook, activeLoans } = useLoans();
   const { books, refreshBooks } = useBooks();
   const navigate = useNavigate();
   const location = useLocation();
@@ -272,11 +272,29 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
         bundleBooks = catalogPool.slice(0, 3);
       }
 
+      // Rule Check: Prevent borrowing the same bundle or any of its books twice
+      const isBundleAlreadyBorrowed = activeLoans?.some(
+        (l) =>
+          (l.bundleTitle && l.bundleTitle.toLowerCase() === (item.title || "").toLowerCase()) ||
+          (l.bundleId && l.bundleId === item.id) ||
+          bundleBooks.some((b) => String(b.id) === String(l.bookId) || (l.title && b.title && l.title.toLowerCase() === b.title.toLowerCase()))
+      );
+
+      if (isBundleAlreadyBorrowed) {
+        showToast(`You have already borrowed "${item.title}". A member can only borrow the same collection bundle once.`);
+        setBorrowingCard(null);
+        return;
+      }
+
       for (const b of bundleBooks) {
         const availableCopy = b.copies?.find((c) => c.status === "AVAILABLE");
         if (availableCopy) {
           try {
-            await borrowBook(availableCopy.id);
+            const loanRes = await borrowBook(availableCopy.id);
+            if (loanRes) {
+              loanRes.bundleId = item.id;
+              loanRes.bundleTitle = item.title;
+            }
             borrowedCount++;
           } catch (e) {
             // Continue borrowing remaining copies in bundle

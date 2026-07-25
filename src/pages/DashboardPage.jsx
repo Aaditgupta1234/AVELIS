@@ -110,8 +110,34 @@ export const DashboardPage = () => {
   const handleReturn = async (loanId) => {
     setActionLoading((prev) => ({ ...prev, [loanId]: "returning" }));
     try {
-      await returnBook(loanId);
-      showToast("Volume returned successfully to the Sanctuary.");
+      const targetLoan = activeLoans.find((l) => l.id === loanId);
+      let bundleLoans = [];
+
+      if (targetLoan) {
+        if (targetLoan.bundleId || targetLoan.bundleTitle) {
+          bundleLoans = activeLoans.filter(
+            (l) =>
+              (targetLoan.bundleId && l.bundleId === targetLoan.bundleId) ||
+              (targetLoan.bundleTitle &&
+                l.bundleTitle?.toLowerCase() === targetLoan.bundleTitle?.toLowerCase())
+          );
+        }
+      }
+
+      if (bundleLoans.length > 1) {
+        // Whole bundle return rule: return all volumes belonging to the bundle
+        for (const loanItem of bundleLoans) {
+          try {
+            await returnBook(loanItem.id);
+          } catch (e) {
+            // continue returning remaining volumes in bundle
+          }
+        }
+        showToast(`Full collection bundle (${bundleLoans.length} volumes) returned successfully to the Sanctuary.`);
+      } else {
+        await returnBook(loanId);
+        showToast("Volume returned successfully to the Sanctuary.");
+      }
     } catch (err) {
       showToast(err.message || "Failed to return book.");
     } finally {

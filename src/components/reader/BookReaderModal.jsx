@@ -1,6 +1,113 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ZoomIn, ZoomOut, Maximize, Minimize, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Maximize, Minimize, BookOpen, ChevronLeft, ChevronRight, Pencil, Trash2, StickyNote, Highlighter, Eraser, Undo2, Redo2, Type, AlignLeft } from "lucide-react";
+
+const PageCanvasOverlay = ({ pageNum, activeTool, penColor, penWidth, inkOpacity = 35, drawings, setDrawings, onSaveHistory }) => {
+  const canvasRef = useRef(null);
+  const isDrawing = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const dataUrl = drawings[pageNum];
+
+    if (dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = dataUrl;
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }, [pageNum, drawings]);
+
+  const saveCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const url = canvas.toDataURL();
+      setDrawings((prev) => ({ ...prev, [pageNum]: url }));
+      if (onSaveHistory) {
+        onSaveHistory(pageNum, url);
+      }
+    }
+  };
+
+  const getPos = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const startDrawing = (e) => {
+    if (activeTool === "none") return;
+    isDrawing.current = true;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const pos = getPos(e);
+
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+
+    if (activeTool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineWidth = penWidth * 6;
+      ctx.globalAlpha = 1.0;
+      ctx.lineCap = "round";
+    } else if (activeTool === "highlighter") {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = penColor || "#FDE047";
+      ctx.lineWidth = penWidth * 5;
+      ctx.globalAlpha = (inkOpacity || 35) / 100;
+      ctx.lineCap = "square";
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = penColor || "#C9A227";
+      ctx.lineWidth = penWidth;
+      ctx.globalAlpha = (inkOpacity || 100) / 100;
+      ctx.lineCap = "round";
+    }
+  };
+
+  const draw = (e) => {
+    if (!isDrawing.current || activeTool === "none") return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const pos = getPos(e);
+
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (isDrawing.current) {
+      isDrawing.current = false;
+      saveCanvas();
+    }
+  };
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={800}
+      height={1050}
+      onMouseDown={startDrawing}
+      onMouseMove={draw}
+      onMouseUp={stopDrawing}
+      onMouseLeave={stopDrawing}
+      className={`absolute inset-0 w-full h-full z-10 ${
+        activeTool === "none" ? "pointer-events-none" : "cursor-crosshair pointer-events-auto"
+      }`}
+    />
+  );
+};
 
 const CHAPTER_TEXTS = [
   "Mr. and Mrs. Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much. They were the last people you'd expect to be involved in anything strange or mysterious, because they just didn't hold with such nonsense.",
@@ -92,6 +199,66 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
   const [inputPageVal, setInputPageVal] = useState("1");
   const [detectedPdfPages, setDetectedPdfPages] = useState(null);
 
+  // Annotation & Highlighting State
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [activeHighlightColor, setActiveHighlightColor] = useState("#FDE047");
+  const [pageNotes, setPageNotes] = useState({});
+
+  // Canvas Freehand Drawing State
+  const [activeTool, setActiveTool] = useState("none"); // 'pen' | 'highlighter' | 'eraser' | 'none'
+  const [penColor, setPenColor] = useState("#C9A227");
+  const [penWidth, setPenWidth] = useState(3);
+  const [inkOpacity, setInkOpacity] = useState(35);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [drawings, setDrawings] = useState({});
+
+  // Drawing History (Undo / Redo) and Text Highlight Mode
+  const [drawingHistory, setDrawingHistory] = useState({});
+  const [highlightMode, setHighlightMode] = useState("word"); // 'word' | 'line' | 'selection'
+
+  const pushDrawingHistory = (pageNum, dataUrl) => {
+    setDrawingHistory((prev) => {
+      const pageHist = prev[pageNum] || { history: [], index: -1 };
+      const newHist = pageHist.history.slice(0, pageHist.index + 1);
+      newHist.push(dataUrl);
+      return {
+        ...prev,
+        [pageNum]: { history: newHist, index: newHist.length - 1 },
+      };
+    });
+  };
+
+  const handleUndo = (pageNum) => {
+    const targetPage = pageNum || currentPage;
+    setDrawingHistory((prev) => {
+      const pageHist = prev[targetPage] || { history: [], index: -1 };
+      if (pageHist.index > 0) {
+        const newIndex = pageHist.index - 1;
+        const prevUrl = pageHist.history[newIndex];
+        setDrawings((d) => ({ ...d, [targetPage]: prevUrl }));
+        return { ...prev, [targetPage]: { ...pageHist, index: newIndex } };
+      } else if (pageHist.index === 0) {
+        setDrawings((d) => ({ ...d, [targetPage]: null }));
+        return { ...prev, [targetPage]: { ...pageHist, index: -1 } };
+      }
+      return prev;
+    });
+  };
+
+  const handleRedo = (pageNum) => {
+    const targetPage = pageNum || currentPage;
+    setDrawingHistory((prev) => {
+      const pageHist = prev[targetPage] || { history: [], index: -1 };
+      if (pageHist.index < pageHist.history.length - 1) {
+        const newIndex = pageHist.index + 1;
+        const nextUrl = pageHist.history[newIndex];
+        setDrawings((d) => ({ ...d, [targetPage]: nextUrl }));
+        return { ...prev, [targetPage]: { ...pageHist, index: newIndex } };
+      }
+      return prev;
+    });
+  };
+
   const viewportRef = useRef(null);
   const iframeRef = useRef(null);
   const isScrollingByButton = useRef(false);
@@ -99,6 +266,42 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
   const wheelAccumulator = useRef(0);
 
   const totalPages = calculateBookTotalPages(book, detectedPdfPages);
+
+  const addNoteToPage = (pageNum) => {
+    const newNote = {
+      id: Date.now(),
+      text: "",
+      color: activeHighlightColor,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setPageNotes((prev) => ({
+      ...prev,
+      [pageNum]: [...(prev[pageNum] || []), newNote],
+    }));
+  };
+
+  const updateNoteText = (pageNum, noteId, newText) => {
+    setPageNotes((prev) => ({
+      ...prev,
+      [pageNum]: (prev[pageNum] || []).map((note) =>
+        note.id === noteId ? { ...note, text: newText } : note
+      ),
+    }));
+  };
+
+  const deleteNoteFromPage = (pageNum, noteId) => {
+    setPageNotes((prev) => ({
+      ...prev,
+      [pageNum]: (prev[pageNum] || []).filter((note) => note.id !== noteId),
+    }));
+  };
+
+  const clearCurrentPageNotes = () => {
+    setPageNotes((prev) => ({
+      ...prev,
+      [currentPage]: [],
+    }));
+  };
   const rawPdfUrl = book?.pdfUrl || null;
   const pdfSource = rawPdfUrl
     ? `${rawPdfUrl.split('#')[0]}#toolbar=0&navpanes=0&statusbar=0&messages=0&view=FitH&page=${currentPage}&zoom=${zoom}`
@@ -333,8 +536,58 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
         {/* Page Header */}
         <div className="flex justify-between items-center text-[10px] font-serif text-neutral-400 border-b border-neutral-200 pb-2 mb-4 uppercase tracking-wider">
           <span className="truncate max-w-[200px]">{book.title}</span>
-          <span>{book.author || "AVELIS ARCHIVE"}</span>
+          <div className="flex items-center gap-3">
+            {isAnnotating && (
+              <button
+                onClick={() => addNoteToPage(pageNum)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#C9A227] text-[#07111F] font-display text-[9px] uppercase tracking-wider hover:bg-[#E5C16B] transition-all shadow-sm cursor-pointer"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+                <span>+ Add Note</span>
+              </button>
+            )}
+            <span>{book.author || "AVELIS ARCHIVE"}</span>
+          </div>
         </div>
+
+        {/* Margin Notes Attached to Page */}
+        {pageNotes[pageNum]?.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {pageNotes[pageNum].map((note) => (
+              <div
+                key={note.id}
+                className="p-2.5 rounded-lg border bg-amber-50/90 text-neutral-900 font-serif text-xs shadow-sm relative transition-all"
+                style={{
+                  borderLeftColor: note.color || "#C9A227",
+                  borderLeftWidth: "4px",
+                  borderColor: "rgba(201,162,39,0.3)",
+                }}
+              >
+                <div className="flex justify-between items-center mb-1 text-[9px] font-display uppercase tracking-wider text-[#8F6F19]">
+                  <span className="flex items-center gap-1">
+                    <Pencil className="w-2.5 h-2.5 text-[#C9A227]" />
+                    Margin Note • {note.createdAt}
+                  </span>
+                  <button
+                    onClick={() => deleteNoteFromPage(pageNum, note.id)}
+                    className="text-rose-500 hover:text-rose-700 transition-colors p-0.5 cursor-pointer"
+                    title="Delete note"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+                <textarea
+                  value={note.text}
+                  onChange={(e) => updateNoteText(pageNum, note.id, e.target.value)}
+                  placeholder="Write your note, highlight summary, or reflection..."
+                  className="w-full bg-transparent border-none outline-none resize-none font-serif text-xs text-neutral-900 placeholder:text-neutral-400 leading-relaxed font-medium"
+                  rows={2}
+                  autoFocus={!note.text}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Page Body */}
         <div className="space-y-3 font-serif text-neutral-800 leading-relaxed flex-1 text-xs sm:text-sm text-justify">
@@ -467,6 +720,219 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsDropdownOpen((prev) => !prev);
+                    setIsAnnotating(true);
+                  }}
+                  className={`p-2 border rounded transition-all cursor-pointer flex items-center gap-2 px-3.5 ${
+                    activeTool !== "none" || isDropdownOpen
+                      ? "bg-[#C9A227] border-[#C9A227] text-[#07111F] font-semibold shadow-[0_0_15px_rgba(201,162,39,0.5)]"
+                      : "border-[#C9A227]/30 hover:border-[#C9A227]/60 text-[#C9A227] hover:text-[#F7F5EE] bg-[#C9A227]/10"
+                  }`}
+                  title="Annotation Options: Pen, Highlight, Eraser"
+                >
+                  <Pencil className="w-4 h-4" />
+                  <span className="font-display text-[10px] uppercase tracking-wider hidden sm:inline">
+                    {activeTool === "pen"
+                      ? "Pen Mode"
+                      : activeTool === "highlighter"
+                      ? "Highlighter"
+                      : activeTool === "eraser"
+                      ? "Eraser"
+                      : "Annotate / Highlight"}
+                  </span>
+                </button>
+
+                {/* Dropdown Options Menu */}
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-64 bg-[#0D1626] border border-[#C9A227]/40 rounded-lg shadow-2xl p-4 z-50 text-xs font-display space-y-4"
+                    >
+                      <div className="flex justify-between items-center border-b border-white/10 pb-2 text-[10px] text-[#C9A227] uppercase tracking-wider font-semibold">
+                        <span>Pen, Highlight & Eraser Tools</span>
+                        <button onClick={() => setIsDropdownOpen(false)} className="text-white/60 hover:text-white cursor-pointer">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Tool Selectors */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => setActiveTool("pen")}
+                          className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all cursor-pointer ${
+                            activeTool === "pen"
+                              ? "bg-[#C9A227] text-[#07111F] border-[#C9A227] font-semibold"
+                              : "border-white/10 text-white/70 hover:border-[#C9A227]/40 hover:text-white"
+                          }`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span className="text-[9px] uppercase tracking-wider">Pen</span>
+                        </button>
+
+                        <button
+                          onClick={() => setActiveTool("highlighter")}
+                          className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all cursor-pointer ${
+                            activeTool === "highlighter"
+                              ? "bg-yellow-400 text-[#07111F] border-yellow-400 font-semibold"
+                              : "border-white/10 text-white/70 hover:border-yellow-400/40 hover:text-white"
+                          }`}
+                        >
+                          <Highlighter className="w-4 h-4" />
+                          <span className="text-[9px] uppercase tracking-wider">Highlight</span>
+                        </button>
+
+                        <button
+                          onClick={() => setActiveTool("eraser")}
+                          className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all cursor-pointer ${
+                            activeTool === "eraser"
+                              ? "bg-rose-500 text-white border-rose-500 font-semibold"
+                              : "border-white/10 text-white/70 hover:border-rose-500/40 hover:text-white"
+                          }`}
+                        >
+                          <Eraser className="w-4 h-4" />
+                          <span className="text-[9px] uppercase tracking-wider">Eraser</span>
+                        </button>
+                      </div>
+
+                      {/* Color Picker (for Pen & Highlighter) */}
+                      {activeTool !== "eraser" && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[9px] text-white/50 uppercase tracking-wider block">Ink Color</span>
+                          <div className="flex items-center gap-2">
+                            {[
+                              { color: "#C9A227", label: "Gold" },
+                              { color: "#EF4444", label: "Red" },
+                              { color: "#22C55E", label: "Green" },
+                              { color: "#3B82F6", label: "Blue" },
+                              { color: "#1E293B", label: "Dark" },
+                            ].map((item) => (
+                              <button
+                                key={item.color}
+                                onClick={() => setPenColor(item.color)}
+                                className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
+                                  penColor === item.color ? "border-white scale-110 shadow-md" : "border-transparent opacity-70"
+                                }`}
+                                style={{ backgroundColor: item.color }}
+                                title={item.label}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Stroke Size & Ink Opacity Controls */}
+                      <div className="space-y-2 pt-1 border-t border-white/10">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[9px] text-white/50 uppercase tracking-wider">
+                            <span>Stroke Size</span>
+                            <span className="text-[#C9A227] font-semibold">{penWidth}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={1}
+                            max={12}
+                            value={penWidth}
+                            onChange={(e) => setPenWidth(parseInt(e.target.value, 10))}
+                            className="w-full accent-[#C9A227] cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[9px] text-white/50 uppercase tracking-wider">
+                            <span>Ink Opacity / Transparency</span>
+                            <span className="text-[#C9A227] font-semibold">{inkOpacity}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={10}
+                            max={100}
+                            step={5}
+                            value={inkOpacity}
+                            onChange={(e) => setInkOpacity(parseInt(e.target.value, 10))}
+                            className="w-full accent-[#C9A227] cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Highlight Selection Target */}
+                      {activeTool === "highlighter" && (
+                        <div className="space-y-1.5 pt-1 border-t border-white/10">
+                          <span className="text-[9px] text-white/50 uppercase tracking-wider block">Highlight Scope</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => setHighlightMode("word")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded border text-[9px] uppercase tracking-wider transition-all cursor-pointer ${
+                                highlightMode === "word"
+                                  ? "bg-[#C9A227]/20 border-[#C9A227] text-[#C9A227] font-semibold"
+                                  : "border-white/10 text-white/60 hover:text-white"
+                              }`}
+                            >
+                              <Type className="w-3.5 h-3.5" />
+                              <span>Whole Word</span>
+                            </button>
+
+                            <button
+                              onClick={() => setHighlightMode("line")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded border text-[9px] uppercase tracking-wider transition-all cursor-pointer ${
+                                highlightMode === "line"
+                                  ? "bg-[#C9A227]/20 border-[#C9A227] text-[#C9A227] font-semibold"
+                                  : "border-white/10 text-white/60 hover:text-white"
+                              }`}
+                            >
+                              <AlignLeft className="w-3.5 h-3.5" />
+                              <span>Entire Line</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Undo & Redo Actions */}
+                      <div className="space-y-1.5 pt-1 border-t border-white/10">
+                        <span className="text-[9px] text-white/50 uppercase tracking-wider block">Canvas Actions</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleUndo(currentPage)}
+                            className="flex items-center justify-center gap-1.5 flex-1 py-1.5 rounded border border-[#C9A227]/30 text-[#C9A227] hover:bg-[#C9A227]/10 text-[9px] uppercase tracking-wider cursor-pointer"
+                            title="Undo Stroke"
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                            <span>Undo</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleRedo(currentPage)}
+                            className="flex items-center justify-center gap-1.5 flex-1 py-1.5 rounded border border-[#C9A227]/30 text-[#C9A227] hover:bg-[#C9A227]/10 text-[9px] uppercase tracking-wider cursor-pointer"
+                            title="Redo Stroke"
+                          >
+                            <Redo2 className="w-3.5 h-3.5" />
+                            <span>Redo</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Clear Actions */}
+                      <div className="pt-2 border-t border-white/10 flex justify-between gap-2">
+                        <button
+                          onClick={() => {
+                            setDrawings((prev) => ({ ...prev, [currentPage]: null }));
+                          }}
+                          className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded border border-rose-500/30 text-rose-400 hover:bg-rose-950/30 text-[9px] uppercase tracking-wider cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Clear Page Drawings</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <button
                 onClick={toggleFullscreen}
                 className="p-2 border border-[#C9A227]/20 hover:border-[#C9A227]/50 text-[#C9A227] hover:text-[#F7F5EE] rounded transition-all bg-[#C9A227]/5 cursor-pointer"
@@ -484,6 +950,114 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
             </div>
           </div>
 
+          {/* Floating Annotation Toolbar */}
+          <AnimatePresence>
+            {isAnnotating && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-[#0D1626] border-b border-[rgba(201,162,39,0.2)] px-6 py-2.5 flex flex-wrap items-center justify-between gap-4 z-20 text-xs font-display flex-shrink-0"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-[#C9A227] text-[10px] tracking-widest uppercase flex items-center gap-1.5 font-semibold">
+                    <Highlighter className="w-3.5 h-3.5" />
+                    Highlighter & Margin Notes Tool
+                  </span>
+                  <div className="w-[1px] h-4 bg-white/10" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[#F7F5EE]/60 uppercase">Color:</span>
+                    <button
+                      onClick={() => setActiveHighlightColor("#FDE047")}
+                      className={`w-5 h-5 rounded-full bg-yellow-300 border-2 transition-transform cursor-pointer ${
+                        activeHighlightColor === "#FDE047" ? "border-white scale-110 shadow-sm" : "border-transparent opacity-60"
+                      }`}
+                      title="Yellow Highlighter"
+                    />
+                    <button
+                      onClick={() => setActiveHighlightColor("#86EFAC")}
+                      className={`w-5 h-5 rounded-full bg-emerald-300 border-2 transition-transform cursor-pointer ${
+                        activeHighlightColor === "#86EFAC" ? "border-white scale-110 shadow-sm" : "border-transparent opacity-60"
+                      }`}
+                      title="Green Highlighter"
+                    />
+                    <button
+                      onClick={() => setActiveHighlightColor("#93C5FD")}
+                      className={`w-5 h-5 rounded-full bg-sky-300 border-2 transition-transform cursor-pointer ${
+                        activeHighlightColor === "#93C5FD" ? "border-white scale-110 shadow-sm" : "border-transparent opacity-60"
+                      }`}
+                      title="Blue Highlighter"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 border border-white/10 rounded p-0.5 bg-black/20">
+                    <button
+                      onClick={() => handleUndo(currentPage)}
+                      className="p-1 text-[#C9A227] hover:text-white transition-colors cursor-pointer"
+                      title="Undo Page Drawing"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleRedo(currentPage)}
+                      className="p-1 text-[#C9A227] hover:text-white transition-colors cursor-pointer"
+                      title="Redo Page Drawing"
+                    >
+                      <Redo2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="w-[1px] h-4 bg-white/10" />
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setHighlightMode("word")}
+                      className={`px-2 py-1 rounded text-[9px] uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                        highlightMode === "word" ? "bg-[#C9A227] text-[#07111F] font-semibold" : "text-white/60 hover:text-white"
+                      }`}
+                      title="Highlight Whole Word on selection"
+                    >
+                      <Type className="w-3 h-3" />
+                      <span>Word</span>
+                    </button>
+                    <button
+                      onClick={() => setHighlightMode("line")}
+                      className={`px-2 py-1 rounded text-[9px] uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                        highlightMode === "line" ? "bg-[#C9A227] text-[#07111F] font-semibold" : "text-white/60 hover:text-white"
+                      }`}
+                      title="Highlight Entire Line / Sentence on selection"
+                    >
+                      <AlignLeft className="w-3 h-3" />
+                      <span>Line</span>
+                    </button>
+                  </div>
+
+                  <div className="w-[1px] h-4 bg-white/10" />
+
+                  <button
+                    onClick={() => addNoteToPage(currentPage)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#C9A227]/20 hover:bg-[#C9A227]/40 border border-[#C9A227]/40 text-[#C9A227] hover:text-[#F7F5EE] transition-all text-[10px] tracking-wider uppercase cursor-pointer"
+                  >
+                    <StickyNote className="w-3.5 h-3.5" />
+                    <span>+ Add Margin Note (Page {currentPage})</span>
+                  </button>
+
+                  {pageNotes[currentPage]?.length > 0 && (
+                    <button
+                      onClick={clearCurrentPageNotes}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-rose-950/20 hover:bg-rose-950/40 border border-rose-500/30 text-rose-400 transition-all text-[10px] tracking-wider uppercase cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Clear Notes (Page {currentPage})</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Reader Viewport Area */}
           <div
             ref={viewportRef}
@@ -495,12 +1069,22 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
               <div
                 key={pageNum}
                 data-page={pageNum}
-                className="bg-[#FAF9F5] text-neutral-900 border border-[#C9A227]/30 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] transition-all duration-200 flex flex-col overflow-hidden p-6 sm:p-10 flex-shrink-0"
+                className="bg-[#FAF9F5] text-neutral-900 border border-[#C9A227]/30 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] transition-all duration-200 flex flex-col overflow-hidden p-6 sm:p-10 flex-shrink-0 relative"
                 style={{
                   width: `${Math.round(800 * (zoom / 100))}px`,
                   minHeight: `${Math.round(1050 * (zoom / 100))}px`,
                 }}
               >
+                <PageCanvasOverlay
+                  pageNum={pageNum}
+                  activeTool={activeTool}
+                  penColor={penColor}
+                  penWidth={penWidth}
+                  inkOpacity={inkOpacity}
+                  drawings={drawings}
+                  setDrawings={setDrawings}
+                  onSaveHistory={(p, url) => pushDrawingHistory(p, url)}
+                />
                 {renderPageCardContent(pageNum)}
               </div>
             ))}

@@ -65,6 +65,21 @@ export const borrowBook = async ({ userId, copyId }) => {
     throw new ApiError(409, 'Book copy is unavailable.');
   }
 
+  // 4.5 Verify member has not ALREADY borrowed this book
+  const existingActiveLoan = await prisma.loan.findFirst({
+    where: {
+      userId,
+      status: { in: [LoanStatus.BORROWED, LoanStatus.OVERDUE] },
+      bookCopy: {
+        bookId: book.id
+      }
+    }
+  });
+
+  if (existingActiveLoan) {
+    throw new ApiError(400, 'You have already borrowed this book. A member can only borrow the same volume once.');
+  }
+
   // Calculate dates using the project's configured default loan period
   const issueDate = new Date();
   const dueDate = new Date();
