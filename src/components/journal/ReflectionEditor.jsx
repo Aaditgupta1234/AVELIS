@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { springs } from "../../utils/motion";
 import { VisibilityToggle } from "./VisibilityToggle";
 import { useBooks } from "../../context/BooksContext.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import { X, BookCheck, Sparkles, BookOpen } from "lucide-react";
 
 export const ReflectionEditor = ({ onSave }) => {
   const { books } = useBooks();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Check if user came from a specific Book Details Page ("Write Reflection")
   const prefilledTitle = location.state?.prefilledBookTitle || location.state?.linkedBookTitle || "";
@@ -47,6 +50,13 @@ export const ReflectionEditor = ({ onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Guest guard: redirect guest to login before publishing or saving
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: "/journal" } });
+      return;
+    }
+
     if (!title.trim() || !content.trim()) return;
 
     onSave({

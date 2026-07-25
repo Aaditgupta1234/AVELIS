@@ -12,13 +12,15 @@ import { useAuth } from "../../hooks/useAuth.js";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { getAllPublicReviews, createReview, updateReview, deleteReview } from "../../services/review.service.js";
 import { getBooks } from "../../services/book.service.js";
+import { useNavigate } from "react-router-dom";
 import { X, Sparkles, Edit3 } from "lucide-react";
 
 const PUBLIC_STORAGE_KEY = "avelis_public_reflections_v5";
 
 export const ReadingJournalPage = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { books } = useBooks();
+  const navigate = useNavigate();
   const privateStorageKey = user?.id ? `avelis_private_reflections_${user.id}` : "avelis_private_reflections_guest";
 
   const [reflections, setReflections] = useState([]);
@@ -201,6 +203,11 @@ export const ReadingJournalPage = () => {
 
   // Handle Reflection Save
   const handleSave = async (entry) => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: "/journal" } });
+      return;
+    }
+
     const isPrivate = entry.visibility === "private";
 
     const matchedBook = books?.find((b) =>
