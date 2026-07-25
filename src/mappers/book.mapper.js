@@ -58,6 +58,8 @@ export const mapBookToUI = (book) => {
     isForSale: !!book.isForSale,
     rating: book.rating ?? null,
     copies: book.copies || [],
+    totalPages: Number(book.totalPages || book.pageCount || book.pages || book.numPages || 0) || null,
+    pageCount: Number(book.totalPages || book.pageCount || book.pages || book.numPages || 0) || null,
     createdAt: book.createdAt || new Date().toISOString(),
   };
 };

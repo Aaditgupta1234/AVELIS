@@ -26,6 +26,8 @@ export const mapLoanToUI = (loan) => {
     coverImagePath: bookData.coverImagePath || null,
     pdfUrl: bookData.pdfUrl || null,
     pdfPath: bookData.pdfPath || null,
+    totalPages: Number(bookData.totalPages || bookData.pageCount || bookData.pages || bookData.numPages || loan.totalPages || loan.pageCount || 0) || null,
+    pageCount: Number(bookData.totalPages || bookData.pageCount || bookData.pages || bookData.numPages || loan.totalPages || loan.pageCount || 0) || null,
     borrowedAt: loan.issueDate || new Date().toISOString(),
     dueDate: loan.dueDate || new Date().toISOString(),
     returnedAt: loan.returnDate || null,
