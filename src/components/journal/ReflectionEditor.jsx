@@ -5,7 +5,7 @@ import { springs } from "../../utils/motion";
 import { VisibilityToggle } from "./VisibilityToggle";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { useAuth } from "../../hooks/useAuth.js";
-import { X, BookCheck, Sparkles, BookOpen } from "lucide-react";
+import { X, BookCheck, Sparkles, BookOpen, Eye, Edit3, FileText } from "lucide-react";
 
 export const ReflectionEditor = ({ onSave }) => {
   const { books } = useBooks();
@@ -21,8 +21,10 @@ export const ReflectionEditor = ({ onSave }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const dropdownRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Update book title if location state changes
   useEffect(() => {
@@ -71,6 +73,70 @@ export const ReflectionEditor = ({ onSave }) => {
     setContent("");
     setBookTitle("");
     setVisibility("private");
+  };
+
+  // Insert bullet list formatting into writing area
+  const insertBulletList = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContent((prev) => (prev ? `${prev}\n• ` : "• "));
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+
+    if (selectedText) {
+      const bulleted = selectedText
+        .split("\n")
+        .map((line) => (line.startsWith("• ") ? line : `• ${line}`))
+        .join("\n");
+      const newContent = content.substring(0, start) + bulleted + content.substring(end);
+      setContent(newContent);
+    } else {
+      const prefix = start > 0 && content[start - 1] !== "\n" ? "\n• " : "• ";
+      const newContent = content.substring(0, start) + prefix + content.substring(end);
+      setContent(newContent);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(start + prefix.length, start + prefix.length);
+        }
+      }, 0);
+    }
+  };
+
+  // Insert blockquote formatting into writing area
+  const insertBlockquote = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContent((prev) => (prev ? `${prev}\n> ` : "> "));
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+
+    if (selectedText) {
+      const quoted = selectedText
+        .split("\n")
+        .map((line) => (line.startsWith("> ") ? line : `> ${line}`))
+        .join("\n");
+      const newContent = content.substring(0, start) + quoted + content.substring(end);
+      setContent(newContent);
+    } else {
+      const prefix = start > 0 && content[start - 1] !== "\n" ? "\n> " : "> ";
+      const newContent = content.substring(0, start) + prefix + content.substring(end);
+      setContent(newContent);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(start + prefix.length, start + prefix.length);
+        }
+      }, 0);
+    }
   };
 
   return (
@@ -174,7 +240,7 @@ export const ReflectionEditor = ({ onSave }) => {
           </div>
         </div>
 
-        {/* Writing Area */}
+        {/* Writing & Markdown Preview Area */}
         <div className="mb-12">
           <input
             type="text"
@@ -184,33 +250,50 @@ export const ReflectionEditor = ({ onSave }) => {
             placeholder="Title of Reflection..."
             required
           />
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="writing-area w-full bg-transparent border-none text-base md:text-lg font-body text-on-surface-variant placeholder:text-on-surface-variant/20 focus:ring-0 px-0 leading-relaxed resize-none outline-none caret-primary"
-            placeholder="Begin your meditation here..."
-            rows={8}
-            required
-          />
+
+          {isPreviewMode ? (
+            <div className="min-h-[220px] p-6 rounded-xl bg-[#07111F]/80 border border-[#C9A227]/20 text-[#F7F5EE] shadow-inner">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                <span className="text-[10px] uppercase font-display tracking-widest text-[#C9A227] font-bold flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  Markdown Live Preview
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewMode(false)}
+                  className="text-[10px] uppercase text-[#C9A227] hover:underline cursor-pointer"
+                >
+                  Return to Edit
+                </button>
+              </div>
+              <div>{renderMarkdownPreview(content)}</div>
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="writing-area w-full bg-transparent border-none text-base md:text-lg font-body text-on-surface-variant placeholder:text-on-surface-variant/20 focus:ring-0 px-0 leading-relaxed resize-none outline-none caret-primary"
+              placeholder="Begin your meditation here... (Markdown supported: # Headings, **bold**, *italic*, > quotes, • lists)"
+              rows={8}
+              required
+            />
+          )}
         </div>
 
         {/* Action Bar */}
-        <div className="flex justify-between items-center pt-8 border-t border-outline-variant/10">
-          <div className="flex gap-4">
+        <div className="flex flex-wrap justify-between items-center gap-4 pt-8 border-t border-outline-variant/10">
+          <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={insertBulletList}
               aria-label="Insert bullet list"
-              className="text-on-surface-variant/60 hover:text-primary transition-all flex items-center gap-2 p-2 focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg"
+              className="text-on-surface-variant/60 hover:text-primary hover:bg-[#C9A227]/10 transition-all flex items-center gap-2 p-2 focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg cursor-pointer"
+              title="Insert Bullet List"
             >
               <span className="material-symbols-outlined select-none">format_list_bulleted</span>
             </button>
-            <button
-              type="button"
-              aria-label="Insert blockquote"
-              className="text-on-surface-variant/60 hover:text-primary transition-all flex items-center gap-2 p-2 focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg"
-            >
-              <span className="material-symbols-outlined select-none">format_quote</span>
-            </button>
+
           </div>
 
           <motion.button
