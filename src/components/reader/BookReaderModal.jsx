@@ -96,6 +96,44 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
   const iframeRef = useRef(null);
   const isScrollingByButton = useRef(false);
   const ticking = useRef(false);
+  const wheelAccumulator = useRef(0);
+
+  const totalPages = calculateBookTotalPages(book, detectedPdfPages);
+  const rawPdfUrl = book?.pdfUrl || null;
+  const pdfSource = rawPdfUrl
+    ? `${rawPdfUrl.split('#')[0]}#toolbar=0&navpanes=0&statusbar=0&messages=0&view=FitH&page=${currentPage}&zoom=${zoom}`
+    : null;
+
+  // Wheel / trackpad scroll listener to sync page count when scrolling over reader viewport
+  const handleWheel = useCallback(
+    (e) => {
+      if (isScrollingByButton.current) return;
+      wheelAccumulator.current += e.deltaY;
+      if (Math.abs(wheelAccumulator.current) > 80) {
+        if (wheelAccumulator.current > 0) {
+          setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+        } else {
+          setCurrentPage((prev) => Math.max(prev - 1, 1));
+        }
+        wheelAccumulator.current = 0;
+      }
+    },
+    [totalPages]
+  );
+
+  // Listen to window postMessage for iframe page updates
+  useEffect(() => {
+    const handleWindowMessage = (e) => {
+      if (e.data && (e.data.page || e.data.pageNumber)) {
+        const p = parseInt(e.data.page || e.data.pageNumber, 10);
+        if (!isNaN(p) && p > 0 && p <= totalPages) {
+          setCurrentPage(p);
+        }
+      }
+    };
+    window.addEventListener("message", handleWindowMessage);
+    return () => window.removeEventListener("message", handleWindowMessage);
+  }, [totalPages]);
 
   // Auto-detect exact page count from loaded PDF document bytes
   useEffect(() => {
@@ -132,12 +170,6 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
       })
       .catch(() => {});
   }, [book]);
-
-  const totalPages = calculateBookTotalPages(book, detectedPdfPages);
-  const rawPdfUrl = book?.pdfUrl || null;
-  const pdfSource = rawPdfUrl
-    ? `${rawPdfUrl.split('#')[0]}#toolbar=0&navpanes=0&statusbar=0&messages=0&view=FitH&page=${currentPage}&zoom=${zoom}`
-    : null;
 
   // Sync iframe src when page or zoom changes to navigate PDF view
   useEffect(() => {
@@ -456,41 +488,22 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
           <div
             ref={viewportRef}
             onScroll={handleScroll}
+            onWheel={handleWheel}
             className="flex-1 bg-[#040A14] overflow-y-auto flex flex-col items-center p-4 sm:p-8 gap-8 relative scroll-smooth"
           >
-            {pdfSource ? (
-              /* PDF File Viewer */
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
               <div
-                className="bg-[#0D1626] border border-[rgba(201,162,39,0.2)] rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] w-full flex-1 flex flex-col overflow-hidden"
+                key={pageNum}
+                data-page={pageNum}
+                className="bg-[#FAF9F5] text-neutral-900 border border-[#C9A227]/30 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] transition-all duration-200 flex flex-col overflow-hidden p-6 sm:p-10 flex-shrink-0"
                 style={{
                   width: `${Math.round(800 * (zoom / 100))}px`,
                   minHeight: `${Math.round(1050 * (zoom / 100))}px`,
                 }}
               >
-                <iframe
-                  ref={iframeRef}
-                  key={`pdf-${currentPage}-${zoom}`}
-                  src={pdfSource}
-                  title={`PDF Reader - ${book.title}`}
-                  className="w-full flex-1 border-none min-h-[700px]"
-                />
+                {renderPageCardContent(pageNum)}
               </div>
-            ) : (
-              /* Interactive Scrollable Multi-Page Digital Codex */
-              Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <div
-                  key={pageNum}
-                  data-page={pageNum}
-                  className="bg-[#FAF9F5] text-neutral-900 border border-[#C9A227]/30 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] transition-all duration-200 flex flex-col overflow-hidden p-6 sm:p-10 flex-shrink-0"
-                  style={{
-                    width: `${Math.round(800 * (zoom / 100))}px`,
-                    minHeight: `${Math.round(1050 * (zoom / 100))}px`,
-                  }}
-                >
-                  {renderPageCardContent(pageNum)}
-                </div>
-              ))
-            )}
+            ))}
           </div>
         </motion.div>
       </div>
