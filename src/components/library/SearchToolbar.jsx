@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { springs } from "../../utils/motion";
-export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addFilter, removeFilter, clearAllFilters, selectedSort, setSelectedSort, viewMode, setViewMode, resultCount, }) => {
+export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addFilter, removeFilter, clearAllFilters, selectedSort, setSelectedSort, viewMode, setViewMode, resultCount, onSearchSubmit, hasActiveSearch, }) => {
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -26,7 +26,7 @@ export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addF
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-    return (<section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-20">
+    return (<section className={`px-margin-mobile md:px-gutter max-w-container-max mx-auto transition-all duration-300 ${hasActiveSearch ? "mb-6 md:mb-8" : "mb-12 md:mb-16"}`}>
       <div className="glass-card rounded-2xl p-4 shadow-2xl">
         <div className="flex flex-col lg:flex-row gap-4 items-center">
           {/* Search Input */}
@@ -34,7 +34,19 @@ export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addF
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/60">
               search
             </span>
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} aria-label="Search the digital library" className="w-full bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl pl-12 pr-6 py-4 focus:ring-2 focus:ring-primary/40 focus:border-primary/40 text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all duration-300" placeholder="Search by author, title, genre, or ISBN..."/>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onSearchSubmit?.();
+                }
+              }}
+              aria-label="Search the digital library"
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl pl-12 pr-6 py-4 focus:ring-2 focus:ring-primary/40 focus:border-primary/40 text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all duration-300"
+              placeholder="Search by author, title, genre, or ISBN..."
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
@@ -60,7 +72,7 @@ export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addF
                     {sortOptions.map((option) => (<button key={option} onClick={() => {
                     setSelectedSort(option);
                     setIsSortOpen(false);
-                }} className={`w-full text-left px-5 py-3 text-xs font-display tracking-wider uppercase hover:bg-primary/10 transition-colors ${selectedSort === option ? "text-primary bg-primary/5" : "text-white/60"}`}>
+                }} className={`w-full text-left px-5 py-3 text-xs font-display tracking-wider uppercase hover:bg-[#C9A227]/10 transition-colors ${selectedSort === option ? "text-primary bg-[#C9A227]/5" : "text-white/60"}`}>
                         {option}
                       </button>))}
                   </motion.div>)}
@@ -81,11 +93,18 @@ export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addF
               </button>
             </div>
 
-            <motion.button whileHover={{
-            y: -2,
-            boxShadow: "0px 10px 35px -10px rgba(212, 175, 55, 0.3)",
-            filter: "brightness(1.1)"
-        }} whileTap={{ scale: 0.98 }} transition={springs.buttonClick} aria-label="Search Library" className="bg-primary text-on-primary px-10 py-4 rounded-xl font-display text-[11px] tracking-[0.2em] uppercase hover:brightness-110 transition-all shadow-lg shadow-primary/10 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <motion.button
+              onClick={() => onSearchSubmit?.()}
+              whileHover={{
+                y: -2,
+                boxShadow: "0px 10px 35px -10px rgba(212, 175, 55, 0.3)",
+                filter: "brightness(1.1)"
+              }}
+              whileTap={{ scale: 0.98 }}
+              transition={springs.buttonClick}
+              aria-label="Search Library"
+              className="bg-primary text-on-primary px-10 py-4 rounded-xl font-display text-[11px] tracking-[0.2em] uppercase hover:brightness-110 transition-all shadow-lg shadow-primary/10 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+            >
               Search Library
             </motion.button>
           </div>

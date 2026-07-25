@@ -17,7 +17,7 @@ const BookSkeleton = () => (
   </div>
 );
 
-export const BookGrid = ({ books, viewMode, isLoading, error, pagination, onPageChange }) => {
+export const BookGrid = ({ books, viewMode, isLoading, error, pagination, onPageChange, hideHeader = false }) => {
   const isList = viewMode === "list";
   const containerVariants = {
     hidden: {},
@@ -34,54 +34,58 @@ export const BookGrid = ({ books, viewMode, isLoading, error, pagination, onPage
   return (
     <section className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-24 md:mb-40">
       {/* Editorial Header & Paging controls */}
-      <div className="flex items-end justify-between mb-12">
-        <div>
-          <h3 className="font-display text-2xl md:text-3xl text-primary mb-2">
-            Trending This Week
-          </h3>
-          <p className="text-on-surface-variant/60 font-body text-sm md:text-base italic">
-            {isLoading ? "Retrieving codex listings..." : "What the AVELIS community is discussing"}
-          </p>
-        </div>
-
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center gap-4">
-            <span className="font-display text-[10px] tracking-[0.15em] text-on-surface-variant/40 uppercase">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-            <div className="flex gap-2">
-              <motion.button
-                whileHover={hasPrev ? { scale: 1.05, borderColor: "rgba(201, 162, 39, 0.5)", color: "var(--color-primary)" } : {}}
-                whileTap={hasPrev ? { scale: 0.95 } : {}}
-                onClick={() => hasPrev && onPageChange(pagination.page - 1)}
-                disabled={!hasPrev || isLoading}
-                className={`w-10 h-10 flex items-center justify-center border rounded-full transition-all focus:outline-none ${
-                  hasPrev && !isLoading
-                    ? "border-outline-variant/20 text-on-surface hover:bg-white/5 cursor-pointer"
-                    : "border-outline-variant/10 text-on-surface/20 cursor-not-allowed opacity-40"
-                }`}
-                aria-label="Previous page"
-              >
-                <span className="material-symbols-outlined text-lg">chevron_left</span>
-              </motion.button>
-              <motion.button
-                whileHover={hasNext ? { scale: 1.05, borderColor: "rgba(201, 162, 39, 0.5)", color: "var(--color-primary)" } : {}}
-                whileTap={hasNext ? { scale: 0.95 } : {}}
-                onClick={() => hasNext && onPageChange(pagination.page + 1)}
-                disabled={!hasNext || isLoading}
-                className={`w-10 h-10 flex items-center justify-center border rounded-full transition-all focus:outline-none ${
-                  hasNext && !isLoading
-                    ? "border-outline-variant/20 text-on-surface hover:bg-white/5 cursor-pointer"
-                    : "border-outline-variant/10 text-on-surface/20 cursor-not-allowed opacity-40"
-                }`}
-                aria-label="Next page"
-              >
-                <span className="material-symbols-outlined text-lg">chevron_right</span>
-              </motion.button>
+      {(!hideHeader || (pagination && pagination.totalPages > 1)) && (
+        <div className={`flex items-end ${hideHeader ? "justify-end" : "justify-between"} mb-8 md:mb-12`}>
+          {!hideHeader && (
+            <div>
+              <h3 className="font-display text-2xl md:text-3xl text-primary mb-2">
+                Trending This Week
+              </h3>
+              <p className="text-on-surface-variant/60 font-body text-sm md:text-base italic">
+                {isLoading ? "Retrieving codex listings..." : "What the AVELIS community is discussing"}
+              </p>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center gap-4">
+              <span className="font-display text-[10px] tracking-[0.15em] text-on-surface-variant/40 uppercase">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={hasPrev ? { scale: 1.05, borderColor: "rgba(201, 162, 39, 0.5)", color: "var(--color-primary)" } : {}}
+                  whileTap={hasPrev ? { scale: 0.95 } : {}}
+                  onClick={() => hasPrev && onPageChange(pagination.page - 1)}
+                  disabled={!hasPrev || isLoading}
+                  className={`w-10 h-10 flex items-center justify-center border rounded-full transition-all focus:outline-none ${
+                    hasPrev && !isLoading
+                      ? "border-outline-variant/20 text-on-surface hover:bg-white/5 cursor-pointer"
+                      : "border-outline-variant/10 text-on-surface-variant/20 cursor-not-allowed"
+                  }`}
+                  aria-label="Previous Page"
+                >
+                  <span className="material-symbols-outlined text-sm">chevron_left</span>
+                </motion.button>
+                <motion.button
+                  whileHover={hasNext ? { scale: 1.05, borderColor: "rgba(201, 162, 39, 0.5)", color: "var(--color-primary)" } : {}}
+                  whileTap={hasNext ? { scale: 0.95 } : {}}
+                  onClick={() => hasNext && onPageChange(pagination.page + 1)}
+                  disabled={!hasNext || isLoading}
+                  className={`w-10 h-10 flex items-center justify-center border rounded-full transition-all focus:outline-none ${
+                    hasNext && !isLoading
+                      ? "border-outline-variant/20 text-on-surface hover:bg-white/5 cursor-pointer"
+                      : "border-outline-variant/10 text-on-surface-variant/20 cursor-not-allowed"
+                  }`}
+                  aria-label="Next Page"
+                >
+                  <span className="material-symbols-outlined text-sm">chevron_right</span>
+                </motion.button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {error ? (
         <motion.div initial="hidden" animate="visible" variants={revealVariants.A} className="text-center py-20 border border-red-500/10 rounded-2xl bg-red-950/5">
