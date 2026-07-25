@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AnimatedSection } from "../components/ui/AnimatedSection";
 import { staggers } from "../utils/motion";
@@ -11,9 +12,9 @@ export const FeaturedCollections = () => {
             <p className="font-display text-primary text-[11px] tracking-[0.4em] uppercase mb-4">Curated Selections</p>
             <h2 className="font-display text-4xl md:text-5xl text-white">The Season's Anthology</h2>
           </div>
-          <a className="font-display text-[11px] tracking-[0.2em] text-primary hover:text-white transition-colors border-b border-primary/20 hover:border-primary pb-2" href="#">
+          <Link className="font-display text-[11px] tracking-[0.2em] text-primary hover:text-white transition-colors border-b border-primary/20 hover:border-primary pb-2" to="/library">
             VIEW ALL ARCHIVES
-          </a>
+          </Link>
         </div>
 
         <motion.div variants={{

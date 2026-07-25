@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion, useMotionValue, useSpring, useReducedMotion } from "framer-motion";
 import { HeroVisual } from "../components/hero/HeroVisual";
 import { springs, durations, easeOut, staggers } from "../utils/motion";
@@ -75,12 +76,14 @@ export const Hero = () => {
           </motion.p>
           
           <motion.div variants={itemVariants} className="flex flex-wrap gap-6">
-            <motion.button whileHover={{
-            y: -2,
-            boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
-        }} whileTap={{ scale: 0.98 }} transition={springs.buttonClick} className="bg-primary text-on-primary px-10 py-4 font-display text-[11px] tracking-[0.2em] uppercase transition-colors">
-              Explore Archives
-            </motion.button>
+            <Link to="/library">
+              <motion.button whileHover={{
+              y: -2,
+              boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
+          }} whileTap={{ scale: 0.98 }} transition={springs.buttonClick} className="bg-primary text-on-primary px-10 py-4 font-display text-[11px] tracking-[0.2em] uppercase transition-colors cursor-pointer">
+                Explore Archives
+              </motion.button>
+            </Link>
             <motion.button onClick={() => {
             document.getElementById("reader-experience")?.scrollIntoView({ behavior: "smooth" });
         }} whileHover={{
