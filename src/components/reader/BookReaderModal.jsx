@@ -192,7 +192,7 @@ const calculateBookTotalPages = (book, detectedPdfPages) => {
 };
 
 export const BookReaderModal = ({ isOpen, onClose, book }) => {
-  const [zoom, setZoom] = useState(60);
+  const [zoom, setZoom] = useState(75);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isEditingPage, setIsEditingPage] = useState(false);
@@ -629,13 +629,13 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black/80 backdrop-blur-md">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-[#07111F] border border-[#C9A227]/30 rounded-xl w-full max-w-6xl h-[90vh] flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.8)] overflow-hidden relative"
+          className="bg-[#07111F] border border-[#C9A227]/30 rounded-none sm:rounded-xl w-full max-w-7xl h-full sm:h-[95vh] flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.8)] overflow-hidden relative"
         >
           {/* Reader Top Bar */}
           <div className="bg-[#0D1626] border-b border-[rgba(201,162,39,0.15)] px-6 py-4 flex flex-wrap items-center justify-between gap-4 flex-shrink-0 z-20">
@@ -1063,7 +1063,7 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
             ref={viewportRef}
             onScroll={handleScroll}
             onWheel={handleWheel}
-            className="flex-1 bg-[#040A14] overflow-y-auto flex flex-col items-center p-4 sm:p-8 gap-8 relative scroll-smooth"
+            className="flex-1 bg-[#07111F] overflow-y-auto flex flex-col items-center p-4 sm:p-8 gap-8 relative scroll-smooth"
           >
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
               <div

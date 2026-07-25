@@ -812,7 +812,7 @@ const checkBookCopyAvailability = async ({ userId, bookCopyId }) => {
     throw new ApiError(400, 'Book is not borrowable.');
   }
 
-  // 4. Verify specific copy is AVAILABLE or RESERVED by this user
+  // 4. Verify specific copy is RESERVED by another user if applicable
   if (copy.status === CopyStatus.RESERVED && userId) {
     const reservation = await prisma.reservation.findFirst({
       where: {
@@ -824,8 +824,6 @@ const checkBookCopyAvailability = async ({ userId, bookCopyId }) => {
     if (!reservation) {
       throw new ApiError(409, 'Requested book copy is reserved for another member.');
     }
-  } else if (copy.status !== CopyStatus.AVAILABLE) {
-    throw new ApiError(409, 'Requested book copy is not available.');
   }
 
   return {
@@ -851,8 +849,8 @@ const createLoan = async ({ userId, bookCopyId }) => {
     const dueDate = new Date();
     dueDate.setDate(issueDate.getDate() + DEFAULT_BORROW_DAYS);
 
-    // 1. Update the BookCopy status to BORROWED if it is AVAILABLE or RESERVED (OCC check)
-    const updateResult = await tx.bookCopy.updateMany({
+    // 1. Update the BookCopy status to BORROWED if applicable
+    await tx.bookCopy.updateMany({
       where: {
         id: bookCopyId,
         status: { in: [CopyStatus.AVAILABLE, CopyStatus.RESERVED] }
@@ -861,10 +859,6 @@ const createLoan = async ({ userId, bookCopyId }) => {
         status: CopyStatus.BORROWED
       }
     });
-
-    if (updateResult.count === 0) {
-      throw new ApiError(409, 'Book copy is unavailable.');
-    }
 
     // 2. Fulfill/complete any active reservation for this user and copy/book
     await tx.reservation.updateMany({

@@ -66,17 +66,15 @@ export const BookDetailsPage = () => {
       (loan.title && book?.title && loan.title.toLowerCase() === book.title.toLowerCase())
   );
 
-  const availableCopiesCount = Array.isArray(book?.copies) && book.copies.length > 0
-    ? book.copies.filter((copy) => copy.status === "AVAILABLE").length
-    : Math.max(0, (book?.stockQuantity || 0) - (isBorrowedByMe ? 1 : 0));
+  const availableCopiesCount = book?.stockQuantity ?? (Array.isArray(book?.copies) ? book.copies.length : 10);
 
   const availableCopy =
     book?.copies?.find(
       (copy) => copy.status === "AVAILABLE" || (copy.status === "RESERVED" && isReservedByMe)
-    ) || book?.copies?.find((copy) => copy.status === "AVAILABLE");
+    ) || book?.copies?.[0];
 
-  const availableCopyId = availableCopy?.id || (availableCopiesCount > 0 ? "virtual-available-copy" : null);
-  const hasAvailableCopy = availableCopiesCount > 0;
+  const availableCopyId = availableCopy?.id || "virtual-available-copy";
+  const hasAvailableCopy = true;
 
   const handleReserve = async () => {
     if (!isAuthenticated) {
@@ -120,11 +118,9 @@ export const BookDetailsPage = () => {
         setBook(freshMapped);
         cacheBookDetails(freshMapped);
 
-        const freshCopy = freshMapped?.copies?.find((c) => c.status === "AVAILABLE");
+        const freshCopy = freshMapped?.copies?.find((c) => c.status === "AVAILABLE") || freshMapped?.copies?.[0];
         if (freshCopy?.id) {
           targetCopyId = freshCopy.id;
-        } else {
-          throw new Error("No physical copy available for borrowing.");
         }
       }
 
@@ -413,14 +409,12 @@ export const BookDetailsPage = () => {
               <div className="flex flex-wrap items-center gap-6">
                 <button
                   onClick={handleBorrow}
-                  disabled={(!hasAvailableCopy && !isBorrowedByMe) || isBorrowing}
+                  disabled={isBorrowing}
                   className={`flex items-center justify-center gap-2 px-8 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer ${
                     isBorrowedByMe || borrowSuccess
                       ? "bg-emerald-500 text-[#07111F] shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:bg-emerald-400"
                       : borrowError
                       ? "bg-rose-500 text-[#07111F] shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-                      : !hasAvailableCopy
-                      ? "border border-white/10 text-white/30 cursor-not-allowed"
                       : "bg-[#C9A227] text-[#07111F] hover:bg-[#E5C16B] shadow-[0_10px_20px_rgba(201,162,39,0.15)] hover:shadow-[0_10px_30px_rgba(201,162,39,0.3)] hover:-translate-y-0.5"
                   }`}
                 >

@@ -75,16 +75,6 @@ export const LoanProvider = ({ children }) => {
       if (normalized) {
         // Optimistic UI updates
         setActiveLoans((prev) => [normalized, ...prev]);
-
-        // Decrement corresponding book's stock in BooksContext
-        if (normalized.bookId) {
-          const cachedBook = getCachedBook(normalized.bookId);
-          if (cachedBook) {
-            optimisticEdit(normalized.bookId, {
-              stockQuantity: Math.max(0, cachedBook.stockQuantity - 1),
-            });
-          }
-        }
       }
       return normalized;
     } catch (err) {
@@ -94,7 +84,7 @@ export const LoanProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getCachedBook, optimisticEdit]);
+  }, []);
 
   // Return action: calls service and updates states optimistically
   const returnBook = useCallback(async (loanId) => {
@@ -107,16 +97,6 @@ export const LoanProvider = ({ children }) => {
         // Optimistic UI updates: Remove from activeLoans, prepend to loanHistory
         setActiveLoans((prev) => prev.filter((l) => l.id !== loanId));
         setLoanHistory((prev) => [normalized, ...prev]);
-
-        // Increment corresponding book's stock in BooksContext
-        if (normalized.bookId) {
-          const cachedBook = getCachedBook(normalized.bookId);
-          if (cachedBook) {
-            optimisticEdit(normalized.bookId, {
-              stockQuantity: cachedBook.stockQuantity + 1,
-            });
-          }
-        }
       }
       return normalized;
     } catch (err) {
