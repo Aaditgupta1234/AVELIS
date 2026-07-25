@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useLoans } from "../context/LoanContext.jsx";
@@ -37,6 +37,14 @@ export const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("checkouts");
   const [actionLoading, setActionLoading] = useState({});
   const [readerBook, setReaderBook] = useState(null);
+  const tabContentRef = useRef(null);
+
+  const handleTabSelect = (tabKey) => {
+    setActiveTab(tabKey);
+    if (tabContentRef.current) {
+      tabContentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const {
     activeLoans,
@@ -124,18 +132,18 @@ export const DashboardPage = () => {
         }
       }
 
-      if (bundleLoans.length > 1) {
-        // Whole bundle return rule: return all volumes belonging to the bundle
-        for (const loanItem of bundleLoans) {
-          try {
-            await returnBook(loanItem.id);
-          } catch (e) {
-            // continue returning remaining volumes in bundle
-          }
+      const loansToReturn = bundleLoans.length > 0 ? bundleLoans : (targetLoan ? [targetLoan] : []);
+      for (const loanItem of loansToReturn) {
+        try {
+          await returnBook(loanItem.id);
+        } catch (e) {
+          // continue returning remaining volumes in bundle
         }
-        showToast(`Full collection bundle (${bundleLoans.length} volumes) returned successfully to the Sanctuary.`);
+      }
+
+      if (bundleLoans.length > 0) {
+        showToast(`Entire collection bundle "${targetLoan.bundleTitle || 'Bundle'}" (${bundleLoans.length} volume${bundleLoans.length > 1 ? 's' : ''}) returned successfully.`);
       } else {
-        await returnBook(loanId);
         showToast("Volume returned successfully to the Sanctuary.");
       }
     } catch (err) {
@@ -148,8 +156,34 @@ export const DashboardPage = () => {
   const handleRenew = async (loanId) => {
     setActionLoading((prev) => ({ ...prev, [loanId]: "renewing" }));
     try {
-      await renewLoan(loanId);
-      showToast("Loan period extended successfully.");
+      const targetLoan = activeLoans.find((l) => l.id === loanId);
+      let bundleLoans = [];
+
+      if (targetLoan) {
+        if (targetLoan.bundleId || targetLoan.bundleTitle) {
+          bundleLoans = activeLoans.filter(
+            (l) =>
+              (targetLoan.bundleId && l.bundleId === targetLoan.bundleId) ||
+              (targetLoan.bundleTitle &&
+                l.bundleTitle?.toLowerCase() === targetLoan.bundleTitle?.toLowerCase())
+          );
+        }
+      }
+
+      const loansToRenew = bundleLoans.length > 0 ? bundleLoans : (targetLoan ? [targetLoan] : []);
+      for (const loanItem of loansToRenew) {
+        try {
+          await renewLoan(loanItem.id);
+        } catch (e) {
+          // continue renewing remaining volumes in bundle
+        }
+      }
+
+      if (bundleLoans.length > 0) {
+        showToast(`Entire collection bundle "${targetLoan.bundleTitle || 'Bundle'}" (${bundleLoans.length} volume${bundleLoans.length > 1 ? 's' : ''}) renewed successfully.`);
+      } else {
+        showToast("Loan period extended successfully.");
+      }
     } catch (err) {
       showToast(err.message || "Failed to renew loan.");
     } finally {
@@ -176,6 +210,7 @@ export const DashboardPage = () => {
   // Dynamic statistics counts based on actual database loans
   const stats = [
     {
+      tabKey: "checkouts",
       label: "Active Checkouts",
       value: loansLoading && activeLoans.length === 0 ? "..." : String(activeLoans.length),
       change: "Limit: 5 active loans",
@@ -183,6 +218,7 @@ export const DashboardPage = () => {
       color: "text-[#C9A227]"
     },
     {
+      tabKey: "orders",
       label: "My Orders",
       value: ordersLoading ? "..." : String(orders.length),
       change: "Physical book purchases",
@@ -190,6 +226,7 @@ export const DashboardPage = () => {
       color: "text-amber-400"
     },
     {
+      tabKey: "history",
       label: "Borrow History",
       value: loansLoading && loanHistory.length === 0 ? "..." : String(loanHistory.length),
       change: "Total logs in archive",
@@ -197,6 +234,7 @@ export const DashboardPage = () => {
       color: "text-emerald-400"
     },
     {
+      tabKey: "checkouts",
       label: "Overdue Loans",
       value: loansLoading && activeLoans.length === 0 ? "..." : String(activeLoans.filter((l) => l.status === "OVERDUE").length),
       change: "Action required",
@@ -420,7 +458,7 @@ export const DashboardPage = () => {
                           {/* Progress Bar (Time Remaining Progress) */}
                           <div className="space-y-2">
                             <div className="flex justify-between text-[10px] font-display tracking-[0.1em] text-[#F7F5EE]/55">
-                              <span>Time Expired</span>
+                              <span>{currentLoan.status === "OVERDUE" || progressPercent >= 100 ? "Time Expired" : "Time Elapsed"}</span>
                               <span>{progressPercent}%</span>
                             </div>
                             <div className="w-full h-[3px] bg-white/5 rounded-full overflow-hidden">
@@ -450,11 +488,11 @@ export const DashboardPage = () => {
                             </button>
                             <button
                               onClick={() => handleRenew(currentLoan.id)}
-                              disabled={actionLoading[currentLoan.id] || currentLoan.renewCount >= 3}
+                              disabled={actionLoading[currentLoan.id] || currentLoan.renewCount >= 2}
                               className="flex items-center gap-2 border border-[#C9A227]/20 hover:border-[#C9A227]/50 text-[#C9A227] hover:text-[#F7F5EE] px-5 py-2.5 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-all bg-[#C9A227]/5 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
                             >
                               <RotateCcw className={`w-3 h-3 ${actionLoading[currentLoan.id] === "renewing" ? "animate-spin" : ""}`} />
-                              <span>{actionLoading[currentLoan.id] === "renewing" ? "Renewing..." : `Renew (${currentLoan.renewCount}/3)`}</span>
+                              <span>{actionLoading[currentLoan.id] === "renewing" ? "Renewing..." : `Renew (${Math.min(3, (currentLoan.renewCount || 0) + 1)}/3)`}</span>
                             </button>
                             <button
                               onClick={() => handleReturn(currentLoan.id)}
@@ -495,15 +533,16 @@ export const DashboardPage = () => {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {stats.map((stat, i) => (
-                    <div
+                    <button
                       key={i}
-                      className="bg-[#0D1626]/40 border border-[rgba(201,162,39,0.12)] rounded-lg p-6 flex items-center gap-6 shadow-[0_10px_25px_rgba(0,0,0,0.2)]"
+                      onClick={() => handleTabSelect(stat.tabKey)}
+                      className="bg-[#0D1626]/40 hover:bg-[#0D1626]/70 border border-[rgba(201,162,39,0.12)] hover:border-[#C9A227]/40 rounded-lg p-6 flex items-center gap-6 shadow-[0_10px_25px_rgba(0,0,0,0.2)] transition-all duration-300 cursor-pointer text-left group"
                     >
-                      <div className="w-12 h-12 rounded bg-[#C9A227]/5 border border-[#C9A227]/20 flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 rounded bg-[#C9A227]/5 group-hover:bg-[#C9A227]/15 border border-[#C9A227]/20 flex items-center justify-center flex-shrink-0 transition-colors">
                         <stat.icon className="w-5 h-5 text-[#C9A227]" />
                       </div>
                       <div className="space-y-1">
-                        <span className="block font-display text-[10px] tracking-[0.2em] text-[#F7F5EE]/50 uppercase">
+                        <span className="block font-display text-[10px] tracking-[0.2em] text-[#F7F5EE]/50 group-hover:text-[#C9A227] uppercase transition-colors">
                           {stat.label}
                         </span>
                         <div className="flex items-baseline gap-3">
@@ -515,16 +554,16 @@ export const DashboardPage = () => {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
                 {/* Tabbed Bento View for Checkouts and History */}
-                <div className="bg-[#0D1626]/30 border border-[rgba(201,162,39,0.12)] rounded-lg p-6 sm:p-8 space-y-6 shadow-[0_15px_35px_rgba(0,0,0,0.2)]">
+                <div ref={tabContentRef} className="bg-[#0D1626]/30 border border-[rgba(201,162,39,0.12)] rounded-lg p-6 sm:p-8 space-y-6 shadow-[0_15px_35px_rgba(0,0,0,0.2)] scroll-mt-28">
                   <div className="flex border-b border-[rgba(201,162,39,0.1)] pb-4 justify-between items-center flex-wrap gap-4">
                     <div className="flex gap-6">
                       <button
-                        onClick={() => setActiveTab("checkouts")}
+                        onClick={() => handleTabSelect("checkouts")}
                         className={`font-display text-sm tracking-[0.15em] uppercase transition-colors relative pb-4 cursor-pointer focus:outline-none ${
                           activeTab === "checkouts" ? "text-[#C9A227]" : "text-[#F7F5EE]/40 hover:text-[#F7F5EE]/75"
                         }`}
@@ -538,7 +577,7 @@ export const DashboardPage = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => setActiveTab("history")}
+                        onClick={() => handleTabSelect("history")}
                         className={`font-display text-sm tracking-[0.15em] uppercase transition-colors relative pb-4 cursor-pointer focus:outline-none ${
                           activeTab === "history" ? "text-[#C9A227]" : "text-[#F7F5EE]/40 hover:text-[#F7F5EE]/75"
                         }`}
@@ -552,7 +591,7 @@ export const DashboardPage = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => setActiveTab("orders")}
+                        onClick={() => handleTabSelect("orders")}
                         className={`font-display text-sm tracking-[0.15em] uppercase transition-colors relative pb-4 cursor-pointer focus:outline-none ${
                           activeTab === "orders" ? "text-[#C9A227]" : "text-[#F7F5EE]/40 hover:text-[#F7F5EE]/75"
                         }`}
@@ -656,7 +695,7 @@ export const DashboardPage = () => {
                                   </button>
                                   <button
                                     onClick={() => handleRenew(loan.id)}
-                                    disabled={isActionPending || loan.renewCount >= 3}
+                                    disabled={isActionPending || loan.renewCount >= 2}
                                     className="flex items-center justify-center gap-1.5 border border-[#C9A227]/20 hover:border-[#C9A227]/60 text-[#C9A227] disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded font-display text-[9px] tracking-[0.15em] uppercase transition-colors bg-white/3 focus:outline-none cursor-pointer"
                                   >
                                     <RotateCcw
@@ -667,7 +706,7 @@ export const DashboardPage = () => {
                                     <span>
                                       {actionLoading[loan.id] === "renewing"
                                         ? "Renewing..."
-                                        : `Renew (${loan.renewCount}/3)`}
+                                        : `Renew (${Math.min(3, (loan.renewCount || 0) + 1)}/3)`}
                                     </span>
                                   </button>
                                   <button

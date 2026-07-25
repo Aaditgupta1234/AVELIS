@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { useLoans } from "../../context/LoanContext.jsx";
 import { useReviews } from "../../context/ReviewContext.jsx";
@@ -13,7 +13,7 @@ import { Navbar } from "../../components/layout/Navbar.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { BackgroundShader } from "../../components/ui/BackgroundShader.jsx";
 import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
-import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2, ShoppingBag, Layers } from "lucide-react";
+import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2, ShoppingBag, Layers, X } from "lucide-react";
 import { BuyBookModal } from "../../components/checkout/BuyBookModal.jsx";
 import { revealVariants } from "../../utils/motion.js";
 
@@ -58,6 +58,8 @@ export const BookDetailsPage = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const reviewSectionRef = useRef(null);
 
   const isReservedByMe = hasActiveReservation(id);
   const isBorrowedByMe = activeLoans?.some(
@@ -449,18 +451,24 @@ export const BookDetailsPage = () => {
                 </button>
 
                 <button
-                  onClick={() => navigate("/journal", { state: { prefilledBookTitle: book.title } })}
-                  className="flex items-center justify-center gap-2 border border-white/20 hover:border-[#C9A227] text-white/80 hover:text-white bg-white/5 hover:bg-[#C9A227]/10 px-6 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate("/login", { state: { from: `/book/${id}` } });
+                      return;
+                    }
+                    setIsReviewModalOpen(true);
+                  }}
+                  className="flex items-center justify-center gap-2 border border-[#C9A227]/40 hover:border-[#C9A227] text-[#C9A227] hover:text-white bg-[#C9A227]/10 hover:bg-[#C9A227]/20 px-6 py-4 rounded font-display text-[10px] tracking-[0.2em] uppercase transition-all duration-300 cursor-pointer shadow-[0_4px_15px_rgba(201,162,39,0.15)]"
                 >
-                  <MessageSquare className="w-4 h-4 text-[#C9A227]" />
-                  <span>Write Reflection</span>
+                  <Star className="w-4 h-4 text-[#C9A227] fill-[#C9A227]" />
+                  <span>Write Review</span>
                 </button>
               </div>
             </div>
           </div>
 
           {/* ── Reviews & Ratings Section ─────────────────────────────── */}
-          <div className="mt-20 border-t border-[rgba(201,162,39,0.12)] pt-12">
+          <div ref={reviewSectionRef} className="mt-20 border-t border-[rgba(201,162,39,0.12)] pt-12">
             <h2 className="font-display text-xl tracking-[0.12em] text-[#F7F5EE] uppercase mb-10">
               Reader Reviews
             </h2>
@@ -739,6 +747,123 @@ export const BookDetailsPage = () => {
       </main>
 
       <Footer />
+
+      {/* Interactive Write Review Modal */}
+      <AnimatePresence>
+        {isReviewModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#07111F]/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0D1626] border border-[#C9A227]/30 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative space-y-6"
+            >
+              <button
+                onClick={() => setIsReviewModalOpen(false)}
+                className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-2">
+                <span className="font-display text-[9px] tracking-[0.2em] text-[#C9A227] uppercase font-bold">
+                  Reader Review
+                </span>
+                <h3 className="font-display text-2xl text-[#F7F5EE]">
+                  Review "{book?.title}"
+                </h3>
+                <p className="font-body text-xs text-[#F7F5EE]/60">
+                  Select your star rating and share your thoughts with the community.
+                </p>
+              </div>
+
+              {hasUserReviewed(id) ? (
+                <div className="p-4 border border-[#C9A227]/20 bg-[#C9A227]/10 rounded-xl flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-[#C9A227] flex-shrink-0" />
+                  <p className="font-body text-sm text-[#F7F5EE]">
+                    You have already submitted a review for this volume.
+                  </p>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    await handleSubmitReview(e);
+                    setIsReviewModalOpen(false);
+                  }}
+                  className="space-y-6"
+                >
+                  <div className="space-y-2">
+                    <label className="block font-display text-[10px] tracking-[0.15em] text-[#F7F5EE]/70 uppercase font-semibold">
+                      Star Rating (1 to 5 Stars)
+                    </label>
+                    <div className="flex items-center gap-2 pt-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className="focus:outline-none transition-transform hover:scale-110 cursor-pointer p-1"
+                          aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                        >
+                          <Star
+                            className={`w-8 h-8 transition-colors duration-150 ${
+                              star <= (hoverRating || reviewRating)
+                                ? "fill-[#C9A227] text-[#C9A227]"
+                                : "text-[#F7F5EE]/20"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    {reviewRating > 0 && (
+                      <p className="font-display text-xs tracking-wider text-[#C9A227] font-semibold pt-1">
+                        {["", "⭐ 1 Star - Poor", "⭐⭐ 2 Stars - Fair", "⭐⭐⭐ 3 Stars - Good", "⭐⭐⭐⭐ 4 Stars - Very Good", "⭐⭐⭐⭐⭐ 5 Stars - Excellent"][reviewRating]}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block font-display text-[10px] tracking-[0.15em] text-[#F7F5EE]/70 uppercase font-semibold">
+                      Your Review
+                    </label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Write your review here..."
+                      rows={4}
+                      required
+                      className="w-full bg-[#07111F] border border-[#C9A227]/20 focus:border-[#C9A227] rounded-xl p-3.5 font-body text-sm text-[#F7F5EE] placeholder:text-[#F7F5EE]/30 resize-none outline-none transition-colors"
+                    />
+                  </div>
+
+                  {reviewError && (
+                    <p className="font-body text-xs text-rose-400">{reviewError.message}</p>
+                  )}
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsReviewModalOpen(false)}
+                      className="flex-1 py-3 rounded-lg border border-white/10 text-white/70 hover:text-white font-display text-xs tracking-wider uppercase cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={reviewRating === 0}
+                      className="flex-1 py-3 rounded-lg bg-[#C9A227] hover:bg-[#E5C16B] disabled:opacity-40 text-[#07111F] font-display text-xs tracking-wider uppercase font-bold cursor-pointer transition-colors shadow-lg"
+                    >
+                      Submit Review
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Physical Copy Checkout & Buy Modal */}
       <BuyBookModal

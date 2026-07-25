@@ -102,7 +102,7 @@ export const ContinueReading = () => {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-[9px] font-display font-semibold tracking-wider">
-                    <span className="text-primary">{progress}% TIME EXPIRED</span>
+                    <span className="text-primary">{progress}% {loan.status === "OVERDUE" || progress >= 100 ? "TIME EXPIRED" : "TIME ELAPSED"}</span>
                     <span
                       className={
                         loan.status === "OVERDUE"

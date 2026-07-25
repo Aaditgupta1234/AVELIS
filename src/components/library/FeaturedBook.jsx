@@ -1,76 +1,190 @@
-import { motion } from "framer-motion";
-import { featuredBook } from "../../data/featuredBook";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useBooks } from "../../context/BooksContext";
+import { featuredBook as defaultFeatured } from "../../data/featuredBook";
 import { springs, revealVariants } from "../../utils/motion";
+
 export const FeaturedBook = () => {
-    return (<motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={revealVariants.A} className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-24 md:mb-40">
-      <div className="relative w-full aspect-[21/10] lg:aspect-[21/8] min-h-[480px] sm:min-h-[520px] lg:min-h-[560px] rounded-2xl overflow-hidden group shadow-[0_40px_100px_-20px_rgba(0,0,0,0.6)]">
-        {/* Cinematic Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#07111F] via-[#07111F]/70 to-transparent z-10"/>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#07111F]/80 via-transparent to-transparent z-10"/>
-        
-        <motion.img alt={`${featuredBook.title} cover`} className="absolute inset-0 w-full h-full object-cover" src={featuredBook.coverImage} initial={{ scale: 1 }} whileHover={{ scale: 1.05 }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}/>
-        
-        <div className="absolute inset-0 z-20 flex flex-col justify-center py-8 md:py-12 px-12 md:px-24 max-w-4xl">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="inline-block px-4 py-1.5 bg-primary/20 text-primary font-body text-[10px] tracking-[0.2em] border border-primary/30 font-semibold uppercase">
-              EDITOR'S MASTERPIECE
-            </span>
-            <span className="text-on-surface-variant/40 text-sm">|</span>
-            <span className="text-on-surface-variant/60 font-body text-[10px] tracking-[0.2em] uppercase font-semibold">
-              {featuredBook.category}
-            </span>
-          </div>
-          
-          <h2 className="font-display text-5xl md:text-7xl text-on-surface mb-6 leading-none tracking-tight">
-            The Gilded<br />Silence
-          </h2>
-          
-          <div className="flex items-center gap-6 mb-8 text-on-surface-variant/80 font-body text-sm md:text-base">
-            <div className="flex items-center gap-1 text-primary">
-              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                star
+    const { books } = useBooks();
+    const navigate = useNavigate();
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Merge real database catalog books with fallback
+    const featuredList = Array.isArray(books) && books.length > 0 ? books : [defaultFeatured];
+
+    // Ensure index stays in valid range
+    const activeIndex = currentIndex % featuredList.length;
+    const currentBook = featuredList[activeIndex] || defaultFeatured;
+
+    // Auto-advance featured books every 8 seconds if multiple books exist
+    useEffect(() => {
+        if (featuredList.length <= 1) return;
+        const interval = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % featuredList.length);
+        }, 8000);
+        return () => clearInterval(interval);
+    }, [featuredList.length]);
+
+    const handleNext = (e) => {
+        e.stopPropagation();
+        setCurrentIndex((prev) => (prev + 1) % featuredList.length);
+    };
+
+    const handlePrev = (e) => {
+        e.stopPropagation();
+        setCurrentIndex((prev) => (prev - 1 + featuredList.length) % featuredList.length);
+    };
+
+    const handleViewBook = () => {
+        if (currentBook.id && !String(currentBook.id).startsWith("featured-")) {
+            navigate(`/book/${currentBook.id}`);
+        } else if (books && books.length > 0) {
+            navigate(`/book/${books[0].id}`);
+        }
+    };
+
+    const categoryText = currentBook.category || currentBook.categories?.[0]?.category?.name || "FEATURED COLLECTION";
+    const authorText = currentBook.author || (currentBook.authors && currentBook.authors[0]?.author?.fullName) || "AVELIS ARCHIVE";
+    const ratingValue = currentBook.rating || 4.9;
+    const yearValue = currentBook.year || currentBook.publicationYear || 2026;
+
+    return (
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={revealVariants.A}
+        className="px-margin-mobile md:px-gutter max-w-container-max mx-auto mb-12 md:mb-20"
+      >
+        <div className="relative w-full aspect-[21/9] lg:aspect-[21/7] min-h-[340px] sm:min-h-[380px] lg:min-h-[420px] rounded-2xl overflow-hidden group shadow-[0_30px_70px_-15px_rgba(0,0,0,0.6)] border border-[#C9A227]/20">
+          {/* Background Image with Animation */}
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={currentBook.id || activeIndex}
+              alt={`${currentBook.title} cover`}
+              className="absolute inset-0 w-full h-full object-cover"
+              src={currentBook.coverImage || defaultFeatured.coverImage}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </AnimatePresence>
+
+          {/* Cinematic Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#07111F] via-[#07111F]/85 to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07111F]/90 via-transparent to-transparent z-10" />
+
+          {/* Content overlay */}
+          <div className="absolute inset-0 z-20 flex flex-col justify-center py-6 md:py-8 px-6 sm:px-10 md:px-16 max-w-3xl">
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
+              <span className="inline-block px-3 py-1 bg-[#C9A227]/20 text-[#C9A227] font-body text-[9px] tracking-[0.18em] border border-[#C9A227]/30 font-semibold uppercase rounded">
+                EDITOR'S MASTERPIECE
               </span>
-              <span className="text-sm font-semibold ml-1">{featuredBook.rating}</span>
-              <span className="text-[12px] opacity-60 ml-1">
-                ({(featuredBook.reviewsCount || 0) / 1000}k reviews)
+              <span className="text-on-surface-variant/40 text-xs">|</span>
+              <span className="text-[#F7F5EE]/60 font-body text-[9px] tracking-[0.18em] uppercase font-semibold">
+                {categoryText}
               </span>
             </div>
-            <span className="text-on-surface-variant/30 font-light">·</span>
-            <span>{featuredBook.year}</span>
-            <span className="text-on-surface-variant/30 font-light">·</span>
-            <span className="text-green-500/80 font-semibold uppercase tracking-widest text-[10px]">
-              Available Now
-            </span>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentBook.id || activeIndex}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-2.5"
+              >
+                <h2 className="font-display text-2xl sm:text-4xl md:text-5xl text-[#F7F5EE] leading-tight tracking-tight line-clamp-2">
+                  {currentBook.title}
+                </h2>
+
+                <p className="font-body text-xs sm:text-sm text-[#C9A227] italic tracking-wider">
+                  by {authorText}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-[#F7F5EE]/80 font-body text-xs pt-0.5">
+                  <div className="flex items-center gap-1 text-[#C9A227]">
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      star
+                    </span>
+                    <span className="text-xs font-semibold ml-0.5">{ratingValue}</span>
+                  </div>
+                  <span className="text-white/30 font-light">·</span>
+                  <span>{yearValue}</span>
+                  <span className="text-white/30 font-light">·</span>
+                  <span className="text-emerald-400 font-semibold uppercase tracking-widest text-[9px]">
+                    Available in Archive
+                  </span>
+                </div>
+
+                <p className="font-body text-xs sm:text-sm text-[#F7F5EE]/75 max-w-xl leading-relaxed line-clamp-2">
+                  {currentBook.description || "A masterwork of literature preserved within the AVELIS digital sanctuary for discerning readers."}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-4">
+              <motion.button
+                onClick={handleViewBook}
+                whileHover={{
+                  y: -2,
+                  boxShadow: "0px 8px 24px -8px rgba(201, 162, 39, 0.4)",
+                  filter: "brightness(1.1)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={springs.buttonClick}
+                className="bg-[#C9A227] text-[#07111F] px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-body text-[11px] tracking-[0.05em] hover:bg-[#E5C16B] transition-all flex items-center gap-2 shadow-lg shadow-[#C9A227]/10 font-semibold cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">auto_stories</span>
+                View Book & Borrow
+              </motion.button>
+
+              <motion.button
+                onClick={handleViewBook}
+                whileHover={{
+                  y: -2,
+                  backgroundColor: "rgba(255, 255, 255, 0.08)",
+                  borderColor: "rgba(255, 255, 255, 0.3)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={springs.buttonClick}
+                className="bg-white/5 backdrop-blur-md border border-white/20 text-[#F7F5EE] px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-body text-[11px] tracking-[0.05em] transition-all flex items-center gap-2 font-semibold cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">menu_book</span>
+                Read Book
+              </motion.button>
+            </div>
           </div>
-          
-          <p className="font-body text-lg text-on-surface-variant/90 mb-10 line-clamp-3 md:line-clamp-none max-w-2xl leading-relaxed">
-            {featuredBook.description}
-          </p>
-          
-          <div className="flex flex-wrap items-center gap-6">
-            <motion.button whileHover={{
-            y: -2,
-            boxShadow: "0px 10px 30px -10px rgba(212, 175, 55, 0.4)",
-            filter: "brightness(1.1)"
-        }} whileTap={{ scale: 0.98 }} transition={springs.buttonClick} className="bg-primary text-on-primary px-10 py-4 rounded-xl font-body text-[12px] tracking-[0.05em] hover:brightness-110 transition-all flex items-center gap-3 shadow-lg shadow-primary/10 font-semibold">
-              <span className="material-symbols-outlined text-lg">auto_stories</span>
-              Borrow Book
-            </motion.button>
-            
-            <motion.button whileHover={{
-            y: -2,
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            borderColor: "rgba(255, 255, 255, 0.3)"
-        }} whileTap={{ scale: 0.98 }} transition={springs.buttonClick} className="bg-surface-container/50 backdrop-blur-md border border-outline-variant/30 text-on-surface px-10 py-4 rounded-xl font-body text-[12px] tracking-[0.05em] transition-all flex items-center gap-3 font-semibold">
-              <span className="material-symbols-outlined text-lg">menu_book</span>
-              Read Preview
-            </motion.button>
-            
-            <motion.button whileHover={{ scale: 1.05, color: "var(--color-primary)", borderColor: "rgba(201, 162, 39, 0.5)" }} whileTap={{ scale: 0.95 }} transition={springs.buttonClick} className="p-4 rounded-full border border-outline-variant/30 text-on-surface hover:text-primary transition-all" aria-label="Bookmark featured book">
-              <span className="material-symbols-outlined text-xl">bookmark</span>
-            </motion.button>
-          </div>
+
+          {/* Interactive Next / Previous Book Controls */}
+          {featuredList.length > 1 && (
+            <div className="absolute bottom-6 right-6 z-30 flex items-center gap-3 bg-[#07111F]/80 backdrop-blur-md border border-[#C9A227]/30 rounded-xl px-4 py-2">
+              <button
+                onClick={handlePrev}
+                className="p-1.5 text-[#F7F5EE]/70 hover:text-[#C9A227] hover:bg-white/10 rounded transition-all cursor-pointer"
+                title="Previous Featured Book"
+              >
+                <span className="material-symbols-outlined text-lg block">chevron_left</span>
+              </button>
+
+              <span className="font-display text-[10px] tracking-[0.15em] text-[#C9A227] font-semibold min-w-[48px] text-center select-none">
+                {activeIndex + 1} / {featuredList.length}
+              </span>
+
+              <button
+                onClick={handleNext}
+                className="p-1.5 text-[#F7F5EE]/70 hover:text-[#C9A227] hover:bg-white/10 rounded transition-all cursor-pointer"
+                title="Next Featured Book"
+              >
+                <span className="material-symbols-outlined text-lg block">chevron_right</span>
+              </button>
+            </div>
+          )}
         </div>
-      </div>
-    </motion.section>);
+      </motion.section>
+    );
 };
