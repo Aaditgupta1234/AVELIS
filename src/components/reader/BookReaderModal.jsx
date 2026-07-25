@@ -1055,7 +1055,10 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
                       {/* Tool Selectors */}
                       <div className="grid grid-cols-3 gap-2">
                         <button
-                          onClick={() => setActiveTool("pen")}
+                          onClick={() => {
+                            setActiveTool("pen");
+                            setIsDropdownOpen(false);
+                          }}
                           className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all cursor-pointer ${
                             activeTool === "pen"
                               ? "bg-[#C9A227] text-[#07111F] border-[#C9A227] font-semibold"
@@ -1067,7 +1070,10 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
                         </button>
 
                         <button
-                          onClick={() => setActiveTool("highlighter")}
+                          onClick={() => {
+                            setActiveTool("highlighter");
+                            setIsDropdownOpen(false);
+                          }}
                           className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all cursor-pointer ${
                             activeTool === "highlighter"
                               ? "bg-yellow-400 text-[#07111F] border-yellow-400 font-semibold"
@@ -1079,7 +1085,10 @@ export const BookReaderModal = ({ isOpen, onClose, book }) => {
                         </button>
 
                         <button
-                          onClick={() => setActiveTool("eraser")}
+                          onClick={() => {
+                            setActiveTool("eraser");
+                            setIsDropdownOpen(false);
+                          }}
                           className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all cursor-pointer ${
                             activeTool === "eraser"
                               ? "bg-rose-500 text-white border-rose-500 font-semibold"
