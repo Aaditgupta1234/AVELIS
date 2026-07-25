@@ -1,3 +1,5 @@
+import { storageService } from './storage.service.js';
+
 export function extractPdfPageCount(buffer) {
   if (!buffer || !Buffer.isBuffer(buffer)) return null;
   const content = buffer.toString('binary');
