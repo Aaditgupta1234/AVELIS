@@ -34,8 +34,8 @@ export const getMe = async (req, res, next) => {
 export const updateMe = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { username } = req.body;
-    const updatedProfile = await updateUserProfile(userId, { username });
+    const { username, avatarUrl } = req.body;
+    const updatedProfile = await updateUserProfile(userId, { username, avatarUrl });
 
     return sendSuccess(
       res,

@@ -85,11 +85,26 @@ export const updateUserProfile = async (userId, updateData) => {
     );
   }
 
-  const newUsername = updateData.username;
+  const { username, avatarUrl } = updateData;
+  const dataToUpdate = {};
 
-  // Compare using the project's existing comparison strategy
-  if (newUsername === user.username) {
-    // Return immediately to avoid unnecessary database update writes and timestamp changes
+  if (username && username !== user.username) {
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (existingUser) {
+      throw new ApiError(409, 'Username is already taken.');
+    }
+    dataToUpdate.username = username;
+  }
+
+  if (avatarUrl !== undefined) {
+    dataToUpdate.avatarUrl = avatarUrl;
+    dataToUpdate.isCustomAvatar = Boolean(avatarUrl);
+  }
+
+  if (Object.keys(dataToUpdate).length === 0) {
     return {
       id: user.id,
       username: user.username,
@@ -102,20 +117,9 @@ export const updateUserProfile = async (userId, updateData) => {
     };
   }
 
-  // Check username uniqueness matching registration flow comparison strategy
-  const existingUser = await prisma.user.findUnique({
-    where: { username: newUsername },
-    select: { id: true },
-  });
-
-  if (existingUser) {
-    throw new ApiError(409, 'Username is already taken.');
-  }
-
-  // Update in database using Prisma select security to fetch only public fields
   const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: { username: newUsername },
+    data: dataToUpdate,
     select: {
       id: true,
       username: true,

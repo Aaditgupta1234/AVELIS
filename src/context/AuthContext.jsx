@@ -20,6 +20,25 @@ const createDefaultAvatar = (name) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg.trim())}`;
 };
 
+const buildUserProfile = (backendUser) => {
+  const userKey = backendUser.id || backendUser.email;
+  const savedBio = localStorage.getItem(`avelis_biography_${userKey}`) || localStorage.getItem("avelis_biography") || "";
+  const savedAvatar = backendUser.avatarUrl || localStorage.getItem(`avelis_custom_avatar_${userKey}`) || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.username || backendUser.name);
+
+  return {
+    ...backendUser,
+    name: backendUser.username || backendUser.name,
+    avatar: savedAvatar,
+    avatarUrl: savedAvatar,
+    biography: savedBio,
+    memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    }),
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
     user: null,
@@ -31,7 +50,6 @@ export const AuthProvider = ({ children }) => {
   });
 
   // Race-free logout utility (clears Supabase session first, then application state & storage)
-  // useCallback([]) — closes over: supabase (module-level), localStorage (global), setAuthState (stable setter)
   const logout = useCallback(async () => {
     try {
       await supabase.auth.signOut();
@@ -39,8 +57,6 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
-    localStorage.removeItem("avelis_custom_avatar");
-    localStorage.removeItem("avelis_biography");
 
     setAuthState({
       user: null,
@@ -65,18 +81,7 @@ export const AuthProvider = ({ children }) => {
     const restoreSession = async () => {
       try {
         const backendUser = await getMe({ signal: controller.signal });
-        
-        // Merge DB profile with local avatar/bio fallbacks
-        const mergedUser = {
-          ...backendUser,
-          avatar: backendUser.avatarUrl || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
-          biography: localStorage.getItem("avelis_biography") || "",
-          memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric"
-          }),
-        };
+        const mergedUser = buildUserProfile(backendUser);
 
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mergedUser));
 
@@ -122,17 +127,7 @@ export const AuthProvider = ({ children }) => {
       
       const token = data.token;
       const backendUser = data.user;
-
-      const mergedUser = {
-        ...backendUser,
-        avatar: backendUser.avatarUrl || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
-        biography: localStorage.getItem("avelis_biography") || "",
-        memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric"
-        }),
-      };
+      const mergedUser = buildUserProfile(backendUser);
 
       localStorage.setItem(STORAGE_KEYS.TOKEN, token);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mergedUser));
@@ -184,17 +179,7 @@ export const AuthProvider = ({ children }) => {
       const data = await oauthUser({ token: supabaseAccessToken });
       const token = data.token;
       const backendUser = data.user;
-
-      const mergedUser = {
-        ...backendUser,
-        avatar: backendUser.avatarUrl || localStorage.getItem("avelis_custom_avatar") || createDefaultAvatar(backendUser.name),
-        biography: localStorage.getItem("avelis_biography") || "",
-        memberSince: new Date(backendUser.createdAt || Date.now()).toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric"
-        }),
-      };
+      const mergedUser = buildUserProfile(backendUser);
 
       localStorage.setItem(STORAGE_KEYS.TOKEN, token);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mergedUser));
@@ -236,15 +221,27 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (name, biography) => {
     if (!authState.user) return;
     try {
-      const response = await apiClient.patch("/users/me", { username: name });
-      const updatedBackendUser = response.data.data;
+      const userKey = authState.user.id || authState.user.email;
+      const currentAvatar = authState.user.avatar || authState.user.avatarUrl;
 
-      localStorage.setItem("avelis_biography", biography || "");
+      const response = await apiClient.patch("/users/me", {
+        username: name,
+        avatarUrl: currentAvatar
+      });
+      const updatedBackendUser = response.data.data || response.data;
+
+      const finalBio = biography !== undefined ? biography : (authState.user.biography || "");
+      localStorage.setItem(`avelis_biography_${userKey}`, finalBio);
+      localStorage.setItem("avelis_biography", finalBio);
 
       const updatedUser = {
         ...authState.user,
-        name: updatedBackendUser.username,
-        biography: biography || "",
+        ...updatedBackendUser,
+        name: updatedBackendUser.username || name,
+        username: updatedBackendUser.username || name,
+        biography: finalBio,
+        avatar: updatedBackendUser.avatarUrl || currentAvatar,
+        avatarUrl: updatedBackendUser.avatarUrl || currentAvatar,
       };
 
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
@@ -256,7 +253,14 @@ export const AuthProvider = ({ children }) => {
 
   const updateAvatar = async (dataUrl) => {
     if (!authState.user) return;
+    const userKey = authState.user.id || authState.user.email;
+    localStorage.setItem(`avelis_custom_avatar_${userKey}`, dataUrl);
     localStorage.setItem("avelis_custom_avatar", dataUrl);
+
+    try {
+      await apiClient.patch("/users/me", { avatarUrl: dataUrl });
+    } catch (_) {}
+
     const updatedUser = {
       ...authState.user,
       avatar: dataUrl,
@@ -268,10 +272,18 @@ export const AuthProvider = ({ children }) => {
 
   const resetAvatar = async () => {
     if (!authState.user) return;
+    const userKey = authState.user.id || authState.user.email;
+    localStorage.removeItem(`avelis_custom_avatar_${userKey}`);
     localStorage.removeItem("avelis_custom_avatar");
+
+    const defaultAvatar = createDefaultAvatar(authState.user.name || authState.user.username);
+    try {
+      await apiClient.patch("/users/me", { avatarUrl: "" });
+    } catch (_) {}
+
     const updatedUser = {
       ...authState.user,
-      avatar: createDefaultAvatar(authState.user.name),
+      avatar: defaultAvatar,
       avatarUrl: null,
     };
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));

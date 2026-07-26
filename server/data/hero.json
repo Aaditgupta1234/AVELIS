@@ -2,8 +2,8 @@
   "heroBookIds": [
     "ddbd05fd-fce3-4437-8c3f-104fd9eee6d4",
     "c8625160-deec-47d4-a938-b799d24b02d2",
-    "d2798e3a-c190-4171-829e-0211faa95f67",
     "3cff37ea-9f21-408d-9564-c766664ace2a",
+    "d2798e3a-c190-4171-829e-0211faa95f67",
     "c776298b-bb6e-4163-9613-a5e6e99c2bd0",
     "4173d6a5-7389-49d2-96be-e399535031fb"
   ],
@@ -195,85 +195,6 @@
       "createdAt": "2026-07-22T19:13:57.704Z"
     },
     {
-      "id": "d2798e3a-c190-4171-829e-0211faa95f67",
-      "title": "del",
-      "author": "F. Scott Fitzgerald",
-      "category": "Classics",
-      "authorsList": [
-        {
-          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
-          "name": "F. Scott Fitzgerald"
-        }
-      ],
-      "categoriesList": [
-        {
-          "id": "d38d4388-823d-4394-881d-af571242f629",
-          "name": "Classics"
-        }
-      ],
-      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/bfe0ebfa-30ac-4e53-a50e-5441417c7c38.png",
-      "coverImagePath": null,
-      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/book-pdfs/2026/07/7cc0ffae-0644-46d5-9835-9fe780b5d9d9.pdf",
-      "pdfPath": null,
-      "publicationYear": 2026,
-      "year": 2026,
-      "publisher": "Archival Press",
-      "language": "English",
-      "bookType": "Hardcover",
-      "description": "",
-      "sellingPrice": 24.99,
-      "stockQuantity": 10,
-      "availableCopiesCount": 9,
-      "isBorrowable": true,
-      "isForSale": true,
-      "rating": null,
-      "copies": [
-        {
-          "id": "c6d42082-21cc-4b22-a5cc-3b2573e290fe",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "ff7964e1-68e9-4ff5-8ac5-6d932861f814",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "49d7bfc5-8588-43af-aaaa-1022022df420",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "ddb9c55d-f3cf-49c6-ba16-2c757f2f0b80",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "aa45b433-0f1b-45d8-b5d7-b5f9360a2c3a",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "ab6b9f0f-7612-439e-a43c-44842f7fd069",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "b7e87f54-e660-4d08-884e-8404a88d8e8b",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "667498af-1736-42a5-9230-1e9bb9dd86d6",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "318b0e5a-5ba5-4d0a-8f41-1830963d7cdb",
-          "status": "AVAILABLE"
-        },
-        {
-          "id": "2d6318bb-4204-4247-97a7-3a6ac9631006",
-          "status": "BORROWED"
-        }
-      ],
-      "totalPages": null,
-      "pageCount": null,
-      "createdAt": "2026-07-25T19:24:54.299Z"
-    },
-    {
       "id": "3cff37ea-9f21-408d-9564-c766664ace2a",
       "title": "Pride and Prejudice",
       "author": "Jane Austen",
@@ -345,6 +266,85 @@
       "createdAt": "2026-07-22T19:13:55.720Z"
     },
     {
+      "id": "d2798e3a-c190-4171-829e-0211faa95f67",
+      "title": "del",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/bfe0ebfa-30ac-4e53-a50e-5441417c7c38.png",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/book-pdfs/2026/07/7cc0ffae-0644-46d5-9835-9fe780b5d9d9.pdf",
+      "pdfPath": null,
+      "publicationYear": 2026,
+      "year": 2026,
+      "publisher": "Archival Press",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "ddb9c55d-f3cf-49c6-ba16-2c757f2f0b80",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "aa45b433-0f1b-45d8-b5d7-b5f9360a2c3a",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ab6b9f0f-7612-439e-a43c-44842f7fd069",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "b7e87f54-e660-4d08-884e-8404a88d8e8b",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "667498af-1736-42a5-9230-1e9bb9dd86d6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "318b0e5a-5ba5-4d0a-8f41-1830963d7cdb",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "2d6318bb-4204-4247-97a7-3a6ac9631006",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "c6d42082-21cc-4b22-a5cc-3b2573e290fe",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ff7964e1-68e9-4ff5-8ac5-6d932861f814",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "49d7bfc5-8588-43af-aaaa-1022022df420",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-25T19:24:54.299Z"
+    },
+    {
       "id": "c776298b-bb6e-4163-9613-a5e6e99c2bd0",
       "title": "Harry Potter And Soccer stone",
       "author": "F. Scott Fitzgerald",
@@ -379,10 +379,6 @@
       "rating": null,
       "copies": [
         {
-          "id": "e62a35ee-8002-4209-afa2-4a170aa1c2b5",
-          "status": "AVAILABLE"
-        },
-        {
           "id": "971ea8c4-7a74-42d6-8f2b-698f2689cb94",
           "status": "AVAILABLE"
         },
@@ -416,6 +412,10 @@
         },
         {
           "id": "d622fbca-f884-4f56-a8fc-901134b39cc6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "e62a35ee-8002-4209-afa2-4a170aa1c2b5",
           "status": "AVAILABLE"
         }
       ],

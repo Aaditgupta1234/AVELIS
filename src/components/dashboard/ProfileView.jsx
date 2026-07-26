@@ -1,8 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { AuthInput } from "../auth/AuthInput";
 import { AuthButton } from "../auth/AuthButton";
 import { Shield, Calendar, Key, Check } from "lucide-react";
+
 export const ProfileView = ({ showToast }) => {
     const { user, updateProfile, updateAvatar, resetAvatar } = useAuth();
     const fileInputRef = useRef(null);
@@ -10,10 +11,17 @@ export const ProfileView = ({ showToast }) => {
     const [bio, setBio] = useState(user?.biography || "");
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (user) {
+            if (user.name) setName(user.name);
+            if (user.biography !== undefined) setBio(user.biography);
+        }
+    }, [user]);
+
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
-        if (!file)
-            return;
+        if (!file) return;
         // Limit file size to 2MB
         if (file.size > 2 * 1024 * 1024) {
             setError("Avatar image must be less than 2MB");
@@ -29,13 +37,16 @@ export const ProfileView = ({ showToast }) => {
         };
         reader.readAsDataURL(file);
     };
+
     const handleUploadClick = () => {
         fileInputRef.current?.click();
     };
+
     const handleRemoveClick = () => {
         resetAvatar();
         showToast("Avatar reset to default.");
     };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name.trim()) {
@@ -47,14 +58,13 @@ export const ProfileView = ({ showToast }) => {
         try {
             await updateProfile(name, bio);
             showToast("Profile updated successfully.");
-        }
-        catch (err) {
+        } catch (err) {
             setError("Failed to update profile. Please try again.");
-        }
-        finally {
+        } finally {
             setSaving(false);
         }
     };
+
     return (<div className="space-y-12">
       {/* Hero Header */}
       <div className="border-b border-[rgba(201,162,39,0.1)] pb-8">
@@ -117,7 +127,7 @@ export const ProfileView = ({ showToast }) => {
               <Shield className="w-4 h-4 text-[#C9A227] opacity-60"/>
               <div className="space-y-0.5">
                 <span className="block text-[9px] text-[#F7F5EE]/40 font-display tracking-wider uppercase">Authentication</span>
-                <span className="font-body text-[#F7F5EE]/80 capitalize">{user?.provider} Account</span>
+                <span className="font-body text-[#F7F5EE]/80 capitalize">{user?.provider || "Account"} Account</span>
               </div>
             </div>
 
