@@ -503,5 +503,329 @@
       "createdAt": "2026-07-22T19:13:53.887Z"
     }
   ],
-  "announcementText": "Welcome to AVELIS — Enjoy 20% Off All Curated Bundling & Physical Archives this Season."
+  "announcementText": "Welcome to AVELIS — Enjoy 20% Off All Curated Bundling & Physical Archives this Season.",
+  "editorPicksBookIds": [
+    "d2798e3a-c190-4171-829e-0211faa95f67",
+    "24cbe7ff-bf57-441d-a1ed-b9b59d6905a6",
+    "c776298b-bb6e-4163-9613-a5e6e99c2bd0",
+    "4173d6a5-7389-49d2-96be-e399535031fb"
+  ],
+  "editorPicksBooks": [
+    {
+      "id": "d2798e3a-c190-4171-829e-0211faa95f67",
+      "title": "del",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/bfe0ebfa-30ac-4e53-a50e-5441417c7c38.png",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/book-pdfs/2026/07/7cc0ffae-0644-46d5-9835-9fe780b5d9d9.pdf",
+      "pdfPath": null,
+      "publicationYear": 2026,
+      "year": 2026,
+      "publisher": "Archival Press",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "ddb9c55d-f3cf-49c6-ba16-2c757f2f0b80",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "aa45b433-0f1b-45d8-b5d7-b5f9360a2c3a",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ab6b9f0f-7612-439e-a43c-44842f7fd069",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "b7e87f54-e660-4d08-884e-8404a88d8e8b",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "667498af-1736-42a5-9230-1e9bb9dd86d6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "318b0e5a-5ba5-4d0a-8f41-1830963d7cdb",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "2d6318bb-4204-4247-97a7-3a6ac9631006",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "c6d42082-21cc-4b22-a5cc-3b2573e290fe",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ff7964e1-68e9-4ff5-8ac5-6d932861f814",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "49d7bfc5-8588-43af-aaaa-1022022df420",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-25T19:24:54.299Z"
+    },
+    {
+      "id": "24cbe7ff-bf57-441d-a1ed-b9b59d6905a6",
+      "title": "Harry Potter And Prisoner of Askaban",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/76dcefa2-0ae1-41d9-8dc3-b138d7a1a1fa.png",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/book-pdfs/2026/07/7f6c7db6-f0d8-407d-a24f-960483a01492.pdf",
+      "pdfPath": null,
+      "publicationYear": 2026,
+      "year": 2026,
+      "publisher": "Archival Press",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "05a42a9f-aef5-4dbf-8123-1b6da412d0d2",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "d3b23d7a-2128-407a-b386-6c610bed1831",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "7a755eb5-3c36-4102-8ff3-c5f879b63b4e",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "73cb09ac-7e54-404b-a3aa-f3711db4e4ed",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "db32ff2d-fb22-476e-bce4-cddc15190ef6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "448ef868-0d69-47ca-8934-33211bc5b89e",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "37a7c764-9a3c-4ecc-b4b5-b2821aeb17d6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "4395c3ca-f6f7-4bec-8c26-ad16ab3e48f5",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "12fdc400-7217-4083-9e55-b50d9722e231",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ec3aaae6-1324-4839-861a-00be6b29a058",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-23T07:48:57.442Z"
+    },
+    {
+      "id": "c776298b-bb6e-4163-9613-a5e6e99c2bd0",
+      "title": "Harry Potter And Soccer stone",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/a0503419-6014-4beb-b822-d23c4c5c08f0.png",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/pdf/2026/07/pdf-29dd8292-13ae-43a8-a68e-d6505c0c8d14.pdf",
+      "pdfPath": null,
+      "publicationYear": 2026,
+      "year": 2026,
+      "publisher": "Archival Press",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "da",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "971ea8c4-7a74-42d6-8f2b-698f2689cb94",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "1c24b68c-a438-4acf-b156-660ec6d4a44d",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "6a68deec-d927-46d2-953c-106d7a81c6e3",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "38a44228-696c-4dba-a292-ddcadb8f8a01",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "221647cb-4f69-45a2-813e-93d96e68e2d7",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ae76a840-4746-425a-b4c6-0fd54185b600",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "f98f858d-e8bd-4067-a0a2-50339ea722e5",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "971351b0-0c41-491e-9508-1316fd711eae",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "d622fbca-f884-4f56-a8fc-901134b39cc6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "e62a35ee-8002-4209-afa2-4a170aa1c2b5",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T20:39:23.690Z"
+    },
+    {
+      "id": "4173d6a5-7389-49d2-96be-e399535031fb",
+      "title": "The Hobbit",
+      "author": "J.R.R. Tolkien",
+      "category": "Fantasy",
+      "authorsList": [
+        {
+          "id": "c6875b0c-8498-446b-af07-1e80542109c2",
+          "name": "J.R.R. Tolkien"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "89e4b974-68f2-4532-b098-d1f1d847e0e0",
+          "name": "Fantasy"
+        }
+      ],
+      "coverImage": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80",
+      "coverImagePath": null,
+      "pdfUrl": "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
+      "pdfPath": null,
+      "publicationYear": 1937,
+      "year": 1937,
+      "publisher": "George Allen & Unwin",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "The prelude to Lord of the Rings following Bilbo Baggins on an epic quest for dragon gold.",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "340d8d0c-ab3f-4fd0-a81d-50ed056e9bab",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "819f865a-69b7-4080-a835-07e830c64bac",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "7861bb85-1a55-4198-9beb-17775d4f648a",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "808aed3e-c008-4634-9bc8-ff89a0106ac4",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "12fbcaff-ac66-4be0-918a-7d67e766fff8",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "8ed0c0ac-c1e8-48eb-908c-fa539e601205",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "6cdff2ca-8675-4ecb-9883-aabbfd22a41f",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "1e76c386-1c71-4dea-905d-a79da762b30f",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "8b16fb67-e39d-4d3b-bf21-bf06da964101",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "d44c44af-f7e0-4832-b05d-876b305c35ca",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T19:13:53.887Z"
+    }
+  ]
 }

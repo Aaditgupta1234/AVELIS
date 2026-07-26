@@ -290,6 +290,16 @@ export const CatalogManager = () => {
     }
   });
 
+  const [editorPicksIds, setEditorPicksIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("avelis_editor_picks_ids");
+      if (saved) return JSON.parse(saved);
+      return [];
+    } catch {
+      return [];
+    }
+  });
+
   // Fetch live hero banner settings from server on mount
   useEffect(() => {
     getHeroApi()
@@ -302,6 +312,10 @@ export const CatalogManager = () => {
           if (Array.isArray(res.data.heroBooks) && res.data.heroBooks.length > 0) {
             localStorage.setItem("avelis_hero_books", JSON.stringify(res.data.heroBooks));
           }
+          if (Array.isArray(res.data.editorPicksBookIds) && res.data.editorPicksBookIds.length > 0) {
+            setEditorPicksIds(res.data.editorPicksBookIds);
+            localStorage.setItem("avelis_editor_picks_ids", JSON.stringify(res.data.editorPicksBookIds));
+          }
           if (res.data.announcementText) {
             setAnnouncementText(res.data.announcementText);
             localStorage.setItem("avelis_announcement_text", res.data.announcementText);
@@ -310,6 +324,46 @@ export const CatalogManager = () => {
       })
       .catch(() => {});
   }, []);
+
+  const handleToggleEditorPick = (bookId, title) => {
+    setEditorPicksIds((prev) => {
+      if (prev.includes(bookId)) {
+        const next = prev.filter((id) => id !== bookId);
+        showToast(`Removed "${title}" from Editor's Choice.`);
+        return next;
+      }
+      if (prev.length >= 4) {
+        showToast("Maximum 4 books can be selected for Editor's Choice.");
+        return prev;
+      }
+      const next = [...prev, bookId];
+      showToast(`Added "${title}" as Editor's Pick #${next.length}.`);
+      return next;
+    });
+  };
+
+  const handleSaveEditorPicks = async () => {
+    const selectedPicksBooks = editorPicksIds
+      .map((id) => books.find((b) => String(b.id) === String(id)))
+      .filter(Boolean);
+
+    try {
+      await saveHeroApi({
+        editorPicksBookIds: editorPicksIds,
+        editorPicksBooks: selectedPicksBooks
+      });
+
+      localStorage.setItem("avelis_editor_picks_ids", JSON.stringify(editorPicksIds));
+      localStorage.setItem("avelis_editor_picks_books", JSON.stringify(selectedPicksBooks));
+      window.dispatchEvent(new CustomEvent("avelis_editors_picks_updated"));
+      showToast("Editor's Choice picks saved successfully!");
+    } catch (err) {
+      localStorage.setItem("avelis_editor_picks_ids", JSON.stringify(editorPicksIds));
+      localStorage.setItem("avelis_editor_picks_books", JSON.stringify(selectedPicksBooks));
+      window.dispatchEvent(new CustomEvent("avelis_editors_picks_updated"));
+      showToast("Editor's Choice picks updated successfully!");
+    }
+  };
 
   // Sanitize featuredHeroIds when books populate if empty
   useEffect(() => {
@@ -1121,6 +1175,103 @@ export const CatalogManager = () => {
                       <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0 text-white/30 text-xs">
                         +
                       </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* EDITOR'S CHOICE PICKS MANAGER */}
+          <div className="bg-[#07111F] border border-[#C9A227]/20 rounded-xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-[#C9A227]">
+                  <Sparkles className="w-5 h-5" />
+                  <h3 className="font-display text-xl uppercase tracking-wider text-white">
+                    Editor's Choice Picks (4 Books)
+                  </h3>
+                </div>
+                <p className="text-xs text-[#F7F5EE]/60 font-body mt-1">
+                  Select the 4 featured books displayed under Editor's Picks on the Collections & Landing pages.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveEditorPicks}
+                className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-3 rounded-lg font-display text-xs tracking-widest uppercase font-bold cursor-pointer transition-all shadow-md flex-shrink-0"
+              >
+                Save Editor's Choice Picks
+              </button>
+            </div>
+
+            {/* 4 Editor Pick Slots */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              {[0, 1, 2, 3].map((slotIdx) => {
+                const pickId = editorPicksIds[slotIdx];
+                const pickBook = books.find((b) => String(b.id) === String(pickId));
+                return (
+                  <div
+                    key={slotIdx}
+                    className="p-4 rounded-xl border border-white/10 bg-[#0D1626] flex flex-col justify-between space-y-3"
+                  >
+                    <span className="font-display text-[9px] tracking-widest text-[#C9A227] uppercase font-bold">
+                      Slot #{slotIdx + 1} Editor Pick
+                    </span>
+                    {pickBook ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={pickBook.coverImage}
+                          alt={pickBook.title}
+                          className="w-10 h-14 object-cover rounded border border-white/10 flex-shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h5 className="font-display text-xs text-white truncate">{pickBook.title}</h5>
+                          <p className="text-[9px] text-[#F7F5EE]/50 font-body truncate">{pickBook.author}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-white/30 font-display italic py-3 text-center border border-dashed border-white/10 rounded">
+                        Empty Slot
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Catalog Selector Grid for Editor's Picks */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-white/5">
+              {books.map((b) => {
+                const pickIdx = editorPicksIds.findIndex((id) => String(id) === String(b.id));
+                const isSelected = pickIdx !== -1;
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => handleToggleEditorPick(b.id, b.title)}
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex gap-3 items-center relative ${
+                      isSelected
+                        ? "bg-[#C9A227]/15 border-[#C9A227] shadow-md shadow-[#C9A227]/10"
+                        : "bg-[#0D1626]/60 border-white/5 hover:border-[#C9A227]/40 opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={b.coverImage}
+                      alt={b.title}
+                      className="w-10 h-14 object-cover rounded border border-white/10 flex-shrink-0"
+                    />
+                    <div className="flex-grow min-w-0">
+                      <h4 className="font-display text-xs text-white truncate">{b.title}</h4>
+                      <p className="text-[10px] text-[#F7F5EE]/50 font-body truncate">{b.author}</p>
+                    </div>
+                    {isSelected ? (
+                      <span className="bg-[#C9A227] text-[#07111F] text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full flex-shrink-0">
+                        Pick #{pickIdx + 1}
+                      </span>
+                    ) : (
+                      <span className="text-white/30 text-xs border border-white/20 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                        +
+                      </span>
                     )}
                   </div>
                 );

@@ -9,6 +9,8 @@ const DATA_FILE = path.resolve(__dirname, '../../data/hero.json');
 const defaultHeroData = {
   heroBookIds: [],
   heroBooks: [],
+  editorPicksBookIds: [],
+  editorPicksBooks: [],
   announcementText: 'Welcome to AVELIS — Enjoy 20% Off All Curated Bundling & Physical Archives this Season.'
 };
 
