@@ -20,8 +20,10 @@ import {
   Quote,
   Bookmark,
   XCircle,
-  ShoppingBag
+  ShoppingBag,
+  Layers
 } from "lucide-react";
+import { mockCollections } from "../data/collections.js";
 import { apiClient } from "../api/client.js";
 import { Navbar } from "../components/layout/Navbar.jsx";
 import { ProfileView } from "../components/dashboard/ProfileView.jsx";
@@ -38,6 +40,42 @@ export const DashboardPage = () => {
   const [actionLoading, setActionLoading] = useState({});
   const [readerBook, setReaderBook] = useState(null);
   const tabContentRef = useRef(null);
+
+  const getBundleForLoan = (loan) => {
+    if (!loan) return null;
+
+    if (loan.bundleTitle) return loan.bundleTitle;
+
+    try {
+      const saved = localStorage.getItem("avelis_loan_bundles");
+      if (saved) {
+        const map = JSON.parse(saved);
+        if (loan.id && map[loan.id]) return map[loan.id];
+        if (loan.bookId && map[loan.bookId]) return map[loan.bookId];
+      }
+    } catch {}
+
+    try {
+      const customBundlesStr = localStorage.getItem("avelis_custom_bundles_v1");
+      const activeBundles = customBundlesStr ? JSON.parse(customBundlesStr) : mockCollections;
+
+      for (const b of activeBundles) {
+        if (b.bookIds && Array.isArray(b.bookIds)) {
+          if (b.bookIds.some((id) => String(id) === String(loan.bookId))) {
+            return b.title;
+          }
+        }
+        if (b.title && loan.title && (
+          b.title.toLowerCase().includes(loan.title.toLowerCase()) ||
+          loan.title.toLowerCase().includes(b.title.toLowerCase())
+        )) {
+          return b.title;
+        }
+      }
+    } catch {}
+
+    return null;
+  };
 
   const handleTabSelect = (tabKey) => {
     setActiveTab(tabKey);
@@ -119,17 +157,13 @@ export const DashboardPage = () => {
     setActionLoading((prev) => ({ ...prev, [loanId]: "returning" }));
     try {
       const targetLoan = activeLoans.find((l) => l.id === loanId);
+      const bTitle = getBundleForLoan(targetLoan);
       let bundleLoans = [];
 
-      if (targetLoan) {
-        if (targetLoan.bundleId || targetLoan.bundleTitle) {
-          bundleLoans = activeLoans.filter(
-            (l) =>
-              (targetLoan.bundleId && l.bundleId === targetLoan.bundleId) ||
-              (targetLoan.bundleTitle &&
-                l.bundleTitle?.toLowerCase() === targetLoan.bundleTitle?.toLowerCase())
-          );
-        }
+      if (targetLoan && bTitle) {
+        bundleLoans = activeLoans.filter(
+          (l) => getBundleForLoan(l)?.toLowerCase() === bTitle.toLowerCase()
+        );
       }
 
       const loansToReturn = bundleLoans.length > 0 ? bundleLoans : (targetLoan ? [targetLoan] : []);
@@ -142,9 +176,9 @@ export const DashboardPage = () => {
       }
 
       if (bundleLoans.length > 0) {
-        showToast(`Entire collection bundle "${targetLoan.bundleTitle || 'Bundle'}" (${bundleLoans.length} volume${bundleLoans.length > 1 ? 's' : ''}) returned successfully.`);
+        showToast(`Entire collection bundle "${bTitle}" (${bundleLoans.length} volume${bundleLoans.length > 1 ? 's' : ''}) returned successfully.`);
       } else {
-        showToast("Volume returned successfully to the Sanctuary.");
+        showToast(`Volume "${targetLoan?.title || 'Book'}" returned successfully.`);
       }
     } catch (err) {
       showToast(err.message || "Failed to return book.");
@@ -157,17 +191,13 @@ export const DashboardPage = () => {
     setActionLoading((prev) => ({ ...prev, [loanId]: "renewing" }));
     try {
       const targetLoan = activeLoans.find((l) => l.id === loanId);
+      const bTitle = getBundleForLoan(targetLoan);
       let bundleLoans = [];
 
-      if (targetLoan) {
-        if (targetLoan.bundleId || targetLoan.bundleTitle) {
-          bundleLoans = activeLoans.filter(
-            (l) =>
-              (targetLoan.bundleId && l.bundleId === targetLoan.bundleId) ||
-              (targetLoan.bundleTitle &&
-                l.bundleTitle?.toLowerCase() === targetLoan.bundleTitle?.toLowerCase())
-          );
-        }
+      if (targetLoan && bTitle) {
+        bundleLoans = activeLoans.filter(
+          (l) => getBundleForLoan(l)?.toLowerCase() === bTitle.toLowerCase()
+        );
       }
 
       const loansToRenew = bundleLoans.length > 0 ? bundleLoans : (targetLoan ? [targetLoan] : []);
@@ -180,7 +210,7 @@ export const DashboardPage = () => {
       }
 
       if (bundleLoans.length > 0) {
-        showToast(`Entire collection bundle "${targetLoan.bundleTitle || 'Bundle'}" (${bundleLoans.length} volume${bundleLoans.length > 1 ? 's' : ''}) renewed successfully.`);
+        showToast(`Entire collection bundle "${bTitle}" (${bundleLoans.length} volume${bundleLoans.length > 1 ? 's' : ''}) renewed successfully.`);
       } else {
         showToast("Loan period extended successfully.");
       }
@@ -444,7 +474,13 @@ export const DashboardPage = () => {
                         {/* Book Details */}
                         <div className="w-full sm:w-2/3 flex flex-col justify-between space-y-6">
                           <div className="space-y-2">
-                            <span className="font-display text-[9px] tracking-[0.2em] text-[#C9A227] uppercase">
+                            {getBundleForLoan(currentLoan) && (
+                              <span className="inline-flex items-center gap-1.5 bg-[#C9A227]/15 border border-[#C9A227]/40 text-[#C9A227] px-2.5 py-1 rounded font-display text-[9px] tracking-[0.2em] uppercase font-bold w-fit mb-1 shadow-sm">
+                                <Layers className="w-3 h-3 text-[#C9A227]" />
+                                <span>Bundle: {getBundleForLoan(currentLoan)}</span>
+                              </span>
+                            )}
+                            <span className="font-display text-[9px] tracking-[0.2em] text-[#C9A227] uppercase block">
                               Currently Borrowed
                             </span>
                             <h3 className="font-display text-2xl text-[#F7F5EE] tracking-[0.02em] line-clamp-2">
@@ -663,6 +699,12 @@ export const DashboardPage = () => {
                                     className="w-10 h-14 object-cover rounded shadow-md border border-white/5 flex-shrink-0"
                                   />
                                   <div className="space-y-1">
+                                    {getBundleForLoan(loan) && (
+                                      <span className="inline-flex items-center gap-1 bg-[#C9A227]/15 border border-[#C9A227]/30 text-[#C9A227] px-2 py-0.5 rounded font-display text-[8px] tracking-[0.15em] uppercase font-bold w-fit mb-1">
+                                        <Layers className="w-2.5 h-2.5" />
+                                        <span>Bundle: {getBundleForLoan(loan)}</span>
+                                      </span>
+                                    )}
                                     <h4 className="font-display text-sm text-[#F7F5EE] tracking-wide line-clamp-1">
                                       {loan.title}
                                     </h4>
@@ -758,6 +800,12 @@ export const DashboardPage = () => {
                                   className="w-10 h-14 object-cover rounded shadow-md border border-white/5 flex-shrink-0"
                                 />
                                 <div className="space-y-1">
+                                  {getBundleForLoan(historyItem) && (
+                                    <span className="inline-flex items-center gap-1 bg-[#C9A227]/15 border border-[#C9A227]/30 text-[#C9A227] px-2 py-0.5 rounded font-display text-[8px] tracking-[0.15em] uppercase font-bold w-fit mb-1">
+                                      <Layers className="w-2.5 h-2.5" />
+                                      <span>Bundle: {getBundleForLoan(historyItem)}</span>
+                                    </span>
+                                  )}
                                   <h4 className="font-display text-sm text-[#F7F5EE] tracking-wide line-clamp-1">
                                     {historyItem.title}
                                   </h4>

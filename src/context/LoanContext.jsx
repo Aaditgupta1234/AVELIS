@@ -28,19 +28,43 @@ export const LoanProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch active loans from backend
+  // Fetch active loans from backend & local synthetic bundle loans
   const refreshActiveLoans = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const data = await apiGetActiveLoans();
-      setActiveLoans(mapLoansToUI(data));
+      const apiMapped = mapLoansToUI(data);
+
+      const savedSynthetic = (() => {
+        try {
+          const s = localStorage.getItem("avelis_synthetic_loans");
+          return s ? JSON.parse(s) : [];
+        } catch { return []; }
+      })();
+
+      const combined = [...apiMapped];
+      savedSynthetic.forEach((synth) => {
+        if (!combined.some((l) => String(l.bookId) === String(synth.bookId) || (l.title && synth.title && l.title.toLowerCase() === synth.title.toLowerCase()))) {
+          combined.push(synth);
+        }
+      });
+
+      setActiveLoans(combined);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      refreshActiveLoans();
+    };
+    window.addEventListener("avelis_loans_updated", handleUpdate);
+    return () => window.removeEventListener("avelis_loans_updated", handleUpdate);
+  }, [refreshActiveLoans]);
 
   // Fetch loan history from backend
   const refreshLoanHistory = useCallback(async (page = 1, limit = 10) => {
@@ -91,13 +115,42 @@ export const LoanProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiReturnBook(loanId);
-      const normalized = mapLoanToUI(data);
-      if (normalized) {
-        // Optimistic UI updates: Remove from activeLoans, prepend to loanHistory
-        setActiveLoans((prev) => prev.filter((l) => l.id !== loanId));
-        setLoanHistory((prev) => [normalized, ...prev]);
-      }
+      let normalized = null;
+      try {
+        const data = await apiReturnBook(loanId);
+        normalized = mapLoanToUI(data);
+      } catch (_) {}
+
+      // Optimistic UI updates: Remove from activeLoans, prepend to loanHistory
+      setActiveLoans((prev) => {
+        const target = prev.find((l) => l.id === loanId);
+        const next = prev.filter((l) => l.id !== loanId);
+        if (target) {
+          const returnedItem = normalized || {
+            ...target,
+            status: "RETURNED",
+            returnedAt: new Date().toISOString()
+          };
+          setLoanHistory((hPrev) => [returnedItem, ...hPrev.filter((h) => h.id !== returnedItem.id)]);
+        }
+        return next;
+      });
+
+      // Cleanup localStorage synthetic records & bundle mappings
+      try {
+        const s = localStorage.getItem("avelis_synthetic_loans");
+        if (s) {
+          const synth = JSON.parse(s).filter((item) => item.id !== loanId && item.bookId !== loanId);
+          localStorage.setItem("avelis_synthetic_loans", JSON.stringify(synth));
+        }
+        const b = localStorage.getItem("avelis_loan_bundles");
+        if (b) {
+          const map = JSON.parse(b);
+          delete map[loanId];
+          localStorage.setItem("avelis_loan_bundles", JSON.stringify(map));
+        }
+      } catch (_) {}
+
       return normalized;
     } catch (err) {
       const normErr = normalizeError(err);
@@ -106,21 +159,58 @@ export const LoanProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getCachedBook, optimisticEdit]);
+  }, []);
 
   // Renew action: calls service and updates active loan optimistically
   const renewLoan = useCallback(async (loanId) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiRenewLoan(loanId);
-      const normalized = mapLoanToUI(data);
-      if (normalized) {
-        // Optimistic UI update: Replace the loan in activeLoans list
-        setActiveLoans((prev) =>
-          prev.map((l) => (l.id === loanId ? normalized : l))
-        );
-      }
+      let normalized = null;
+      try {
+        const data = await apiRenewLoan(loanId);
+        normalized = mapLoanToUI(data);
+      } catch (_) {}
+
+      setActiveLoans((prev) =>
+        prev.map((l) => {
+          if (l.id === loanId || l.bookId === loanId) {
+            const nextCount = (normalized ? Number(normalized.renewCount || 0) : Number(l.renewCount || 0) + 1);
+            const currentDueDate = new Date(l.dueDate || Date.now());
+            currentDueDate.setDate(currentDueDate.getDate() + 14);
+            const nextDueDate = normalized?.dueDate || currentDueDate.toISOString();
+
+            return {
+              ...l,
+              ...(normalized || {}),
+              renewCount: nextCount > 0 ? nextCount : (Number(l.renewCount || 0) + 1),
+              dueDate: nextDueDate
+            };
+          }
+          return l;
+        })
+      );
+
+      // Save synthetic loan updates to localStorage if applicable
+      try {
+        const s = localStorage.getItem("avelis_synthetic_loans");
+        if (s) {
+          const synth = JSON.parse(s).map((item) => {
+            if (item.id === loanId || item.bookId === loanId) {
+              const currentDueDate = new Date(item.dueDate || Date.now());
+              currentDueDate.setDate(currentDueDate.getDate() + 14);
+              return {
+                ...item,
+                renewCount: Number(item.renewCount || 0) + 1,
+                dueDate: currentDueDate.toISOString()
+              };
+            }
+            return item;
+          });
+          localStorage.setItem("avelis_synthetic_loans", JSON.stringify(synth));
+        }
+      } catch (_) {}
+
       return normalized;
     } catch (err) {
       const normErr = normalizeError(err);

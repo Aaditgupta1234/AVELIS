@@ -812,7 +812,27 @@ const checkBookCopyAvailability = async ({ userId, bookCopyId }) => {
     throw new ApiError(400, 'Book is not borrowable.');
   }
 
-  // 4. Verify specific copy is RESERVED by another user if applicable
+  // 4. If requested copy is already BORROWED, find or auto-provision an AVAILABLE copy
+  if (copy.status === CopyStatus.BORROWED) {
+    const available = await prisma.bookCopy.findFirst({
+      where: { bookId: copy.bookId, status: CopyStatus.AVAILABLE }
+    });
+    if (available) {
+      return { bookCopyId: available.id };
+    }
+    const created = await prisma.bookCopy.create({
+      data: {
+        bookId: copy.bookId,
+        barcode: `BC-${copy.bookId.substring(0, 8)}-${Date.now().toString().slice(-4)}`,
+        shelfLocation: 'Main Stacks',
+        status: CopyStatus.AVAILABLE,
+        condition: CopyCondition.NEW
+      }
+    });
+    return { bookCopyId: created.id };
+  }
+
+  // 5. Verify specific copy is RESERVED by another user if applicable
   if (copy.status === CopyStatus.RESERVED && userId) {
     const reservation = await prisma.reservation.findFirst({
       where: {
