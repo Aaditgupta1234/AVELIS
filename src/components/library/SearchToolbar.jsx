@@ -2,9 +2,19 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { springs } from "../../utils/motion";
 export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addFilter, removeFilter, clearAllFilters, selectedSort, setSelectedSort, viewMode, setViewMode, resultCount, onSearchSubmit, hasActiveSearch, }) => {
+    const [localQuery, setLocalQuery] = useState(searchQuery || "");
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        setLocalQuery(searchQuery || "");
+    }, [searchQuery]);
+
+    const handleExecuteSearch = () => {
+        setSearchQuery(localQuery);
+        onSearchSubmit?.();
+    };
     const sortOptions = ["Recommended", "Newest", "A-Z"];
     const categories = [
         "Mystery",
@@ -29,25 +39,30 @@ export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addF
     return (<section className={`px-margin-mobile md:px-gutter max-w-container-max mx-auto transition-all duration-300 ${hasActiveSearch ? "mb-6 md:mb-8" : "mb-12 md:mb-16"}`}>
       <div className="glass-card rounded-2xl p-4 shadow-2xl">
         <div className="flex flex-col lg:flex-row gap-4 items-center">
-          {/* Search Input */}
-          <div className="relative flex-1 w-full">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/60">
+          {/* Search Input Form */}
+          <form onSubmit={(e) => { e.preventDefault(); handleExecuteSearch(); }} className="relative flex-1 w-full">
+            <button type="submit" aria-label="Execute Search" className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary transition-colors cursor-pointer border-none bg-transparent outline-none">
               search
-            </span>
+            </button>
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={localQuery}
+              onChange={(e) => {
+                const val = e.target.value;
+                setLocalQuery(val);
+                setSearchQuery(val);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  onSearchSubmit?.();
+                  e.preventDefault();
+                  handleExecuteSearch();
                 }
               }}
               aria-label="Search the digital library"
               className="w-full bg-surface-container-lowest/50 border border-outline-variant/20 rounded-xl pl-12 pr-6 py-4 focus:ring-2 focus:ring-primary/40 focus:border-primary/40 text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all duration-300"
               placeholder="Search by author, title, genre, or ISBN..."
             />
-          </div>
+          </form>
 
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             {/* Advanced Filter */}
@@ -94,7 +109,7 @@ export const SearchToolbar = ({ searchQuery, setSearchQuery, activeFilters, addF
             </div>
 
             <motion.button
-              onClick={() => onSearchSubmit?.()}
+              onClick={handleExecuteSearch}
               whileHover={{
                 y: -2,
                 boxShadow: "0px 10px 35px -10px rgba(212, 175, 55, 0.3)",
