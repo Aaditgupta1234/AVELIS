@@ -1,0 +1,507 @@
+{
+  "heroBookIds": [
+    "ddbd05fd-fce3-4437-8c3f-104fd9eee6d4",
+    "c8625160-deec-47d4-a938-b799d24b02d2",
+    "d2798e3a-c190-4171-829e-0211faa95f67",
+    "3cff37ea-9f21-408d-9564-c766664ace2a",
+    "c776298b-bb6e-4163-9613-a5e6e99c2bd0",
+    "4173d6a5-7389-49d2-96be-e399535031fb"
+  ],
+  "heroBooks": [
+    {
+      "id": "ddbd05fd-fce3-4437-8c3f-104fd9eee6d4",
+      "title": "1984",
+      "author": "George Orwell",
+      "category": "Dystopian",
+      "authorsList": [
+        {
+          "id": "4a9d87d5-bdf0-4e80-820c-bb7f70117745",
+          "name": "George Orwell"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "bd10f8c1-13d5-4fd7-82e4-0f692a117343",
+          "name": "Dystopian"
+        }
+      ],
+      "coverImage": "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/book-pdfs/2026/07/d01179a0-c0f0-4825-95e8-7eaaee5a0309.pdf",
+      "pdfPath": null,
+      "publicationYear": 1949,
+      "year": 1949,
+      "publisher": "Secker & Warburg",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "A chilling dystopian novel depicting totalitarian government surveillance and thought control.",
+      "sellingPrice": 19.99,
+      "stockQuantity": 15,
+      "availableCopiesCount": 15,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "6b6999ce-2e2a-405e-9155-dd6f0803c671",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "7d16c553-bd64-405b-93f1-f30c73f07e2e",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "3a313221-8090-422b-8a78-e5f48018111c",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "934efffb-3590-4c92-b74b-47f8caa0272d",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "cb9b0ba9-5e15-4ebc-8e54-aa2fdbee52fe",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "6c031e6d-ab6c-4c86-8169-50d3d2064dca",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "84153801-d6b2-4f83-a862-2b202f49d0ad",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "a0e61668-a390-4d09-9398-ec74bf123dda",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "cb3ed283-ed6d-44c6-b227-af5dd05530e4",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "dec9cdfa-970f-4e7c-9829-1332341f4896",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "cb4fd2a2-67de-4314-9434-e5f17b24ac48",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "edd104b3-9e0d-4f94-8cce-e7ab509d07ac",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "8db3f79d-ad5a-48a1-87a2-5aefb19c6954",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "1483aeac-866d-4416-a361-fa50f3fb59f8",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "56d30c2e-a1d7-48f5-9adc-50de78e68f07",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T19:13:51.973Z"
+    },
+    {
+      "id": "c8625160-deec-47d4-a938-b799d24b02d2",
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=600&q=80",
+      "coverImagePath": null,
+      "pdfUrl": "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
+      "pdfPath": null,
+      "publicationYear": 1925,
+      "year": 1925,
+      "publisher": "Charles Scribner Sons",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "A story of ambition, love, and tragedy in the Roaring Twenties.",
+      "sellingPrice": 16.5,
+      "stockQuantity": 12,
+      "availableCopiesCount": 12,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "481531fa-6d86-4084-bc05-8d84a46cd079",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "74b664ea-9efc-409e-b6db-6f92b7142597",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "affcdb35-103d-4655-ac44-aec41683152b",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "69cedfc9-15fb-45a3-a97f-c54a4a16bdc6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "0a6125a5-09f1-42fe-adad-c8616fb4f527",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "44f3c72c-0211-43ec-85f0-3e6d3f7a483a",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "8169b3e7-a9fe-4e6a-a5c3-d57da8200ee1",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "0e3efdae-800e-4543-abfd-89f88d3ad4ca",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "0f33d880-b207-4a14-8b63-e9a7de5ec3f9",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "f91570fc-307c-4e7d-ae14-ee9e75c42240",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "775ac785-5b25-437a-9580-90aedd2e5a6f",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "bde80cce-027e-40e8-88e4-6d494b877ac7",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T19:13:57.704Z"
+    },
+    {
+      "id": "d2798e3a-c190-4171-829e-0211faa95f67",
+      "title": "del",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/bfe0ebfa-30ac-4e53-a50e-5441417c7c38.png",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/book-pdfs/2026/07/7cc0ffae-0644-46d5-9835-9fe780b5d9d9.pdf",
+      "pdfPath": null,
+      "publicationYear": 2026,
+      "year": 2026,
+      "publisher": "Archival Press",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 9,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "c6d42082-21cc-4b22-a5cc-3b2573e290fe",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ff7964e1-68e9-4ff5-8ac5-6d932861f814",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "49d7bfc5-8588-43af-aaaa-1022022df420",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ddb9c55d-f3cf-49c6-ba16-2c757f2f0b80",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "aa45b433-0f1b-45d8-b5d7-b5f9360a2c3a",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ab6b9f0f-7612-439e-a43c-44842f7fd069",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "b7e87f54-e660-4d08-884e-8404a88d8e8b",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "667498af-1736-42a5-9230-1e9bb9dd86d6",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "318b0e5a-5ba5-4d0a-8f41-1830963d7cdb",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "2d6318bb-4204-4247-97a7-3a6ac9631006",
+          "status": "BORROWED"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-25T19:24:54.299Z"
+    },
+    {
+      "id": "3cff37ea-9f21-408d-9564-c766664ace2a",
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "1a9bf196-6c0c-48e6-894b-f0be99c2bf05",
+          "name": "Jane Austen"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80",
+      "coverImagePath": null,
+      "pdfUrl": "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
+      "pdfPath": null,
+      "publicationYear": 1813,
+      "year": 1813,
+      "publisher": "T. Egerton",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "A classic romantic novel following Elizabeth Bennet and Fitzwilliam Darcy.",
+      "sellingPrice": 14.99,
+      "stockQuantity": 8,
+      "availableCopiesCount": 8,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "697428ed-ab40-4a5f-ae0c-31017b6b6275",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "a86745d9-fc43-4fe6-b555-5f4c7fd8d7f7",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "38632c95-4d8e-4bc6-83dc-fa00f7a310a5",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "d657c034-036e-4815-a2bf-683771d07561",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "500e6fb2-3048-49aa-9086-83c027007043",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "295c679e-4fae-41f7-9d5a-83afa7efa084",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "3ec36a35-a717-4385-84f5-40ecbe0739fe",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "81273e07-23ed-4298-9230-53e36189157c",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T19:13:55.720Z"
+    },
+    {
+      "id": "c776298b-bb6e-4163-9613-a5e6e99c2bd0",
+      "title": "Harry Potter And Soccer stone",
+      "author": "F. Scott Fitzgerald",
+      "category": "Classics",
+      "authorsList": [
+        {
+          "id": "f6494c62-fec8-4409-9df7-0c897abc84f0",
+          "name": "F. Scott Fitzgerald"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "d38d4388-823d-4394-881d-af571242f629",
+          "name": "Classics"
+        }
+      ],
+      "coverImage": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-covers/book-covers/2026/07/a0503419-6014-4beb-b822-d23c4c5c08f0.png",
+      "coverImagePath": null,
+      "pdfUrl": "https://flsaxmhpjxbrzxwteocv.supabase.co/storage/v1/object/public/book-pdfs/pdf/2026/07/pdf-29dd8292-13ae-43a8-a68e-d6505c0c8d14.pdf",
+      "pdfPath": null,
+      "publicationYear": 2026,
+      "year": 2026,
+      "publisher": "Archival Press",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "da",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "e62a35ee-8002-4209-afa2-4a170aa1c2b5",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "971ea8c4-7a74-42d6-8f2b-698f2689cb94",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "1c24b68c-a438-4acf-b156-660ec6d4a44d",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "6a68deec-d927-46d2-953c-106d7a81c6e3",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "38a44228-696c-4dba-a292-ddcadb8f8a01",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "221647cb-4f69-45a2-813e-93d96e68e2d7",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "ae76a840-4746-425a-b4c6-0fd54185b600",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "f98f858d-e8bd-4067-a0a2-50339ea722e5",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "971351b0-0c41-491e-9508-1316fd711eae",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "d622fbca-f884-4f56-a8fc-901134b39cc6",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T20:39:23.690Z"
+    },
+    {
+      "id": "4173d6a5-7389-49d2-96be-e399535031fb",
+      "title": "The Hobbit",
+      "author": "J.R.R. Tolkien",
+      "category": "Fantasy",
+      "authorsList": [
+        {
+          "id": "c6875b0c-8498-446b-af07-1e80542109c2",
+          "name": "J.R.R. Tolkien"
+        }
+      ],
+      "categoriesList": [
+        {
+          "id": "89e4b974-68f2-4532-b098-d1f1d847e0e0",
+          "name": "Fantasy"
+        }
+      ],
+      "coverImage": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80",
+      "coverImagePath": null,
+      "pdfUrl": "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
+      "pdfPath": null,
+      "publicationYear": 1937,
+      "year": 1937,
+      "publisher": "George Allen & Unwin",
+      "language": "English",
+      "bookType": "Hardcover",
+      "description": "The prelude to Lord of the Rings following Bilbo Baggins on an epic quest for dragon gold.",
+      "sellingPrice": 24.99,
+      "stockQuantity": 10,
+      "availableCopiesCount": 10,
+      "isBorrowable": true,
+      "isForSale": true,
+      "rating": null,
+      "copies": [
+        {
+          "id": "340d8d0c-ab3f-4fd0-a81d-50ed056e9bab",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "819f865a-69b7-4080-a835-07e830c64bac",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "7861bb85-1a55-4198-9beb-17775d4f648a",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "808aed3e-c008-4634-9bc8-ff89a0106ac4",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "12fbcaff-ac66-4be0-918a-7d67e766fff8",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "8ed0c0ac-c1e8-48eb-908c-fa539e601205",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "6cdff2ca-8675-4ecb-9883-aabbfd22a41f",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "1e76c386-1c71-4dea-905d-a79da762b30f",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "8b16fb67-e39d-4d3b-bf21-bf06da964101",
+          "status": "AVAILABLE"
+        },
+        {
+          "id": "d44c44af-f7e0-4832-b05d-876b305c35ca",
+          "status": "AVAILABLE"
+        }
+      ],
+      "totalPages": null,
+      "pageCount": null,
+      "createdAt": "2026-07-22T19:13:53.887Z"
+    }
+  ],
+  "announcementText": "Welcome to AVELIS — Enjoy 20% Off All Curated Bundling & Physical Archives this Season."
+}

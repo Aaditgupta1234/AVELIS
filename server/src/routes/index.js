@@ -23,6 +23,7 @@ import authorRoutes from './author.routes.js';
 import categoryRoutes from './category.routes.js';
 import uploadRoutes from './upload.routes.js';
 import bundleRoutes from './bundle.routes.js';
+import heroRoutes from './hero.routes.js';
 import healthRoutes from './health.routes.js';
 import { noCacheMiddleware } from '../middleware/nocache.middleware.js';
 
@@ -38,6 +39,7 @@ const router = Router();
  * /api/v1/authors      → Author routes
  * /api/v1/categories   → Category routes
  * /api/v1/bundles      → Bundle routes
+ * /api/v1/hero         → Hero showcase banner routes
  * /api/v1/uploads      → Upload routes
  * /api/v1/users        → User routes
  * /api/v1/admin        → Admin routes
@@ -51,6 +53,7 @@ router.use('/books', bookRoutes);
 router.use('/authors', authorRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/bundles', bundleRoutes);
+router.use('/hero', heroRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/users', noCacheMiddleware, userRoutes);
 router.use('/admin', noCacheMiddleware, adminRoutes);

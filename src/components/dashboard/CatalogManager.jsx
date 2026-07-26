@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useBooks } from "../../context/BooksContext.jsx";
 import { createBook, updateBook, deleteBook } from "../../services/book.service.js";
 import { mapBookToUI } from "../../mappers/book.mapper.js";
 import { mockCollections } from "../../data/collections.js";
 import { uploadBookCover, uploadBookPdf } from "../../services/upload.service.js";
 import { getBundlesApi, createBundleApi, updateBundleApi, deleteBundleApi } from "../../api/bundle.api.js";
+import { getHeroApi, saveHeroApi } from "../../api/hero.api.js";
 import { getAllPublicReviews, deleteReview } from "../../services/review.service.js";
 import {
   Trash2,
@@ -282,11 +284,44 @@ export const CatalogManager = () => {
       }
       const single = localStorage.getItem("avelis_hero_book_id");
       if (single) return [single];
-      return books.slice(0, 6).map((b) => b.id);
+      return [];
     } catch {
-      return books.slice(0, 6).map((b) => b.id);
+      return [];
     }
   });
+
+  // Fetch live hero banner settings from server on mount
+  useEffect(() => {
+    getHeroApi()
+      .then((res) => {
+        if (res?.success && res?.data) {
+          if (Array.isArray(res.data.heroBookIds) && res.data.heroBookIds.length > 0) {
+            setFeaturedHeroIds(res.data.heroBookIds);
+            localStorage.setItem("avelis_hero_book_ids", JSON.stringify(res.data.heroBookIds));
+          }
+          if (Array.isArray(res.data.heroBooks) && res.data.heroBooks.length > 0) {
+            localStorage.setItem("avelis_hero_books", JSON.stringify(res.data.heroBooks));
+          }
+          if (res.data.announcementText) {
+            setAnnouncementText(res.data.announcementText);
+            localStorage.setItem("avelis_announcement_text", res.data.announcementText);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Sanitize featuredHeroIds when books populate if empty
+  useEffect(() => {
+    if (!books || books.length === 0) return;
+    setFeaturedHeroIds((prev) => {
+      if (prev && prev.length > 0) {
+        const valid = prev.filter((id) => books.some((b) => String(b.id) === String(id)));
+        if (valid.length > 0) return valid;
+      }
+      return books.slice(0, 6).map((b) => b.id);
+    });
+  }, [books.length]);
   const [announcementText, setAnnouncementText] = useState(() => {
     return (
       localStorage.getItem("avelis_announcement_text") ||
@@ -522,36 +557,74 @@ export const CatalogManager = () => {
   };
 
   // -------------------------------------------------------------
+  // -------------------------------------------------------------
   // TAB 2: HERO & LAYOUT ACTIONS (UP TO 6 HERO BOOKS)
   // -------------------------------------------------------------
   const handleToggleHeroBook = (bookId, bookTitle) => {
     setFeaturedHeroIds((prev) => {
-      let updated;
-      if (prev.includes(bookId)) {
+      const targetIdStr = String(bookId);
+      const isCurrentlySelected = prev.some((id) => String(id) === targetIdStr);
+
+      if (isCurrentlySelected) {
         if (prev.length <= 1) {
           showToast("At least 1 book must remain in the Hero Showcase.");
           return prev;
         }
-        updated = prev.filter((id) => id !== bookId);
+        return prev.filter((id) => String(id) !== targetIdStr);
       } else {
         if (prev.length >= 6) {
           showToast("Maximum 6 Hero books allowed. Deselect a book first.");
           return prev;
         }
-        updated = [...prev, bookId];
+        const matchInBooks = books.find((b) => String(b.id) === targetIdStr);
+        const actualId = matchInBooks ? matchInBooks.id : bookId;
+        return [...prev, actualId];
       }
+    });
+  };
+
+  const handleMoveHeroOrder = (e, bookId, direction) => {
+    e.stopPropagation();
+    setFeaturedHeroIds((prev) => {
+      const targetIdStr = String(bookId);
+      const index = prev.findIndex((id) => String(id) === targetIdStr);
+      if (index === -1) return prev;
+
+      const newIndex = direction === "up" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= prev.length) return prev;
+
+      const updated = [...prev];
+      const [movedItem] = updated.splice(index, 1);
+      updated.splice(newIndex, 0, movedItem);
       return updated;
     });
   };
 
-  const handleSaveHeroShowcase = () => {
-    if (!featuredHeroIds || featuredHeroIds.length === 0) {
+  const handleSaveHeroShowcase = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const validHeroIds = featuredHeroIds.filter((id) =>
+      books.some((b) => String(b.id) === String(id))
+    );
+
+    if (!validHeroIds || validHeroIds.length === 0) {
       showToast("Select at least 1 volume for the Hero Showcase.");
       return;
     }
-    localStorage.setItem("avelis_hero_book_ids", JSON.stringify(featuredHeroIds));
+
+    const fullHeroBooks = validHeroIds
+      .map((id) => books.find((b) => String(b.id) === String(id)))
+      .filter(Boolean);
+
+    localStorage.setItem("avelis_hero_book_ids", JSON.stringify(validHeroIds));
+    localStorage.setItem("avelis_hero_books", JSON.stringify(fullHeroBooks));
+    localStorage.setItem("avelis_hero_book_id", String(validHeroIds[0]));
+
+    try {
+      await saveHeroApi({ heroBookIds: validHeroIds, heroBooks: fullHeroBooks });
+    } catch (_) {}
+
     window.dispatchEvent(new CustomEvent("avelis_hero_updated"));
-    showToast(`Hero Showcase Banner saved successfully! (${featuredHeroIds.length} volumes active in carousel).`);
+    showToast(`Hero Showcase Banner saved successfully! (${validHeroIds.length} volumes active in carousel).`);
   };
 
   const handleSaveAnnouncement = (e) => {
@@ -676,13 +749,15 @@ export const CatalogManager = () => {
 
   return (
     <div className="space-y-8 bg-[#0D1626]/40 border border-[rgba(201,162,39,0.15)] rounded-xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
-      {/* Toast Announcement */}
-      {toastMessage && (
-        <div className="fixed bottom-8 right-8 bg-[#0D1626] border border-emerald-500/40 text-emerald-400 px-6 py-4 rounded-lg shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-50 flex items-center gap-3 font-body text-sm animate-bounce">
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Toast Announcement Portalled directly to document.body */}
+      {toastMessage &&
+        createPortal(
+          <div className="fixed top-20 right-6 bg-[#07111F] border border-emerald-500/60 text-emerald-400 px-6 py-4 rounded-xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[99999] flex items-center gap-3 font-body text-sm border-l-4 border-l-emerald-400 transition-all pointer-events-auto">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="font-semibold">{toastMessage}</span>
+          </div>,
+          document.body
+        )}
 
       {/* Header Toolbar & Role Badge */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-[rgba(201,162,39,0.15)]">
@@ -925,12 +1000,75 @@ export const CatalogManager = () => {
               </button>
             </div>
             <p className="text-xs text-[#F7F5EE]/70 leading-relaxed font-body">
-              Click books below to select up to 6 volumes that will appear in the 1/6 carousel at the top of the Library Hero banner section. Click "Save Hero Showcase Banner" to update the Library page immediately.
+              Select up to 6 volumes for the Hero Banner carousel. Re-order them using the sequence buttons below to set their exact 1 to 6 position on the Library page.
             </p>
+
+            {/* ACTIVE HERO BANNER SEQUENCE (#1 TO #6 ORDER PREVIEW) */}
+            <div className="space-y-3 bg-[#0D1626] p-4 sm:p-5 rounded-xl border border-[#C9A227]/30">
+              <div className="flex items-center justify-between">
+                <h4 className="font-display text-xs text-[#C9A227] uppercase tracking-widest font-bold flex items-center gap-2">
+                  <span>Carousel Display Order (#1 to #{featuredHeroIds.length})</span>
+                </h4>
+                <span className="text-[10px] text-[#F7F5EE]/50 font-body">
+                  Use ◄ and ► arrows to change sequence
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {featuredHeroIds.map((id, index) => {
+                  const heroBook = books.find((b) => String(b.id) === String(id));
+                  if (!heroBook) return null;
+                  return (
+                    <div
+                      key={id}
+                      className="bg-[#07111F] border border-[#C9A227]/40 p-2.5 rounded-lg flex flex-col justify-between space-y-2 relative group shadow-md"
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="bg-[#C9A227] text-[#07111F] font-display text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          #{index + 1}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={(e) => handleMoveHeroOrder(e, id, "up")}
+                            className="p-1 hover:bg-[#C9A227]/20 text-[#C9A227] disabled:opacity-20 rounded text-xs transition-all cursor-pointer"
+                            title="Move Left / Earlier"
+                          >
+                            ◄
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === featuredHeroIds.length - 1}
+                            onClick={(e) => handleMoveHeroOrder(e, id, "down")}
+                            className="p-1 hover:bg-[#C9A227]/20 text-[#C9A227] disabled:opacity-20 rounded text-xs transition-all cursor-pointer"
+                            title="Move Right / Later"
+                          >
+                            ►
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={heroBook.coverImage}
+                          alt={heroBook.title}
+                          className="w-8 h-11 object-cover rounded border border-white/10 flex-shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h5 className="font-display text-xs text-white truncate">{heroBook.title}</h5>
+                          <p className="text-[9px] text-[#F7F5EE]/50 font-body truncate">{heroBook.author}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {books.map((b) => {
-                const heroIndex = featuredHeroIds.indexOf(b.id);
+                const heroIndex = featuredHeroIds.findIndex((id) => String(id) === String(b.id));
                 const isSelected = heroIndex !== -1;
                 return (
                   <div
@@ -958,6 +1096,26 @@ export const CatalogManager = () => {
                       <div className="flex items-center gap-1.5 bg-[#C9A227] text-[#07111F] text-[10px] font-display font-bold px-2.5 py-1 rounded-full flex-shrink-0">
                         <CheckCircle className="w-3.5 h-3.5" />
                         <span>#{heroIndex + 1}</span>
+                        <div className="flex flex-col ml-1 border-l border-[#07111F]/30 pl-1">
+                          <button
+                            type="button"
+                            disabled={heroIndex === 0}
+                            onClick={(e) => handleMoveHeroOrder(e, b.id, "up")}
+                            className="hover:text-white disabled:opacity-20 cursor-pointer text-[8px] leading-none transition-colors"
+                            title="Move up in carousel order"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            disabled={heroIndex === featuredHeroIds.length - 1}
+                            onClick={(e) => handleMoveHeroOrder(e, b.id, "down")}
+                            className="hover:text-white disabled:opacity-20 cursor-pointer text-[8px] leading-none transition-colors"
+                            title="Move down in carousel order"
+                          >
+                            ▼
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0 text-white/30 text-xs">
@@ -967,17 +1125,6 @@ export const CatalogManager = () => {
                   </div>
                 );
               })}
-            </div>
-
-            <div className="pt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveHeroShowcase}
-                className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-3 rounded-lg font-display text-xs tracking-widest uppercase font-bold cursor-pointer transition-all shadow-md flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Hero Showcase Banner</span>
-              </button>
             </div>
           </div>
 

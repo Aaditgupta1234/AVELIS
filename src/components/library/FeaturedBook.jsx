@@ -4,11 +4,25 @@ import { useNavigate } from "react-router-dom";
 import { useBooks } from "../../context/BooksContext";
 import { featuredBook as defaultFeatured } from "../../data/featuredBook";
 import { springs, revealVariants } from "../../utils/motion";
+import { getHeroApi } from "../../api/hero.api";
 
 export const FeaturedBook = () => {
     const { books } = useBooks();
     const navigate = useNavigate();
     const [currentIndex, setCurrentIndex] = useState(0);
+
+    const [savedHeroBooks, setSavedHeroBooks] = useState(() => {
+        try {
+            const saved = localStorage.getItem("avelis_hero_books");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+            return [];
+        } catch {
+            return [];
+        }
+    });
 
     const [heroIds, setHeroIds] = useState(() => {
         try {
@@ -26,34 +40,58 @@ export const FeaturedBook = () => {
 
     useEffect(() => {
         const handleHeroUpdate = () => {
-            try {
-                const saved = localStorage.getItem("avelis_hero_book_ids");
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setHeroIds(parsed);
-                        return;
-                    }
+            getHeroApi()
+              .then((res) => {
+                if (res?.success && res?.data) {
+                  if (Array.isArray(res.data.heroBooks) && res.data.heroBooks.length > 0) {
+                    setSavedHeroBooks(res.data.heroBooks);
+                    localStorage.setItem("avelis_hero_books", JSON.stringify(res.data.heroBooks));
+                  }
+                  if (Array.isArray(res.data.heroBookIds) && res.data.heroBookIds.length > 0) {
+                    setHeroIds(res.data.heroBookIds);
+                    localStorage.setItem("avelis_hero_book_ids", JSON.stringify(res.data.heroBookIds));
+                    setCurrentIndex(0);
+                    return;
+                  }
                 }
-                const single = localStorage.getItem("avelis_hero_book_id");
-                if (single) setHeroIds([single]);
-            } catch {}
+              })
+              .catch(() => {
+                try {
+                  const savedBooksStr = localStorage.getItem("avelis_hero_books");
+                  if (savedBooksStr) setSavedHeroBooks(JSON.parse(savedBooksStr));
+                  const saved = localStorage.getItem("avelis_hero_book_ids");
+                  if (saved) {
+                    setHeroIds(JSON.parse(saved));
+                    setCurrentIndex(0);
+                  }
+                } catch {}
+              });
         };
+
+        // Run immediately on component mount
+        handleHeroUpdate();
+
         window.addEventListener("avelis_hero_updated", handleHeroUpdate);
         window.addEventListener("storage", handleHeroUpdate);
+        window.addEventListener("focus", handleHeroUpdate);
         return () => {
             window.removeEventListener("avelis_hero_updated", handleHeroUpdate);
             window.removeEventListener("storage", handleHeroUpdate);
+            window.removeEventListener("focus", handleHeroUpdate);
         };
     }, []);
 
-    // Filter books matching admin-selected heroIds (up to 6)
-    const selectedHeroBooks = Array.isArray(heroIds) && heroIds.length > 0
-        ? heroIds.map((id) => books.find((b) => b.id === id)).filter(Boolean)
-        : [];
-
-    const featuredList = selectedHeroBooks.length > 0
-        ? selectedHeroBooks
+    // Resolve hero list from server-saved heroBooks in exact rank order (#1 to #6)
+    const featuredList = (savedHeroBooks && savedHeroBooks.length > 0)
+        ? savedHeroBooks.map((sb) => {
+            const liveMatch = Array.isArray(books) ? books.find((b) => String(b.id) === String(sb.id)) : null;
+            return liveMatch ? { ...sb, ...liveMatch } : sb;
+          })
+        : (heroIds && heroIds.length > 0)
+        ? heroIds.map((id) => {
+            const liveMatch = Array.isArray(books) ? books.find((b) => String(b.id) === String(id)) : null;
+            return liveMatch || null;
+          }).filter(Boolean)
         : Array.isArray(books) && books.length > 0
         ? books.slice(0, 6)
         : [defaultFeatured];
