@@ -8,6 +8,7 @@ import { uploadBookCover, uploadBookPdf } from "../../services/upload.service.js
 import { getBundlesApi, createBundleApi, updateBundleApi, deleteBundleApi } from "../../api/bundle.api.js";
 import { getHeroApi, saveHeroApi } from "../../api/hero.api.js";
 import { getAllPublicReviews, deleteReview } from "../../services/review.service.js";
+import { apiClient } from "../../api/client.js";
 import {
   Trash2,
   Edit,
@@ -30,6 +31,8 @@ import {
   MessageSquare,
   RotateCcw,
   Save,
+  ShoppingBag,
+  XCircle,
   Image as ImageIcon
 } from "lucide-react";
 
@@ -110,6 +113,45 @@ export const CatalogManager = () => {
       console.error("Failed to fetch public reflections for admin:", err);
     } finally {
       setReflectionsLoading(false);
+    }
+  };
+
+  // -------------------------------------------------------------
+  // TAB 5: ADMIN CUSTOMER ORDERS MANAGEMENT STATE
+  // -------------------------------------------------------------
+  const [allOrders, setAllOrders] = useState([]);
+  const [adminOrdersLoading, setAdminOrdersLoading] = useState(false);
+
+  const fetchAdminOrders = async () => {
+    setAdminOrdersLoading(true);
+    try {
+      const response = await apiClient.get('/orders');
+      setAllOrders(response.data?.data || []);
+    } catch (err) {
+      console.error("Failed to fetch admin orders:", err);
+      setAllOrders([]);
+    } finally {
+      setAdminOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === "orders") {
+      fetchAdminOrders();
+    }
+  }, [adminTab]);
+
+  const handleAdminCancelOrder = async (orderId, orderNumber) => {
+    if (!window.confirm(`Are you sure you want to cancel Order ${orderNumber}? Stock will be automatically restored.`)) return;
+    try {
+      const res = await apiClient.patch(`/orders/${orderId}/cancel`, {
+        reason: "ADMIN_CANCELLED"
+      });
+      showToast(`Order ${orderNumber} cancelled by Admin. Stock restored.`);
+      fetchAdminOrders();
+      refreshBooks();
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to cancel order.");
     }
   };
 
@@ -875,6 +917,17 @@ export const CatalogManager = () => {
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Journal Reflections</span>
           </button>
+          <button
+            onClick={() => setAdminTab("orders")}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
+              adminTab === "orders"
+                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                : "text-[#F7F5EE]/70 hover:text-white"
+            }`}
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>Customer Orders</span>
+          </button>
         </div>
       </div>
 
@@ -1487,6 +1540,107 @@ export const CatalogManager = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: CUSTOMER ORDERS MANAGEMENT */}
+      {/* ========================================================================= */}
+      {adminTab === "orders" && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center flex-wrap gap-4">
+            <div>
+              <h3 className="font-display text-xl text-white uppercase tracking-wider">
+                All Placed Customer Orders
+              </h3>
+              <p className="text-xs text-[#F7F5EE]/60 font-body mt-1">
+                View all physical book orders placed by members, check reserved copies, and manage cancellations/stock restoration.
+              </p>
+            </div>
+            <button
+              onClick={fetchAdminOrders}
+              className="flex items-center gap-2 bg-[#C9A227]/20 border border-[#C9A227]/40 hover:bg-[#C9A227]/30 text-[#C9A227] px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Refresh Orders</span>
+            </button>
+          </div>
+
+          {adminOrdersLoading ? (
+            <div className="p-12 text-center text-xs text-[#F7F5EE]/60">Loading customer orders...</div>
+          ) : allOrders.length === 0 ? (
+            <div className="p-12 text-center text-xs text-[#F7F5EE]/50 bg-[#07111F] rounded-xl border border-white/5">
+              No physical book orders currently placed.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {allOrders.map((ord) => {
+                const firstItem = ord.items?.[0];
+                const bookTitle = firstItem?.book?.title || "Archival Hardcover Volume";
+                const coverImg = firstItem?.book?.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80";
+                const isCancellable = ord.orderStatus === "PLACED" || ord.orderStatus === "PROCESSING";
+                const isCancelled = ord.orderStatus === "CANCELLED";
+
+                return (
+                  <div
+                    key={ord.id}
+                    className="bg-[#07111F] border border-[rgba(201,162,39,0.2)] rounded-xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={coverImg}
+                        alt={bookTitle}
+                        className="w-12 h-16 object-cover rounded border border-white/10 shadow flex-shrink-0"
+                      />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-display text-xs text-[#C9A227] font-semibold tracking-wider">
+                            {ord.orderNumber}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 font-display text-[8px] tracking-widest uppercase rounded border ${
+                              isCancelled
+                                ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                                : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                            }`}
+                          >
+                            {ord.orderStatus || "PLACED"}
+                          </span>
+                        </div>
+                        <h4 className="font-display text-sm text-white tracking-wide">
+                          {bookTitle} {ord.items?.length > 1 ? `(+${ord.items.length - 1} more)` : ""}
+                        </h4>
+                        <p className="font-body text-[11px] text-[#F7F5EE]/60">
+                          Member: <span className="text-[#C9A227] font-semibold">{ord.user?.username || ord.user?.email || "Scholar"}</span> • Placed: {new Date(ord.orderedAt || ord.createdAt).toLocaleDateString()}
+                        </p>
+                        <p className="font-body text-[10px] text-[#F7F5EE]/40 italic truncate max-w-md">
+                          Address: {ord.shippingAddress}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-white/5">
+                      <span className="font-display text-base font-bold text-[#C9A227]">
+                        ${Number(ord.totalAmount || 24.99).toFixed(2)}
+                      </span>
+                      <span className={`font-body text-[9px] ${isCancelled ? "text-rose-400" : "text-emerald-400"}`}>
+                        Payment: {ord.paymentStatus || "PAID"}
+                      </span>
+                      {isCancellable && (
+                        <button
+                          onClick={() => handleAdminCancelOrder(ord.id, ord.orderNumber)}
+                          className="px-3 py-1.5 bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 rounded font-display text-[9px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer mt-1"
+                        >
+                          <XCircle className="w-3 h-3" />
+                          <span>Cancel Order & Restock</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

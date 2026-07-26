@@ -8,5 +8,7 @@ router.use(authMiddleware);
 
 router.post('/', orderController.createOrder);
 router.get('/my-orders', orderController.getMyOrders);
+router.get('/', orderController.getAllOrders);
+router.patch('/:orderId/cancel', orderController.cancelOrder);
 
 export default router;

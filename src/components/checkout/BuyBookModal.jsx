@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingBag, CreditCard, Truck, CheckCircle2, ShieldCheck, MapPin, ArrowRight } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.js";
+import { useBooks } from "../../context/BooksContext.jsx";
 import { apiClient } from "../../api/client.js";
 
 export const BuyBookModal = ({ isOpen, onClose, book }) => {
   const { user, isAuthenticated } = useAuth();
+  const { refreshBooks } = useBooks();
 
   const [step, setStep] = useState("form"); // "form" | "success"
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,14 +65,14 @@ export const BuyBookModal = ({ isOpen, onClose, book }) => {
 
       setCompletedOrder(orderData);
       setStep("success");
+
+      // Immediately refresh catalog stock counts
+      if (typeof refreshBooks === 'function') {
+        refreshBooks();
+      }
     } catch (err) {
-      // Fallback optimistic order display if API endpoint unreachable
-      setCompletedOrder({
-        orderNumber: `ORD-${Date.now()}`,
-        totalAmount: totalPrice,
-        shippingAddress: fullShippingAddress,
-      });
-      setStep("success");
+      const errMsg = err.response?.data?.message || err.message || "Failed to place order.";
+      setOrderError(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -114,6 +116,11 @@ export const BuyBookModal = ({ isOpen, onClose, book }) => {
           <div className="p-6 sm:p-8 overflow-y-auto flex-1">
             {step === "form" ? (
               <form onSubmit={handlePlaceOrder} className="space-y-6">
+                {orderError && (
+                  <div className="p-3.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-body text-xs">
+                    {orderError}
+                  </div>
+                )}
                 {/* Book Order Summary Header */}
                 <div className="flex gap-4 p-4 rounded-lg bg-[#0D1626]/50 border border-[rgba(201,162,39,0.12)] items-center">
                   <img

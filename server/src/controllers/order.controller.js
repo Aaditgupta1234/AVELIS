@@ -21,3 +21,30 @@ export const getMyOrders = async (req, res, next) => {
     next(error);
   }
 };
+
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { orderId } = req.params;
+    const { reason } = req.body || {};
+
+    const order = await orderService.cancelOrder({ orderId, userId, userRole, reason });
+    return res.status(200).json(new ApiResponse(200, order, 'Order cancelled successfully and stock restored.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllOrders = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Only administrators can view all orders.' });
+    }
+    const { status, search } = req.query;
+    const orders = await orderService.getAllOrders({ status, search });
+    return res.status(200).json(new ApiResponse(200, orders, 'All orders retrieved successfully.'));
+  } catch (error) {
+    next(error);
+  }
+};

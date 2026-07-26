@@ -68,7 +68,11 @@ export const BookDetailsPage = () => {
       (loan.title && book?.title && loan.title.toLowerCase() === book.title.toLowerCase())
   );
 
-  const availableCopiesCount = book?.stockQuantity ?? (Array.isArray(book?.copies) ? book.copies.length : 10);
+  const availableCopiesCount = typeof book?.availableCopiesCount === "number"
+    ? book.availableCopiesCount
+    : (Array.isArray(book?.copies) && book.copies.length > 0
+        ? book.copies.filter((c) => c.status === "AVAILABLE").length
+        : Number(book?.stockQuantity || 0));
 
   const availableCopy =
     book?.copies?.find(
@@ -173,6 +177,16 @@ export const BookDetailsPage = () => {
       }
     }
   }, [books, id, isValidUuid, navigate]);
+
+  const refetchBookDetails = useCallback(async () => {
+    if (!id || !isValidUuid) return;
+    try {
+      const rawBook = await getBookById(id);
+      const mapped = mapBookToUI(rawBook);
+      setBook(mapped);
+      cacheBookDetails(mapped);
+    } catch (_) {}
+  }, [id, isValidUuid, cacheBookDetails]);
 
   useEffect(() => {
     if (!isValidUuid) {
@@ -868,7 +882,10 @@ export const BookDetailsPage = () => {
       {/* Physical Copy Checkout & Buy Modal */}
       <BuyBookModal
         isOpen={isBuyModalOpen}
-        onClose={() => setIsBuyModalOpen(false)}
+        onClose={() => {
+          setIsBuyModalOpen(false);
+          refetchBookDetails();
+        }}
         book={book}
       />
     </div>

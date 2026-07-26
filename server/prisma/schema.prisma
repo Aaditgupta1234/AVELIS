@@ -68,27 +68,44 @@ enum AuthProvider {
   MICROSOFT
 }
 
+enum CancellationReason {
+  USER_REQUEST
+  ADMIN_CANCELLED
+  OUT_OF_STOCK
+  PAYMENT_FAILED
+  OTHER
+}
+
+enum InventoryAction {
+  STOCK_RESERVED
+  STOCK_RELEASED
+  LOAN_BORROWED
+  LOAN_RETURNED
+  MANUAL_ADJUSTMENT
+}
+
 model User {
-  id                String        @id @default(uuid())
-  username          String        @unique
-  email             String        @unique
+  id                String           @id @default(uuid())
+  username          String           @unique
+  email             String           @unique
   passwordHash      String
   phone             String?
   avatarUrl         String?
-  isCustomAvatar    Boolean       @default(false)
-  signupProvider    AuthProvider  @default(LOCAL)
-  providerId        String?       @unique
-  emailVerified     Boolean       @default(false)
+  isCustomAvatar    Boolean          @default(false)
+  signupProvider    AuthProvider     @default(LOCAL)
+  providerId        String?          @unique
+  emailVerified     Boolean          @default(false)
   lastLoginAt       DateTime?
   lastLoginProvider AuthProvider?
-  role              UserRole      @default(MEMBER)
-  isActive          Boolean       @default(true)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  role              UserRole         @default(MEMBER)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
   loans             Loan[]
   orders            Order[]
   reviews           Review[]
   reservations      Reservation[]
+  inventoryAudits   InventoryAudit[]
 
   @@index([providerId])
   @@index([email])
@@ -114,32 +131,33 @@ model Category {
 }
 
 model Book {
-  id              String         @id @default(uuid())
+  id              String           @id @default(uuid())
   title           String
-  isbn            String         @unique
+  isbn            String           @unique
   publisher       String?
   publicationYear Int?
-  language        String         @default("English")
-  bookType        String?        @default("Hardcover")
+  language        String           @default("English")
+  bookType        String?          @default("Hardcover")
   description     String?
   coverImage      String?
   coverImagePath  String?
   pdfUrl          String?
   pdfPath         String?
-  sellingPrice    Decimal        @default(0)
-  stockQuantity   Int            @default(0)
-  isBorrowable    Boolean        @default(true)
-  isForSale       Boolean        @default(true)
-  isDeleted       Boolean        @default(false)
+  sellingPrice    Decimal          @default(0)
+  stockQuantity   Int              @default(0)
+  isBorrowable    Boolean          @default(true)
+  isForSale       Boolean          @default(true)
+  isDeleted       Boolean          @default(false)
   deletedAt       DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   authors         BookAuthor[]
   categories      BookCategory[]
   copies          BookCopy[]
   orderItems      OrderItem[]
   reviews         Review[]
   reservations    Reservation[]
+  inventoryAudits InventoryAudit[]
 }
 
 model BookAuthor {
@@ -174,14 +192,18 @@ model BookCopy {
   condition     CopyCondition @default(NEW)
   status        CopyStatus    @default(AVAILABLE)
   purchaseDate  DateTime?     @db.Date
+  orderItemId   String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   book          Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  orderItem     OrderItem?    @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
   loans         Loan[]
   reservations  Reservation[]
 
   @@index([bookId])
   @@index([barcode])
+  @@index([orderItemId])
+  @@index([bookId, status])
 }
 
 model Loan {
@@ -204,30 +226,34 @@ model Loan {
 }
 
 model Order {
-  id              String        @id @default(uuid())
-  userId          String
-  orderNumber     String        @unique
-  totalAmount     Decimal
-  paymentStatus   PaymentStatus
-  orderStatus     OrderStatus
-  shippingAddress String
-  orderedAt       DateTime      @default(now())
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  items           OrderItem[]
+  id                 String              @id @default(uuid())
+  userId             String
+  orderNumber        String              @unique
+  totalAmount        Decimal
+  paymentStatus      PaymentStatus
+  orderStatus        OrderStatus
+  shippingAddress    String
+  orderedAt          DateTime            @default(now())
+  cancelledAt        DateTime?
+  cancelledBy        String?
+  cancellationReason CancellationReason?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items              OrderItem[]
 
   @@index([userId])
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String     @id @default(uuid())
   orderId   String
   bookId    String
-  quantity  Int     @default(1)
+  quantity  Int        @default(1)
   unitPrice Decimal
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  book      Book    @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  order     Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book      Book       @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  copies    BookCopy[]
 
   @@unique([orderId, bookId])
   @@index([orderId])
@@ -271,4 +297,24 @@ model Reservation {
   @@index([copyId])
   @@index([status])
   @@index([bookId, status, createdAt])
+}
+
+model InventoryAudit {
+  id              String          @id @default(uuid())
+  bookId          String
+  orderId         String?
+  userId          String?
+  action          InventoryAction
+  quantityChanged Int
+  previousStock   Int
+  newStock        Int
+  affectedCopyIds Json?
+  createdAt       DateTime        @default(now())
+
+  book Book  @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([bookId])
+  @@index([orderId])
+  @@index([userId])
 }

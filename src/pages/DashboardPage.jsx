@@ -98,11 +98,13 @@ export const DashboardPage = () => {
     cancelReservation
   } = useReservations();
 
-  const { books } = useBooks();
+  const { books, refreshBooks } = useBooks();
   const { userReviews } = useReviews();
 
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [cancelModalOrder, setCancelModalOrder] = useState(null);
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -230,6 +232,37 @@ export const DashboardPage = () => {
       showToast(err.message || "Failed to cancel reservation.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [reservationId]: null }));
+    }
+  };
+
+  const handleCancelOrderConfirm = async () => {
+    if (!cancelModalOrder) return;
+    setIsCancellingOrder(true);
+    try {
+      const response = await apiClient.patch(`/orders/${cancelModalOrder.id}/cancel`, {
+        reason: "USER_REQUEST"
+      });
+      const updatedOrder = response.data?.data;
+      if (updatedOrder) {
+        setOrders((prev) => prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)));
+      } else {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === cancelModalOrder.id
+              ? { ...o, orderStatus: "CANCELLED", paymentStatus: "REFUNDED" }
+              : o
+          )
+        );
+      }
+      showToast(`Order ${cancelModalOrder.orderNumber} cancelled successfully.`);
+      if (typeof refreshBooks === "function") {
+        refreshBooks();
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to cancel order.");
+    } finally {
+      setIsCancellingOrder(false);
+      setCancelModalOrder(null);
     }
   };
 
@@ -855,6 +888,9 @@ export const DashboardPage = () => {
                               firstItem?.book?.coverImage ||
                               "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80";
 
+                            const isCancellable = order.orderStatus === "PLACED" || order.orderStatus === "PROCESSING";
+                            const isCancelled = order.orderStatus === "CANCELLED";
+
                             return (
                               <div
                                 key={order.id}
@@ -871,7 +907,13 @@ export const DashboardPage = () => {
                                       <span className="font-display text-xs text-[#C9A227] font-semibold tracking-wider">
                                         {order.orderNumber}
                                       </span>
-                                      <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-display text-[8px] tracking-widest uppercase rounded">
+                                      <span
+                                        className={`px-2 py-0.5 font-display text-[8px] tracking-widest uppercase rounded border ${
+                                          isCancelled
+                                            ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                                            : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                        }`}
+                                      >
                                         {order.orderStatus || "PLACED"}
                                       </span>
                                     </div>
@@ -888,13 +930,27 @@ export const DashboardPage = () => {
                                   </div>
                                 </div>
 
-                                <div className="flex sm:flex-col items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                                <div className="flex sm:flex-col items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5 gap-2">
                                   <span className="font-display text-base font-bold text-[#C9A227]">
                                     ${Number(order.totalAmount || 24.99).toFixed(2)}
                                   </span>
-                                  <span className="font-body text-[9px] text-emerald-400">
-                                    Paid via Card / UPI
+                                  <span
+                                    className={`font-body text-[9px] ${
+                                      isCancelled ? "text-rose-400" : "text-emerald-400"
+                                    }`}
+                                  >
+                                    {isCancelled ? `Status: ${order.paymentStatus || "REFUNDED"}` : "Paid via Card / UPI"}
                                   </span>
+
+                                  {isCancellable && (
+                                    <button
+                                      onClick={() => setCancelModalOrder(order)}
+                                      className="text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/50 bg-rose-950/20 hover:bg-rose-950/40 px-3 py-1.5 rounded font-display text-[9px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer mt-1"
+                                    >
+                                      <XCircle className="w-3 h-3" />
+                                      <span>Cancel Order</span>
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -1020,6 +1076,72 @@ export const DashboardPage = () => {
         onClose={() => setReaderBook(null)}
         book={readerBook}
       />
+
+      {/* Order Cancellation Confirmation Modal */}
+      <AnimatePresence>
+        {cancelModalOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="bg-[#07111F] border border-rose-500/30 rounded-xl max-w-md w-full p-6 space-y-6 shadow-2xl relative"
+            >
+              <div className="flex items-center gap-3 border-b border-rose-500/20 pb-4">
+                <div className="w-10 h-10 rounded bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 flex-shrink-0">
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base text-[#F7F5EE] uppercase tracking-wider">
+                    Confirm Cancellation
+                  </h3>
+                  <p className="font-body text-xs text-[#C9A227]">
+                    {cancelModalOrder.orderNumber}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 font-body text-xs text-[#F7F5EE]/80">
+                <p>
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </p>
+                <div className="p-3 bg-[#0D1626] rounded border border-white/10 space-y-1">
+                  <p className="text-[#F7F5EE]/50">Order Content:</p>
+                  <p className="font-semibold text-[#F7F5EE]">
+                    {cancelModalOrder.items?.[0]?.book?.title || "Hardcover Book Purchase"}
+                  </p>
+                  <p className="text-emerald-400 font-semibold">
+                    Amount: ${Number(cancelModalOrder.totalAmount || 24.99).toFixed(2)}
+                  </p>
+                </div>
+                <p className="text-[11px] text-[#F7F5EE]/50 italic">
+                  Note: Restores reserved physical copies to available stock automatically.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setCancelModalOrder(null)}
+                  disabled={isCancellingOrder}
+                  className="px-4 py-2 rounded border border-white/10 hover:border-white/20 text-[#F7F5EE]/70 font-display text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Keep Order
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelOrderConfirm}
+                  disabled={isCancellingOrder}
+                  className="px-5 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-display text-[10px] uppercase tracking-wider transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isCancellingOrder ? "Cancelling..." : "Confirm Cancellation"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
