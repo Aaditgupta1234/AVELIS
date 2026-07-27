@@ -1,9 +1,9 @@
-# AVELIS — Digital Library Management Platform
+# AVELIS — Production-Grade Digital Reading Platform
 
-AVELIS is a production-inspired, full-stack digital library management platform built with React 19, Node.js, Express, Prisma ORM, and PostgreSQL. It features a modern, fluid user interface integrated with a robust, layered backend architecture supporting digital reader annotations, FIFO hold reservations, role-based access control, and complete catalog administration.
+AVELIS is a production-grade, full-stack Digital Reading Platform that combines an immersive cloud-based reading experience with comprehensive library operations—including borrowing, FIFO reservations, in-browser PDF reading, annotations, reading progress synchronization, and role-based administration—powered by React 19, Node.js, Express, Prisma ORM, and PostgreSQL.
 
 > **Note**
-> **Portfolio Disclaimer**: AVELIS is a portfolio and educational project developed to demonstrate modern full-stack software engineering principles, layered application architecture, and cloud deployment pipelines. While fully functional and deployed live, it is intended as a demonstration showcase rather than a commercial enterprise platform.
+> **Portfolio Disclaimer**: AVELIS is a portfolio project created to demonstrate production-grade software engineering practices, cloud-native architecture, scalable REST APIs, and modern digital reading workflows. While fully deployed and functional, it is intended as a technical showcase rather than a commercial product.
 
 ---
 
@@ -91,9 +91,9 @@ The application is deployed across cloud infrastructure:
 
 ## 📖 Project Overview
 
-**AVELIS** was engineered to address common challenges in digital resource management—delivering a unified platform where members can search library holdings, read digital publications directly in the browser, manage active book borrowing loans, and queue up reservations when physical inventory is checked out.
+**AVELIS** bridges modern digital reading with production-grade library operations—delivering a unified platform where readers can search the digital collection, read publications directly in the browser, manage active borrowing loans, and queue reservations when inventory is checked out.
 
-Traditional library management scripts often rely on basic database queries and monolithic codebases. AVELIS demonstrates a clean, decoupled architecture:
+Traditional library software often relies on monolithic codebases and basic database queries. AVELIS demonstrates a clean, decoupled architecture:
 1. **Frontend**: A responsive React 19 Single Page Application built with Vite and Tailwind CSS, prioritizing dynamic layout transitions, optimistic UI synchronization, and accessible reading controls.
 2. **Backend**: A production-grade REST API written in Node.js and Express, following strict Controller-Service-Repository separation with Prisma ORM transactional guarantees for inventory management.
 
@@ -106,7 +106,7 @@ Traditional library management scripts often rely on basic database queries and 
 * **ACID Data Integrity**: PostgreSQL transactional workflows via Prisma ORM preventing inventory overselling during concurrent checkouts.
 * **Dual Authentication**: Hybrid security model supporting traditional Email/Password credentials and Google OAuth 2.0.
 * **In-Browser Digital Reader**: Dedicated PDF viewer equipped with reading progress persistence, custom notes, bookmarks, and highlights.
-* **Role-Based Access Control**: Tiered security rules granting standard members library privileges while restricting catalog and user administration to staff.
+* **Role-Based Access Control**: Tiered security rules granting standard readers access while restricting catalog and user administration to platform administrators.
 * **Responsive UI Design**: Tailored aesthetics built with Tailwind CSS, custom design tokens, and smooth Framer Motion micro-interactions.
 
 ---
@@ -116,17 +116,17 @@ Traditional library management scripts often rely on basic database queries and 
 ### 🔑 Authentication & Authorization
 * **Dual Authentication Modes**: Email/password registration/login along with Google OAuth 2.0 authentication.
 * **JWT Access Control**: Stateful bearer token issuing with client session storage and auto-validation routines.
-* **Role-Based Access Control (RBAC)**: Tiered privilege enforcement distinguishing `MEMBER` users from `ADMIN` library managers.
+* **Role-Based Access Control (RBAC)**: Tiered privilege enforcement distinguishing `MEMBER` readers from `ADMIN` platform administrators.
 * **Protected Client Routing**: Guarded frontend routes with session return-path preservation.
 
 ### 📚 Catalog Management & Discovery
-* **Interactive Library Explorer**: Browse paginated catalog holdings with real-time keyword search by title, author, category, or ISBN.
+* **Content Discovery Browser**: Browse the paginated digital collection with real-time keyword search by title, author, category, or ISBN.
 * **Category Filtering**: Dynamic genre classification and structured collections (e.g., Editor's Picks, Featured Authors).
 * **Book Details View**: Complete book metadata, stock status indicators, publisher details, and community ratings.
-* **Continue Reading Hub**: Personalized quick-access shelf displaying active digital books and current completion percentages.
+* **Continue Reading Hub**: Personalized quick-access shelf displaying active digital publications and current completion percentages.
 
 ### 📖 In-Browser Digital Reader
-* **PDF Document Viewer**: Direct browser-rendered digital reading interface for library e-books.
+* **PDF Document Viewer**: Direct browser-rendered digital reading interface for digital publications.
 * **Reading Progress Persistence**: Real-time page tracking saving exact reading coordinates per user.
 * **Personal Notes & Bookmarks**: Create, view, and organize reading bookmarks, highlights, and journal notes.
 
@@ -147,7 +147,7 @@ Traditional library management scripts often rely on basic database queries and 
 ### 🛠️ Administrative Management
 * **Catalog Management**: Complete CRUD interface for administrators to create, update, and manage book inventories.
 * **Digital File Uploads**: Streamlined file upload handlers for book cover artwork and PDF documents stored securely in Supabase Storage.
-* **User Management**: Staff interface for managing member permissions and account statuses.
+* **User Management**: Administrator interface for managing reader permissions and account statuses.
 
 ### 🛡️ System Security & Resilience
 * **HTTP Security Headers**: Express integration with Helmet security headers.
@@ -162,7 +162,7 @@ Traditional library management scripts often rely on basic database queries and 
 | Technology | Version | Purpose |
 | :--- | :--- | :--- |
 | **React** | `v19.2.7` | UI component architecture and client rendering |
-| **Vite** | `v8.1.0` | Next-generation frontend build tooling and HMR |
+| **Vite** | `v8.1.0` | Modern frontend build tooling with native ESM and HMR |
 | **Tailwind CSS** | `v4.3.1` | Utility-first styling framework & design system |
 | **Framer Motion** | `v12.42.0` | Fluid UI layout animations and micro-interactions |
 | **React Router** | `v7.18.0` | Client-side routing and layout management |
@@ -192,7 +192,7 @@ Traditional library management scripts often rely on basic database queries and 
 
 ## 🏗️ Architecture Overview
 
-AVELIS enforces strict operational boundaries between presentation components, HTTP request controllers, domain business logic services, and database persistence layers.
+AVELIS is deployed across a cloud-native stack with strict operational boundaries between presentation components, HTTP request controllers, domain business logic services, and database persistence layers.
 
 ```mermaid
 flowchart TD
@@ -526,9 +526,9 @@ The repository includes detailed documentation files inside the `docs/` folder:
 ## 🔮 Potential Future Enhancements
 
 * [ ] **Full-Text Catalog Search**: Integration of PostgreSQL `tsvector` full-text search indexing for advanced book queries.
-* [ ] **Email Notifications**: Automated transactional email reminders for upcoming due dates and hold availability using Resend or SendGrid.
+* [ ] **Email Notifications**: Automated transactional email reminders for upcoming due dates and content availability using Resend or SendGrid.
 * [ ] **Offline Reader Support**: Service worker integration for offline reading caching of digital PDF materials.
-* [ ] **Enhanced Analytics Dashboard**: Visual charts for administrative library usage statistics and circulation metrics.
+* [ ] **Enhanced Analytics Dashboard**: Visual charts for platform usage analytics, reader engagement metrics, and content circulation insights.
 
 ---
 
@@ -570,14 +570,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ## 🙏 Acknowledgements
 
-AVELIS was developed as a portfolio project to demonstrate modern full-stack web development practices using React 19, Express, Prisma ORM, PostgreSQL, and Supabase. Special thanks to the open-source software communities maintaining these tools.
+AVELIS was built as a technical showcase of modern full-stack engineering using React, Express, Prisma ORM, PostgreSQL, Supabase, and the open-source ecosystem that makes production-grade web development possible.
 
 ---
 
 ## ⚠️ Disclaimer
 
 > **Note**
-> AVELIS is a portfolio and educational project developed to demonstrate full-stack software engineering concepts. While deployed and functional, it is not intended for production use in commercial library environments.
+> AVELIS is a portfolio and educational project developed to demonstrate production-grade cloud architecture, scalable backend design, and modern digital reading workflows. Although fully functional and publicly deployed, it is intended as a technical showcase rather than a commercial software offering.
 
 ---
 
