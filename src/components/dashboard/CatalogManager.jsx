@@ -5,8 +5,10 @@ import { createBook, updateBook, deleteBook } from "../../services/book.service.
 import { mapBookToUI } from "../../mappers/book.mapper.js";
 import { mockCollections } from "../../data/collections.js";
 import { uploadBookCover, uploadBookPdf } from "../../services/upload.service.js";
-import { getBundlesApi, createBundleApi, updateBundleApi, deleteBundleApi } from "../../api/bundle.api.js";
+import { getCategoriesApi, createCategoryApi, updateCategoryApi, deleteCategoryApi, restoreCategoryApi } from "../../api/category.api.js";
+import { getAuthorsApi, createAuthorApi, updateAuthorApi, deleteAuthorApi, restoreAuthorApi } from "../../api/author.api.js";
 import { getHeroApi, saveHeroApi } from "../../api/hero.api.js";
+import { getBundlesApi, createBundleApi, updateBundleApi, deleteBundleApi } from "../../api/bundle.api.js";
 import { getAllPublicReviews, deleteReview } from "../../services/review.service.js";
 import { apiClient } from "../../api/client.js";
 import {
@@ -33,10 +35,16 @@ import {
   Save,
   ShoppingBag,
   XCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ShieldAlert,
+  Info,
+  UserCheck,
+  RefreshCw,
+  FolderPlus,
+  UserPlus
 } from "lucide-react";
 
-export const CatalogManager = () => {
+const CatalogManagerInner = () => {
   const {
     books,
     isLoading,
@@ -50,29 +58,200 @@ export const CatalogManager = () => {
   const [apiAuthors, setApiAuthors] = useState([]);
   const [apiCategories, setApiCategories] = useState([]);
 
-  // Fetch live Authors & Categories dynamically from API on mount
-  useEffect(() => {
-    const fetchRelations = async () => {
-      try {
-        const [authRes, catRes] = await Promise.all([
-          fetch('/api/v1/authors').then((r) => r.json()),
-          fetch('/api/v1/categories').then((r) => r.json()),
-        ]);
-        if (authRes.success && Array.isArray(authRes.data)) {
-          setApiAuthors(authRes.data);
-        }
-        if (catRes.success && Array.isArray(catRes.data)) {
-          setApiCategories(catRes.data);
-        }
-      } catch (err) {
-        console.error("Failed to load live authors/categories from API:", err);
-      }
-    };
-    fetchRelations();
-  }, []);
+  // Quick Create Modal State inside Book Form
+  const [isQuickAuthorOpen, setIsQuickAuthorOpen] = useState(false);
+  const [quickAuthorName, setQuickAuthorName] = useState("");
+  const [quickAuthorBio, setQuickAuthorBio] = useState("");
+  const [quickAuthorPhoto, setQuickAuthorPhoto] = useState("");
+  const [quickAuthorLoading, setQuickAuthorLoading] = useState(false);
 
-  // Admin Hub Main Section Tabs
-  const [adminTab, setAdminTab] = useState("catalog"); // "catalog" | "hero" | "bundles" | "reflections"
+  const [isQuickCategoryOpen, setIsQuickCategoryOpen] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState("");
+  const [quickCategoryDesc, setQuickCategoryDesc] = useState("");
+  const [quickCategoryLoading, setQuickCategoryLoading] = useState(false);
+
+  // Dedicated Authors & Categories Management Tab State
+  const [adminTab, setAdminTab] = useState("catalog"); // "catalog" | "relations" | "hero" | "bundles" | "reflections" | "orders"
+  const [relationFilter, setRelationFilter] = useState("active"); // "active" | "archived" | "all"
+  const [relationSearchQuery, setRelationSearchQuery] = useState("");
+
+  // Edit / Restore / Audit Modal State in Management Tab
+  const [editingAuthorModal, setEditingAuthorModal] = useState(null);
+  const [editingCategoryModal, setEditingCategoryModal] = useState(null);
+  const [confirmRestoreModal, setConfirmRestoreModal] = useState(null); // { type: 'author'|'category', item: ... }
+  const [viewAuditModal, setViewAuditModal] = useState(null); // { type: 'author'|'category', item: ... }
+
+  // Fetch live Authors & Categories dynamically from API on mount & filter change
+  const fetchRelations = async (filterParam = relationFilter) => {
+    try {
+      const [authRes, catRes] = await Promise.all([
+        getAuthorsApi({ filter: filterParam }),
+        getCategoriesApi({ filter: filterParam }),
+      ]);
+      const authorsData = Array.isArray(authRes)
+        ? authRes
+        : (Array.isArray(authRes?.data) ? authRes.data : (Array.isArray(authRes?.data?.data) ? authRes.data.data : []));
+      const categoriesData = Array.isArray(catRes)
+        ? catRes
+        : (Array.isArray(catRes?.data) ? catRes.data : (Array.isArray(catRes?.data?.data) ? catRes.data.data : []));
+
+      setApiAuthors(authorsData);
+      setApiCategories(categoriesData);
+    } catch (err) {
+      console.error("Failed to load live authors/categories from API:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRelations(relationFilter);
+  }, [relationFilter, adminTab]);
+
+
+
+
+
+  // Quick Create Submit Handlers
+  const handleQuickCreateAuthor = async (e) => {
+    e.preventDefault();
+    if (!quickAuthorName.trim()) return;
+    setQuickAuthorLoading(true);
+    try {
+      const res = await createAuthorApi({
+        fullName: quickAuthorName,
+        biography: quickAuthorBio,
+        photo: quickAuthorPhoto,
+      });
+      if (res.success && res.data) {
+        const newAuthor = res.data;
+        showToast(`Author "${newAuthor.fullName || newAuthor.name}" saved successfully!`);
+        setApiAuthors((prev) => {
+          const exists = prev.some((a) => a.id === newAuthor.id);
+          if (exists) return prev.map((a) => (a.id === newAuthor.id ? newAuthor : a));
+          return [...prev, newAuthor];
+        });
+        setSelectedAuthorId(newAuthor.id);
+        setIsQuickAuthorOpen(false);
+        setQuickAuthorName("");
+        setQuickAuthorBio("");
+        setQuickAuthorPhoto("");
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to save author.");
+    } finally {
+      setQuickAuthorLoading(false);
+    }
+  };
+
+  const handleQuickCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!quickCategoryName.trim()) return;
+    setQuickCategoryLoading(true);
+    try {
+      const res = await createCategoryApi({
+        name: quickCategoryName,
+        description: quickCategoryDesc,
+      });
+      if (res.success && res.data) {
+        const newCategory = res.data;
+        showToast(`Category "${newCategory.name}" saved successfully!`);
+        setApiCategories((prev) => {
+          const exists = prev.some((c) => c.id === newCategory.id);
+          if (exists) return prev.map((c) => (c.id === newCategory.id ? newCategory : c));
+          return [...prev, newCategory];
+        });
+        setSelectedCategoryId(newCategory.id);
+        setIsQuickCategoryOpen(false);
+        setQuickCategoryName("");
+        setQuickCategoryDesc("");
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to save category.");
+    } finally {
+      setQuickCategoryLoading(false);
+    }
+  };
+
+  // Management Tab Actions
+  const handleSaveEditAuthor = async (e) => {
+    e.preventDefault();
+    if (!editingAuthorModal) return;
+    try {
+      const res = await updateAuthorApi(editingAuthorModal.id, {
+        fullName: editingAuthorModal.fullName || editingAuthorModal.name,
+        biography: editingAuthorModal.biography,
+        photo: editingAuthorModal.photo,
+        expectedUpdatedAt: editingAuthorModal.updatedAt,
+      });
+      if (res.success) {
+        showToast(`Author "${res.data.fullName}" updated successfully!`);
+        setEditingAuthorModal(null);
+        fetchRelations(relationFilter);
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to update author.");
+    }
+  };
+
+  const handleSaveEditCategory = async (e) => {
+    e.preventDefault();
+    if (!editingCategoryModal) return;
+    try {
+      const res = await updateCategoryApi(editingCategoryModal.id, {
+        name: editingCategoryModal.name,
+        description: editingCategoryModal.description,
+        expectedUpdatedAt: editingCategoryModal.updatedAt,
+      });
+      if (res.success) {
+        showToast(`Category "${res.data.name}" updated successfully!`);
+        setEditingCategoryModal(null);
+        fetchRelations(relationFilter);
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to update category.");
+    }
+  };
+
+  const handleDeleteAuthor = async (author) => {
+    if (author.isSystem) return;
+    if (!window.confirm(`Are you sure you want to soft-delete author "${author.fullName || author.name}"?`)) return;
+    try {
+      const res = await deleteAuthorApi(author.id);
+      showToast(res.message || "Author soft-deleted.");
+      fetchRelations(relationFilter);
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to delete author.");
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    if (category.isSystem) return;
+    if (!window.confirm(`Are you sure you want to soft-delete category "${category.name}"?`)) return;
+    try {
+      const res = await deleteCategoryApi(category.id);
+      showToast(res.message || "Category soft-deleted.");
+      fetchRelations(relationFilter);
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to delete category.");
+    }
+  };
+
+  const handleExecuteRestore = async () => {
+    if (!confirmRestoreModal) return;
+    const { type, item } = confirmRestoreModal;
+    try {
+      if (type === 'author') {
+        const res = await restoreAuthorApi(item.id);
+        showToast(`Author "${res.data.fullName || res.data.name}" restored successfully!`);
+      } else {
+        const res = await restoreCategoryApi(item.id);
+        showToast(`Category "${res.data.name}" restored successfully!`);
+      }
+      setConfirmRestoreModal(null);
+      fetchRelations(relationFilter);
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to restore.");
+    }
+  };
 
   // -------------------------------------------------------------
   // TAB 4: MEMBER JOURNAL REFLECTIONS MODERATION STATE
@@ -206,6 +385,18 @@ export const CatalogManager = () => {
   const [pdfUrl, setPdfUrl] = useState("");
   const [selectedAuthorId, setSelectedAuthorId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+
+  useEffect(() => {
+    if (!selectedAuthorId && Array.isArray(apiAuthors) && apiAuthors.length > 0) {
+      setSelectedAuthorId(apiAuthors[0]?.id || "");
+    }
+  }, [apiAuthors, selectedAuthorId]);
+
+  useEffect(() => {
+    if (!selectedCategoryId && Array.isArray(apiCategories) && apiCategories.length > 0) {
+      setSelectedCategoryId(apiCategories[0]?.id || "");
+    }
+  }, [apiCategories, selectedCategoryId]);
 
   const [formError, setFormError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -409,15 +600,15 @@ export const CatalogManager = () => {
 
   // Sanitize featuredHeroIds when books populate if empty
   useEffect(() => {
-    if (!books || books.length === 0) return;
+    if (!Array.isArray(books) || books.length === 0) return;
     setFeaturedHeroIds((prev) => {
       if (prev && prev.length > 0) {
-        const valid = prev.filter((id) => books.some((b) => String(b.id) === String(id)));
+        const valid = prev.filter((id) => books.some((b) => b && String(b.id) === String(id)));
         if (valid.length > 0) return valid;
       }
-      return books.slice(0, 6).map((b) => b.id);
+      return books.slice(0, 6).map((b) => b?.id).filter(Boolean);
     });
-  }, [books.length]);
+  }, [books?.length]);
   const [announcementText, setAnnouncementText] = useState(() => {
     return (
       localStorage.getItem("avelis_announcement_text") ||
@@ -501,13 +692,31 @@ export const CatalogManager = () => {
     const authorsMap = new Map();
     const categoriesMap = new Map();
 
-    apiAuthors.forEach((a) => authorsMap.set(a.id, a));
-    apiCategories.forEach((c) => categoriesMap.set(c.id, c));
+    if (Array.isArray(apiAuthors)) {
+      apiAuthors.forEach((a) => {
+        if (a && a.id) authorsMap.set(a.id, a);
+      });
+    }
+    if (Array.isArray(apiCategories)) {
+      apiCategories.forEach((c) => {
+        if (c && c.id) categoriesMap.set(c.id, c);
+      });
+    }
 
-    books.forEach((b) => {
-      if (b.authorsList) b.authorsList.forEach((a) => authorsMap.set(a.id, a));
-      if (b.categoriesList) b.categoriesList.forEach((c) => categoriesMap.set(c.id, c));
-    });
+    if (Array.isArray(books)) {
+      books.forEach((b) => {
+        if (b && Array.isArray(b.authorsList)) {
+          b.authorsList.forEach((a) => {
+            if (a && a.id) authorsMap.set(a.id, a);
+          });
+        }
+        if (b && Array.isArray(b.categoriesList)) {
+          b.categoriesList.forEach((c) => {
+            if (c && c.id) categoriesMap.set(c.id, c);
+          });
+        }
+      });
+    }
 
     return {
       authors: Array.from(authorsMap.values()),
@@ -516,6 +725,22 @@ export const CatalogManager = () => {
   };
 
   const { authors, categories } = getUniqueRelations();
+
+  const rawCategories = (Array.isArray(apiCategories) && apiCategories.length > 0)
+    ? apiCategories
+    : (Array.isArray(categories) ? categories : []);
+
+  const displayCategories = rawCategories.filter(
+    (c) => (c?.name || "").toLowerCase().includes(relationSearchQuery.toLowerCase())
+  );
+
+  const rawAuthors = (Array.isArray(apiAuthors) && apiAuthors.length > 0)
+    ? apiAuthors
+    : (Array.isArray(authors) ? authors : []);
+
+  const displayAuthors = rawAuthors.filter(
+    (a) => ((a?.fullName || a?.name) || "").toLowerCase().includes(relationSearchQuery.toLowerCase())
+  );
 
   // Book Modal Triggers
   const openCreateModal = () => {
@@ -813,7 +1038,6 @@ export const CatalogManager = () => {
   const handleDeleteBundle = async (bundleId, bTitle) => {
     if (!window.confirm(`Delete bundle "${bTitle}"?`)) return;
     try {
-      await deleteBundleApi(bundleId);
       const updated = bundles.filter((b) => b.id !== bundleId);
       saveBundlesToStorage(updated);
       showToast(`Bundle "${bTitle}" deleted.`);
@@ -822,25 +1046,29 @@ export const CatalogManager = () => {
     }
   };
 
-  const filteredBooks = books
+  const filteredBooks = (Array.isArray(books) ? books : [])
     .filter((b) => {
-      const q = searchQuery.toLowerCase();
+      if (!b) return false;
+      const q = (searchQuery || "").toLowerCase();
+      const titleStr = (b.title || "").toLowerCase();
+      const authorStr = (b.author || b.authorName || "").toLowerCase();
+      const typeStr = (b.bookType || "").toLowerCase();
       const matchesSearch =
-        b.title.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q) ||
-        (b.bookType || "").toLowerCase().includes(q);
+        titleStr.includes(q) || authorStr.includes(q) || typeStr.includes(q);
       const matchesType =
         selectedTypeFilter === "ALL" || (b.bookType || "Hardcover") === selectedTypeFilter;
       return matchesSearch && matchesType;
     })
     .sort((a, b) => {
+      const titleA = a?.title || "";
+      const titleB = b?.title || "";
       if (sortField === "type") {
-        return (a.bookType || "Hardcover").localeCompare(b.bookType || "Hardcover");
+        return (a?.bookType || "Hardcover").localeCompare(b?.bookType || "Hardcover");
       }
       if (sortField === "price") {
-        return (a.sellingPrice || 0) - (b.sellingPrice || 0);
+        return (a?.sellingPrice || 0) - (b?.sellingPrice || 0);
       }
-      return a.title.localeCompare(b.title);
+      return titleA.localeCompare(titleB);
     });
 
   return (
@@ -872,7 +1100,7 @@ export const CatalogManager = () => {
         </div>
 
         {/* Tab Navigation Pill Selector */}
-        <div className="flex items-center gap-2 bg-[#07111F] p-1.5 rounded-lg border border-[#C9A227]/20">
+        <div className="flex items-center gap-2 bg-[#07111F] p-1.5 rounded-lg border border-[#C9A227]/20 flex-wrap">
           <button
             onClick={() => setAdminTab("catalog")}
             className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
@@ -883,6 +1111,17 @@ export const CatalogManager = () => {
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>Books & Pricing</span>
+          </button>
+          <button
+            onClick={() => setAdminTab("relations")}
+            className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-display tracking-wider uppercase transition-all cursor-pointer ${
+              adminTab === "relations"
+                ? "bg-[#C9A227] text-[#07111F] font-bold shadow-md"
+                : "text-[#F7F5EE]/70 hover:text-white"
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5" />
+            <span>Authors & Categories</span>
           </button>
           <button
             onClick={() => setAdminTab("hero")}
@@ -1645,6 +1884,326 @@ export const CatalogManager = () => {
           )}
         </div>
       )}
+      {/* ========================================================================= */}
+      {/* TAB 6: AUTHORS & CATEGORIES MANAGEMENT */}
+      {/* ========================================================================= */}
+      {adminTab === "relations" && (
+        <div className="space-y-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-[#07111F] p-6 rounded-xl border border-[rgba(201,162,39,0.2)]">
+            <div>
+              <h3 className="font-display text-xl text-white uppercase tracking-wider flex items-center gap-2">
+                <Tag className="w-5 h-5 text-[#C9A227]" />
+                <span>Authors & Categories Management</span>
+              </h3>
+              <p className="text-xs text-[#F7F5EE]/60 font-body mt-1">
+                Manage authors and domains, soft-delete or restore entries, inspect audit lifecycle trails, and review linked volumes count.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Filter Tabs (Active, Archived, All) */}
+              <div className="flex items-center bg-[#0D1626] p-1 rounded-lg border border-[#C9A227]/20 text-xs font-display uppercase tracking-wider">
+                <button
+                  onClick={() => setRelationFilter("active")}
+                  className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                    relationFilter === "active" ? "bg-[#C9A227] text-[#07111F] font-bold" : "text-[#F7F5EE]/60 hover:text-white"
+                  }`}
+                >
+                  Active Only
+                </button>
+                <button
+                  onClick={() => setRelationFilter("archived")}
+                  className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                    relationFilter === "archived" ? "bg-[#C9A227] text-[#07111F] font-bold" : "text-[#F7F5EE]/60 hover:text-white"
+                  }`}
+                >
+                  Archived
+                </button>
+                <button
+                  onClick={() => setRelationFilter("all")}
+                  className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                    relationFilter === "all" ? "bg-[#C9A227] text-[#07111F] font-bold" : "text-[#F7F5EE]/60 hover:text-white"
+                  }`}
+                >
+                  All
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <button
+                onClick={() => setIsQuickAuthorOpen(true)}
+                className="bg-[#C9A227]/20 border border-[#C9A227]/40 hover:bg-[#C9A227]/30 text-[#C9A227] px-3.5 py-2 rounded text-xs font-display tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Add Author</span>
+              </button>
+
+              <button
+                onClick={() => setIsQuickCategoryOpen(true)}
+                className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-3.5 py-2 rounded text-xs font-display tracking-wider uppercase font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+                <span>+ Add Category</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search Filter Bar */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#F7F5EE]/40" />
+            <input
+              type="text"
+              value={relationSearchQuery}
+              onChange={(e) => setRelationSearchQuery(e.target.value)}
+              placeholder="Search authors by name, bio or categories by title..."
+              className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] focus:border-[#C9A227] text-[#F7F5EE] rounded-lg pl-12 pr-4 py-2.5 text-xs outline-none transition-colors"
+            />
+          </div>
+
+          {/* 1. CATEGORIES MANAGEMENT TABLE */}
+          <div className="bg-[#07111F] border border-[rgba(201,162,39,0.2)] rounded-xl overflow-hidden shadow-xl">
+            <div className="p-4 bg-[#0D1626] border-b border-[#C9A227]/20 flex justify-between items-center">
+              <h4 className="font-display text-sm text-[#C9A227] uppercase tracking-wider font-bold flex items-center gap-2">
+                <Tag className="w-4 h-4" />
+                <span>Categories Catalog ({displayCategories.length})</span>
+              </h4>
+              <span className="text-[10px] text-[#F7F5EE]/50 font-mono">Sorted Alphabetically</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-[#C9A227]/20 bg-[#07111F] text-[#C9A227] font-display text-[10px] uppercase tracking-widest">
+                    <th className="p-3.5">Category Name</th>
+                    <th className="p-3.5">Description</th>
+                    <th className="p-3.5 text-center">Active Books</th>
+                    <th className="p-3.5 text-center">Status</th>
+                    <th className="p-3.5 text-center">System Protected</th>
+                    <th className="p-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-body text-[#F7F5EE]/80">
+                  {displayCategories.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-white/40">
+                        <p className="text-xs">No categories found matching criteria.</p>
+                        <button
+                          onClick={() => setIsQuickCategoryOpen(true)}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#C9A227]/20 border border-[#C9A227]/40 text-[#C9A227] text-xs font-display uppercase tracking-wider hover:bg-[#C9A227]/30 transition-all cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> + Add Category
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    displayCategories.map((c) => (
+                      <tr key={c.id} className="hover:bg-white/5 transition-colors align-middle">
+                        <td className="p-3.5 font-semibold text-white font-display uppercase tracking-wide">
+                          {c.name}
+                        </td>
+                        <td className="p-3.5 text-[#F7F5EE]/70 max-w-xs truncate">
+                          {c.description || "—"}
+                        </td>
+                        <td className="p-3.5 text-center font-bold text-[#C9A227]">
+                          {c.booksCount !== undefined ? c.booksCount : 0}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded text-[9px] font-display uppercase font-bold tracking-wider border ${
+                              c.isDeleted
+                                ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            }`}
+                          >
+                            {c.isDeleted ? "Archived" : "Active"}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-center">
+                          {c.isSystem ? (
+                            <span className="inline-block px-2 py-0.5 rounded bg-[#C9A227]/20 text-[#C9A227] border border-[#C9A227]/40 text-[9px] font-display uppercase font-bold tracking-widest">
+                              System Core
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-white/30 font-mono">Custom</span>
+                          )}
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              onClick={() => setViewAuditModal({ type: 'category', item: c })}
+                              className="p-1.5 border border-white/10 hover:border-white/30 rounded text-white/60 hover:text-white transition-all cursor-pointer"
+                              title="View Audit Trail Lifecycle"
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => setEditingCategoryModal(c)}
+                              className="p-1.5 border border-[#C9A227]/20 hover:border-[#C9A227] rounded text-[#C9A227] hover:bg-[#C9A227]/10 transition-all cursor-pointer"
+                              title="Edit Category"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+
+                            {c.isDeleted ? (
+                              <button
+                                onClick={() => setConfirmRestoreModal({ type: 'category', item: c })}
+                                className="p-1.5 border border-emerald-500/30 hover:border-emerald-500 rounded text-emerald-400 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                                title="Restore Category"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                disabled={c.isSystem}
+                                onClick={() => handleDeleteCategory(c)}
+                                className={`p-1.5 border rounded transition-all ${
+                                  c.isSystem
+                                    ? "opacity-30 cursor-not-allowed border-white/10 text-white/40"
+                                    : "border-rose-500/20 hover:border-rose-500 text-rose-400 hover:bg-rose-950/20 cursor-pointer"
+                                }`}
+                                title={c.isSystem ? "System core categories cannot be deleted." : "Soft-delete Category"}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 2. AUTHORS MANAGEMENT TABLE */}
+          <div className="bg-[#07111F] border border-[rgba(201,162,39,0.2)] rounded-xl overflow-hidden shadow-xl">
+            <div className="p-4 bg-[#0D1626] border-b border-[#C9A227]/20 flex justify-between items-center">
+              <h4 className="font-display text-sm text-[#C9A227] uppercase tracking-wider font-bold flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                <span>Authors Roster ({displayAuthors.length})</span>
+              </h4>
+              <span className="text-[10px] text-[#F7F5EE]/50 font-mono">Sorted Alphabetically</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-[#C9A227]/20 bg-[#07111F] text-[#C9A227] font-display text-[10px] uppercase tracking-widest">
+                    <th className="p-3.5">Author Name</th>
+                    <th className="p-3.5">Biography</th>
+                    <th className="p-3.5 text-center">Active Books</th>
+                    <th className="p-3.5 text-center">Status</th>
+                    <th className="p-3.5 text-center">System Protected</th>
+                    <th className="p-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-body text-[#F7F5EE]/80">
+                  {displayAuthors.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-white/40">
+                        <p className="text-xs">No authors found matching criteria.</p>
+                        <button
+                          onClick={() => setIsQuickAuthorOpen(true)}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#C9A227]/20 border border-[#C9A227]/40 text-[#C9A227] text-xs font-display uppercase tracking-wider hover:bg-[#C9A227]/30 transition-all cursor-pointer"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" /> + Add Author
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    displayAuthors.map((a) => (
+                      <tr key={a.id} className="hover:bg-white/5 transition-colors align-middle">
+                        <td className="p-3.5 font-semibold text-white font-display tracking-wide">
+                          <div className="flex items-center gap-2.5">
+                            {a.photo ? (
+                              <img src={a.photo} alt={a.fullName || a.name} className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-[#C9A227]/20 border border-[#C9A227]/40 text-[#C9A227] flex items-center justify-center font-bold text-[10px]">
+                                {(a.fullName || a.name || "A").substring(0, 1)}
+                              </div>
+                            )}
+                            <span>{a.fullName || a.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-3.5 text-[#F7F5EE]/70 max-w-xs truncate italic">
+                          {a.biography || "—"}
+                        </td>
+                        <td className="p-3.5 text-center font-bold text-[#C9A227]">
+                          {a.booksCount !== undefined ? a.booksCount : 0}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded text-[9px] font-display uppercase font-bold tracking-wider border ${
+                              a.isDeleted
+                                ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            }`}
+                          >
+                            {a.isDeleted ? "Archived" : "Active"}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-center">
+                          {a.isSystem ? (
+                            <span className="inline-block px-2 py-0.5 rounded bg-[#C9A227]/20 text-[#C9A227] border border-[#C9A227]/40 text-[9px] font-display uppercase font-bold tracking-widest">
+                              System Core
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-white/30 font-mono">Custom</span>
+                          )}
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              onClick={() => setViewAuditModal({ type: 'author', item: a })}
+                              className="p-1.5 border border-white/10 hover:border-white/30 rounded text-white/60 hover:text-white transition-all cursor-pointer"
+                              title="View Audit Trail Lifecycle"
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => setEditingAuthorModal(a)}
+                              className="p-1.5 border border-[#C9A227]/20 hover:border-[#C9A227] rounded text-[#C9A227] hover:bg-[#C9A227]/10 transition-all cursor-pointer"
+                              title="Edit Author"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+
+                            {a.isDeleted ? (
+                              <button
+                                onClick={() => setConfirmRestoreModal({ type: 'author', item: a })}
+                                className="p-1.5 border border-emerald-500/30 hover:border-emerald-500 rounded text-emerald-400 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                                title="Restore Author"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                disabled={a.isSystem}
+                                onClick={() => handleDeleteAuthor(a)}
+                                className={`p-1.5 border rounded transition-all ${
+                                  a.isSystem
+                                    ? "opacity-30 cursor-not-allowed border-white/10 text-white/40"
+                                    : "border-rose-500/20 hover:border-rose-500 text-rose-400 hover:bg-rose-950/20 cursor-pointer"
+                                }`}
+                                title={a.isSystem ? "System core authors cannot be deleted." : "Soft-delete Author"}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* CREATE & EDIT BOOK MODAL */}
@@ -1713,9 +2272,18 @@ export const CatalogManager = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
-                    Author
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227]">
+                      Author
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickAuthorOpen(true)}
+                      className="text-[10px] text-[#C9A227] hover:text-[#E5C16B] font-display tracking-widest uppercase flex items-center gap-1 cursor-pointer bg-[#C9A227]/10 px-2 py-0.5 rounded border border-[#C9A227]/30 hover:bg-[#C9A227]/20 transition-all"
+                    >
+                      <Plus className="w-3 h-3" /> + New Author
+                    </button>
+                  </div>
                   <select
                     value={selectedAuthorId}
                     onChange={(e) => setSelectedAuthorId(e.target.value)}
@@ -1733,9 +2301,18 @@ export const CatalogManager = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
-                    Category
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227]">
+                      Category
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickCategoryOpen(true)}
+                      className="text-[10px] text-[#C9A227] hover:text-[#E5C16B] font-display tracking-widest uppercase flex items-center gap-1 cursor-pointer bg-[#C9A227]/10 px-2 py-0.5 rounded border border-[#C9A227]/30 hover:bg-[#C9A227]/20 transition-all"
+                    >
+                      <Plus className="w-3 h-3" /> + New Category
+                    </button>
+                  </div>
                   <select
                     value={selectedCategoryId}
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
@@ -1946,8 +2523,6 @@ export const CatalogManager = () => {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* CREATE & EDIT BUNDLE MODAL WITH BOOK SELECTOR */}
       {/* ========================================================================= */}
       {isBundleModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
@@ -2171,8 +2746,464 @@ export const CatalogManager = () => {
           </div>
         </div>
       )}
+      {/* ========================================================================= */}
+      {/* QUICK CREATE AUTHOR MODAL */}
+      {/* ========================================================================= */}
+      {isQuickAuthorOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-[#0D1626] border border-[#C9A227]/40 rounded-xl p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              onClick={() => setIsQuickAuthorOpen(false)}
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="font-display text-lg text-[#F7F5EE] uppercase tracking-wider flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-[#C9A227]" />
+              <span>Add New Author</span>
+            </h3>
+
+            <form onSubmit={handleQuickCreateAuthor} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Full Author Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={quickAuthorName}
+                  onChange={(e) => setQuickAuthorName(e.target.value)}
+                  placeholder="e.g. Carl Sagan"
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Biography (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={quickAuthorBio}
+                  onChange={(e) => setQuickAuthorBio(e.target.value)}
+                  placeholder="Short author biography..."
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Photo URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={quickAuthorPhoto}
+                  onChange={(e) => setQuickAuthorPhoto(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAuthorOpen(false)}
+                  className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase font-display"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={quickAuthorLoading}
+                  className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-2 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer transition-all"
+                >
+                  {quickAuthorLoading ? "Saving..." : "Create Author"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* QUICK CREATE CATEGORY MODAL */}
+      {/* ========================================================================= */}
+      {isQuickCategoryOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-[#0D1626] border border-[#C9A227]/40 rounded-xl p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              onClick={() => setIsQuickCategoryOpen(false)}
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="font-display text-lg text-[#F7F5EE] uppercase tracking-wider flex items-center gap-2">
+              <FolderPlus className="w-4 h-4 text-[#C9A227]" />
+              <span>Add New Category</span>
+            </h3>
+
+            <form onSubmit={handleQuickCreateCategory} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={quickCategoryName}
+                  onChange={(e) => setQuickCategoryName(e.target.value)}
+                  placeholder="e.g. Artificial Intelligence"
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={quickCategoryDesc}
+                  onChange={(e) => setQuickCategoryDesc(e.target.value)}
+                  placeholder="Short description of this domain..."
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickCategoryOpen(false)}
+                  className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase font-display"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={quickCategoryLoading}
+                  className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-2 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer transition-all"
+                >
+                  {quickCategoryLoading ? "Saving..." : "Create Category"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT AUTHOR MODAL */}
+      {/* ========================================================================= */}
+      {editingAuthorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-[#0D1626] border border-[#C9A227]/40 rounded-xl p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              onClick={() => setEditingAuthorModal(null)}
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="font-display text-lg text-[#F7F5EE] uppercase tracking-wider flex items-center gap-2">
+              <Edit className="w-4 h-4 text-[#C9A227]" />
+              <span>Edit Author</span>
+            </h3>
+
+            <form onSubmit={handleSaveEditAuthor} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Full Author Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingAuthorModal.fullName || editingAuthorModal.name || ""}
+                  onChange={(e) => setEditingAuthorModal({ ...editingAuthorModal, fullName: e.target.value, name: e.target.value })}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Biography
+                </label>
+                <textarea
+                  rows={3}
+                  value={editingAuthorModal.biography || ""}
+                  onChange={(e) => setEditingAuthorModal({ ...editingAuthorModal, biography: e.target.value })}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Photo URL
+                </label>
+                <input
+                  type="url"
+                  value={editingAuthorModal.photo || ""}
+                  onChange={(e) => setEditingAuthorModal({ ...editingAuthorModal, photo: e.target.value })}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingAuthorModal(null)}
+                  className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase font-display"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-2 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT CATEGORY MODAL */}
+      {/* ========================================================================= */}
+      {editingCategoryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-[#0D1626] border border-[#C9A227]/40 rounded-xl p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              onClick={() => setEditingCategoryModal(null)}
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="font-display text-lg text-[#F7F5EE] uppercase tracking-wider flex items-center gap-2">
+              <Edit className="w-4 h-4 text-[#C9A227]" />
+              <span>Edit Category</span>
+            </h3>
+
+            <form onSubmit={handleSaveEditCategory} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingCategoryModal.name || ""}
+                  onChange={(e) => setEditingCategoryModal({ ...editingCategoryModal, name: e.target.value })}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-display uppercase tracking-widest text-[#C9A227] mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={editingCategoryModal.description || ""}
+                  onChange={(e) => setEditingCategoryModal({ ...editingCategoryModal, description: e.target.value })}
+                  className="w-full bg-[#07111F] border border-[rgba(201,162,39,0.2)] text-[#F7F5EE] rounded p-2.5 text-xs outline-none focus:border-[#C9A227]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingCategoryModal(null)}
+                  className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase font-display"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-2 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* RESTORE CONFIRMATION MODAL */}
+      {/* ========================================================================= */}
+      {confirmRestoreModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-sm bg-[#0D1626] border border-emerald-500/40 rounded-xl p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center border border-emerald-500/40">
+              <RotateCcw className="w-6 h-6" />
+            </div>
+
+            <h3 className="font-display text-lg text-white uppercase tracking-wider">
+              Restore {confirmRestoreModal.type === 'author' ? 'Author' : 'Category'}
+            </h3>
+
+            <p className="font-body text-xs text-[#F7F5EE]/80 leading-relaxed">
+              Are you sure you want to restore{" "}
+              <span className="text-[#C9A227] font-semibold">
+                "{confirmRestoreModal.item.name || confirmRestoreModal.item.fullName}"
+              </span>
+              ? It will reappear in active dropdowns and catalog options.
+            </p>
+
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmRestoreModal(null)}
+                className="px-4 py-2 text-[#F7F5EE]/60 hover:text-white text-xs uppercase font-display cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteRestore}
+                className="bg-emerald-500 hover:bg-emerald-400 text-[#07111F] px-5 py-2 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer shadow-md"
+              >
+                Restore Entity
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* AUDIT TRAIL LIFECYCLE MODAL */}
+      {/* ========================================================================= */}
+      {viewAuditModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-[#0D1626] border border-[#C9A227]/40 rounded-xl p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              onClick={() => setViewAuditModal(null)}
+              className="absolute top-4 right-4 text-[#F7F5EE]/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="font-display text-lg text-[#C9A227] uppercase tracking-wider flex items-center gap-2">
+              <Info className="w-5 h-5 text-[#C9A227]" />
+              <span>Audit Lifecycle Details</span>
+            </h3>
+
+            <div className="space-y-3 font-body text-xs bg-[#07111F] p-4 rounded-lg border border-white/10 text-[#F7F5EE]/90">
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-white/40 uppercase font-display text-[10px]">Entity Name:</span>
+                <span className="font-bold text-[#C9A227] font-display">{viewAuditModal.item.name || viewAuditModal.item.fullName}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-white/40 uppercase font-display text-[10px]">Created At:</span>
+                <span>{viewAuditModal.item.createdAt ? new Date(viewAuditModal.item.createdAt).toLocaleString() : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-white/40 uppercase font-display text-[10px]">Created By:</span>
+                <span className="text-emerald-400 font-mono">{viewAuditModal.item.createdBy || 'System Initialization'}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-white/40 uppercase font-display text-[10px]">Updated At:</span>
+                <span>{viewAuditModal.item.updatedAt ? new Date(viewAuditModal.item.updatedAt).toLocaleString() : 'N/A'}</span>
+              </div>
+              {viewAuditModal.item.deletedAt && (
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-rose-400 uppercase font-display text-[10px]">Deleted At:</span>
+                  <span className="text-rose-300">{new Date(viewAuditModal.item.deletedAt).toLocaleString()}</span>
+                </div>
+              )}
+              {viewAuditModal.item.deletedBy && (
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-rose-400 uppercase font-display text-[10px]">Deleted By:</span>
+                  <span className="text-rose-300 font-mono">{viewAuditModal.item.deletedBy}</span>
+                </div>
+              )}
+              {viewAuditModal.item.restoredAt && (
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-emerald-400 uppercase font-display text-[10px]">Restored At:</span>
+                  <span className="text-emerald-300">{new Date(viewAuditModal.item.restoredAt).toLocaleString()}</span>
+                </div>
+              )}
+              {viewAuditModal.item.restoredBy && (
+                <div className="flex justify-between pb-1">
+                  <span className="text-emerald-400 uppercase font-display text-[10px]">Restored By:</span>
+                  <span className="text-emerald-300 font-mono">{viewAuditModal.item.restoredBy}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewAuditModal(null)}
+                className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-5 py-2 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer"
+              >
+                Close Audit View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+class CatalogManagerErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("CatalogManager rendering error captured:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-[#0D1626] border border-rose-500/40 rounded-xl p-8 text-center space-y-4 max-w-2xl mx-auto my-12 shadow-2xl">
+          <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 mx-auto flex items-center justify-center border border-rose-500/40">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <h3 className="font-display text-lg text-white uppercase tracking-wider">
+            Catalog Control Center Render Notice
+          </h3>
+          <p className="font-body text-xs text-rose-300 bg-rose-950/30 p-4 rounded border border-rose-500/20 font-mono text-left overflow-x-auto">
+            {this.state.error?.message || "An unexpected rendering exception occurred."}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="bg-[#C9A227] hover:bg-[#E5C16B] text-[#07111F] px-6 py-2.5 rounded font-display text-xs tracking-wider uppercase font-bold cursor-pointer transition-all shadow-md"
+          >
+            Reload Control Center
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export const CatalogManager = (props) => (
+  <CatalogManagerErrorBoundary>
+    <CatalogManagerInner {...props} />
+  </CatalogManagerErrorBoundary>
+);
 
 export default CatalogManager;

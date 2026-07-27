@@ -68,8 +68,40 @@ async function main() {
   // 4. Seed Categories
   console.log('  -> Seeding Categories...');
   const categoriesData = [
-    { name: 'Fantasy', description: 'Magical and mythical worlds and characters.' },
-    { name: 'Dystopian', description: 'Explorations of dark, totalitarian future societies.' },
+    { name: 'Fiction', description: 'Imaginative storytelling and narrative prose.' },
+    { name: 'Non-Fiction', description: 'Factual accounts, essays, and educational writings.' },
+    { name: 'Science', description: 'Scientific inquiry, physics, biology, and cosmos.' },
+    { name: 'Technology', description: 'Software, hardware, engineering, and artificial intelligence.' },
+    { name: 'Programming', description: 'Code architecture, algorithms, and software development.' },
+    { name: 'Business', description: 'Economic strategy, entrepreneurship, and leadership.' },
+    { name: 'Finance', description: 'Personal finance, markets, and investment principles.' },
+    { name: 'Economics', description: 'Macro and microeconomic theory and global trade.' },
+    { name: 'History', description: 'Historical chronicles, global events, and civilizations.' },
+    { name: 'Philosophy', description: 'Ethics, metaphysics, logic, and existential inquiry.' },
+    { name: 'Psychology', description: 'Human cognition, emotion, and behavioral science.' },
+    { name: 'Literature', description: 'Masterworks of world literature and literary criticism.' },
+    { name: 'Poetry', description: 'Verses, anthologies, and poetic compositions.' },
+    { name: 'Biography', description: 'Life stories of influential thinkers and leaders.' },
+    { name: 'Self Help', description: 'Personal growth, productivity, and mindfulness.' },
+    { name: 'Mystery', description: 'Detective stories, investigative puzzles, and suspense.' },
+    { name: 'Thriller', description: 'High-stakes suspense and psychological tension.' },
+    { name: 'Crime', description: 'True crime, legal thrillers, and criminal justice.' },
+    { name: 'Horror', description: 'Macabre narratives, supernatural tales, and dark fiction.' },
+    { name: 'Romance', description: 'Relationships, passion, and emotional journeys.' },
+    { name: 'Fantasy', description: 'Magical realms, mythical creatures, and epic quests.' },
+    { name: 'Science Fiction', description: 'Futuristic technology, space exploration, and speculative worlds.' },
+    { name: 'Dystopian', description: 'Totalitarian futures, societal collapses, and speculative dilemmas.' },
+    { name: 'Adventure', description: 'Exploration, survival, and high-energy journeys.' },
+    { name: 'Young Adult', description: 'Coming-of-age stories and adolescent fiction.' },
+    { name: "Children's", description: 'Illustrated books and juvenile literature.' },
+    { name: 'Comics & Graphic Novels', description: 'Visual narratives, comics, and manga.' },
+    { name: 'Religion', description: 'Theology, spiritual traditions, and comparative belief.' },
+    { name: 'Politics', description: 'Political theory, governance, and international relations.' },
+    { name: 'Art', description: 'Visual arts, painting, sculpture, and art history.' },
+    { name: 'Design', description: 'UI/UX design, typography, architecture, and aesthetics.' },
+    { name: 'Education', description: 'Pedagogy, learning techniques, and academic theory.' },
+    { name: 'Health', description: 'Nutrition, wellness, medicine, and human biology.' },
+    { name: 'Travel', description: 'Travelogues, cultural guides, and global geography.' },
     { name: 'Classics', description: 'Time-tested literary masterpieces.' },
     { name: 'General Fiction', description: 'Contemporary and general fictional stories.' },
     { name: 'Sci-Fi', description: 'Speculative fiction exploring futuristic concepts.' },
@@ -79,8 +111,8 @@ async function main() {
   for (const catData of categoriesData) {
     const cat = await prisma.category.upsert({
       where: { name: catData.name },
-      update: { description: catData.description },
-      create: catData,
+      update: { description: catData.description, isSystem: true, isDeleted: false },
+      create: { ...catData, isSystem: true },
     });
     categories.push(cat);
   }

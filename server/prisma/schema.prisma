@@ -118,7 +118,18 @@ model Author {
   photo     String?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+  isDeleted  Boolean      @default(false)
+  deletedAt  DateTime?
+  deletedBy  String?
+  restoredAt DateTime?
+  createdBy  String?
+  restoredBy String?
+  isSystem   Boolean      @default(false)
   books     BookAuthor[]
+
+  @@index([isDeleted])
+  @@index([fullName])
+  @@index([isSystem])
 }
 
 model Category {
@@ -127,7 +138,18 @@ model Category {
   description String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  isDeleted   Boolean        @default(false)
+  deletedAt   DateTime?
+  deletedBy   String?
+  restoredAt  DateTime?
+  createdBy   String?
+  restoredBy  String?
+  isSystem    Boolean        @default(false)
   books       BookCategory[]
+
+  @@index([isDeleted])
+  @@index([name])
+  @@index([isSystem])
 }
 
 model Book {
