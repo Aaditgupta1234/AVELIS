@@ -222,19 +222,51 @@ npx prisma db push
 npx prisma db seed
 ```
 
----
+## Environment Configuration
 
-## Environment Variables
+AVELIS maintains strict environment separation between client and server layers, as well as local development vs production environments. Environment files containing sensitive credentials are intentionally excluded from version control.
+
+### Directory Structure
+
+```
+Anveli/
+│
+├── .env                ← Local frontend variables (ignored by Git)
+├── .env.example        ← Frontend template (committed)
+│
+├── server/
+│   ├── .env            ← Local backend variables (ignored by Git)
+│   └── .env.example    ← Backend template (committed)
+```
+
+### Environment Variables Directory
+
+#### Frontend Environment Variables
 
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
-| `NODE_ENV` | Application execution environment (`development`, `production`) | `development` |
-| `PORT` | Backend server port | `5000` |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/avelis_db` |
-| `JWT_SECRET` | Secret key for signing and verifying JSON Web Tokens | `your-secret-key` |
-| `CLIENT_URL` | Trusted origin URL for CORS validation | `http://localhost:5173` |
+| `NODE_ENV` | Client environment mode (`development`, `production`) | `development` |
+| `VITE_API_BASE_URL` | Backend REST API base URL | `http://localhost:5000/api/v1` |
+| `VITE_SUPABASE_URL` | Supabase project URL | `https://xxxx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Supabase public anonymous API key | `eyJhbG...` |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID | `xxxx.apps.googleusercontent.com` |
+| `VITE_APP_URL` | Client application origin URL | `http://localhost:5173` |
 
----
+#### Backend Environment Variables
+
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `NODE_ENV` | Node execution environment | `development` |
+| `PORT` | Backend HTTP server port | `5000` |
+| `DATABASE_URL` | PostgreSQL connection string (Transaction pooler) | `postgresql://user:pass@localhost:5432/avelis_db` |
+| `DIRECT_URL` | Direct PostgreSQL connection string for migrations | `postgresql://user:pass@localhost:5432/avelis_db` |
+| `JWT_SECRET` | Secret key for signing and verifying JWT tokens | `your-secret-key` |
+| `JWT_EXPIRES_IN` | Token expiration lifespan | `7d` |
+| `SUPABASE_URL` | Supabase project URL | `https://xxxx.supabase.co` |
+| `SUPABASE_SECRET_KEY` | Supabase service secret key | `sb_secret_xxxx` |
+| `SUPABASE_BOOK_COVERS_BUCKET` | Storage bucket for book cover images | `book-covers` |
+| `SUPABASE_BOOK_PDFS_BUCKET` | Storage bucket for book PDF codices | `book-pdfs` |
+| `CLIENT_URL` | Trusted origin URL for CORS validation | `http://localhost:5173` |
 
 ## Execution Commands
 
@@ -324,9 +356,32 @@ All backend endpoints are mounted under base path `/api/v1`. Authentication requ
 | **Frontend SPA** | ✅ Complete | Complete user workflow views & design system |
 | **Integration** | ✅ Complete | Full REST API context binding across all modules |
 | **Deployment** | ✅ Complete | Production build scripts & environment configurations |
-| **Production Verification** | ✅ Complete | Passing lint (`oxlint`) and production build checks |
+---
+
+## Production Deployment Checklist
+
+Before deploying AVELIS to production:
+
+- [ ] Verify `.env` files are excluded by Git (`git status` and `git check-ignore .env`).
+- [ ] Ensure `.env.example` and `server/.env.example` templates match codebase usages.
+- [ ] Configure required environment variables in Vercel (`VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GOOGLE_CLIENT_ID`).
+- [ ] Configure required environment variables in Render (`PORT`, `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `CLIENT_URL`).
+- [ ] Run production build locally (`npm run build`).
+- [ ] Apply Prisma migrations to the production database (`npx prisma migrate deploy`).
+- [ ] Verify Supabase Storage buckets exist (`book-covers`, `book-pdfs`).
+- [ ] Verify Google OAuth Authorized Origins and Redirect URIs.
+- [ ] Verify backend health endpoint returns healthy status (`GET /health` or `GET /api/v1`).
+- [ ] Verify frontend successfully communicates with production backend API.
 
 ---
+
+## Rollback
+
+If a production deployment encounters critical failures:
+
+1. Restore the previous stable Git commit in your repository branch.
+2. Trigger a redeploy via Vercel (Frontend) and Render (Backend).
+3. If a database migration was executed, run your migration rollback strategy before redeploying.
 
 ## Current Limitations
 

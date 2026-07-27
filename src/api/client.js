@@ -1,11 +1,7 @@
 import axios from 'axios';
 import { STORAGE_KEYS } from '../constants/storage.js';
 
-const apiURL = import.meta.env.VITE_API_URL;
-
-if (!apiURL) {
-  throw new Error('VITE_API_URL environment variable is required. Please set it in your .env configuration.');
-}
+const apiURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 export const apiClient = axios.create({
   baseURL: apiURL,
