@@ -1,428 +1,594 @@
-# AVELIS — Enterprise Digital Library Management System
+# AVELIS — Digital Library Management Platform
 
-AVELIS is a production-ready, full-stack digital library management system built with React 19, Node.js, Express, Prisma ORM, and PostgreSQL. It combines a fluid, responsive client interface with an enterprise-grade backend architecture.
+AVELIS is a production-inspired, full-stack digital library management platform built with React 19, Node.js, Express, Prisma ORM, and PostgreSQL. It features a modern, fluid user interface integrated with a robust, layered backend architecture supporting digital reader annotations, FIFO hold reservations, role-based access control, and complete catalog administration.
 
----
-
-[![Version](https://img.shields.io/badge/Version-v1.0.0-gold.svg)](#)
-[![Build](https://img.shields.io/badge/Build-Passing-emerald.svg)](#)
-[![License](https://img.shields.io/badge/License-ISC-blue.svg)](#)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg?style=flat&logo=react&logoColor=black)](#)
-[![Express.js](https://img.shields.io/badge/Express-4.x-000000.svg?style=flat&logo=express&logoColor=white)](#)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B-4169E1.svg?style=flat&logo=postgresql&logoColor=white)](#)
-[![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748.svg?style=flat&logo=prisma&logoColor=white)](#)
+> **Note**
+> **Portfolio Disclaimer**: AVELIS is a portfolio and educational project developed to demonstrate modern full-stack software engineering principles, layered application architecture, and cloud deployment pipelines. While fully functional and deployed live, it is intended as a demonstration showcase rather than a commercial enterprise platform.
 
 ---
 
-## Live Demo
+[![Version](https://img.shields.io/badge/Version-v1.0.0-gold.svg)](#-project-status)
+[![License](https://img.shields.io/badge/License-ISC-blue.svg)](#-license)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?style=flat&logo=react&logoColor=black)](#-technology-stack)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933.svg?style=flat&logo=nodedotjs&logoColor=white)](#-technology-stack)
+[![Express.js](https://img.shields.io/badge/Express-4.x-000000.svg?style=flat&logo=express&logoColor=white)](#-technology-stack)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B-4169E1.svg?style=flat&logo=postgresql&logoColor=white)](#-technology-stack)
+[![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748.svg?style=flat&logo=prisma&logoColor=white)](#-technology-stack)
+[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Storage-3ECF8E.svg?style=flat&logo=supabase&logoColor=white)](#-technology-stack)
+[![Frontend Deployment](https://img.shields.io/badge/Vercel-Deployed-000000.svg?style=flat&logo=vercel&logoColor=white)](https://avelis-alpha.vercel.app)
+[![Backend Deployment](https://img.shields.io/badge/Render-Deployed-46E3B7.svg?style=flat&logo=render&logoColor=white)](https://avelis-api.onrender.com)
 
-* **Frontend Application:** `<DEPLOYMENT_URL>` *(e.g. https://avelis-library.vercel.app)*
-* **Backend API Health Check:** `<API_HEALTH_URL>` *(e.g. https://api.avelis-library.com/api/v1)*
+---
+
+## 📑 Table of Contents
+
+- [🌐 Live Demo](#-live-demo)
+- [📌 Project Status](#-project-status)
+- [🖼️ Screenshots](#️-screenshots)
+- [📖 Project Overview](#-project-overview)
+- [✨ Core Highlights](#-core-highlights)
+- [🔑 Key Features](#-key-features)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [🏗️ Architecture Overview](#️-architecture-overview)
+- [📁 Folder Structure](#-folder-structure)
+- [🚀 Quick Start](#-quick-start)
+- [📥 Installation & Setup](#-installation--setup)
+- [🔐 Environment Variables](#-environment-variables)
+- [💻 Running Locally](#-running-locally)
+- [☁️ Production Deployment](#️-production-deployment)
+- [🔌 API Overview](#-api-overview)
+- [🗄️ Database Overview](#️-database-overview)
+- [🛡️ Security](#️-security)
+- [⚡ Performance](#-performance)
+- [📚 Documentation Directory](#-documentation-directory)
+- [🔮 Potential Future Enhancements](#-potential-future-enhancements)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [🙏 Acknowledgements](#-acknowledgements)
+- [⚠️ Disclaimer](#️-disclaimer)
+- [📬 Contact](#-contact)
+
+---
+
+## 🌐 Live Demo
+
+The application is deployed across cloud infrastructure:
+
+* **Frontend Application:** [https://avelis-alpha.vercel.app](https://avelis-alpha.vercel.app)
+* **Backend API Base:** [https://avelis-api.onrender.com](https://avelis-api.onrender.com)
+* **API Health Endpoint:** [https://avelis-api.onrender.com/api/v1/health](https://avelis-api.onrender.com/api/v1/health)
 * **Interactive API Reference:** See [docs/API.md](docs/API.md)
 
 ---
 
-> [!IMPORTANT]
-> **Production Highlights**
-> * **Secure Authentication:** JWT-based sessions with password hashing and Role-Based Access Control (RBAC).
-> * **Layered Architecture:** Strict isolation between HTTP controllers, domain service logic, and database access.
-> * **Transactional Integrity:** ACID-compliant operations via Prisma ORM & PostgreSQL.
-> * **Optimistic UI Sync:** Instant client feedback with state rollbacks on API failures.
-> * **Hardened Security:** Integrated Helmet headers, IP rate limiting, request slowdown throttling, and PII-redacted structured logging.
+## 📌 Project Status
+
+| Metric / Dimension | Details |
+| :--- | :--- |
+| **Current Version** | `v1.0.0` |
+| **Development Status** | Active Portfolio Project |
+| **Frontend Hosting** | Vercel (Single Page Application) |
+| **Backend Hosting** | Render (Express Web Service) |
+| **Database** | PostgreSQL 16 (Hosted on Supabase) |
+| **Asset Storage** | Supabase Storage (Covers & Digital PDFs) |
+| **Authentication** | JWT Sessions, Email/Password, Google OAuth 2.0 |
 
 ---
 
-## Table of Contents
+## 🖼️ Screenshots
 
-* [Project Overview](#project-overview)
-* [Why AVELIS?](#why-avelis)
-* [Key Features](#key-features)
-* [Technology Stack](#technology-stack)
-* [Architecture Overview](#architecture-overview)
-* [Project Structure](#project-structure)
-* [Installation & Setup](#installation--setup)
-* [Environment Variables](#environment-variables)
-* [Execution Commands](#execution-commands)
-* [API Directory](#api-directory)
-* [Screenshots](#screenshots)
-* [Production Capabilities](#production-capabilities)
-* [Project Status](#project-status)
-* [Current Limitations](#current-limitations)
-* [Future Roadmap](#future-roadmap)
-* [Documentation Directory](#documentation-directory)
-* [Contributing & License](#contributing--license)
+> Relative visual placeholders for core application interfaces.
+
+| Landing & 3D Hero Showcase | Catalog & Search Interface |
+| :---: | :---: |
+| ![Landing Page Hero](docs/images/screenshots/landing-hero.gif) | ![Catalog Search](docs/images/screenshots/catalog-search.png) |
+
+| In-Browser PDF Reader & Annotations | Admin Management Dashboard |
+| :---: | :---: |
+| ![Reader Dashboard](docs/images/screenshots/reader-dashboard.png) | ![Admin Panel](docs/images/screenshots/admin-panel.png) |
 
 ---
 
-## Project Overview
+## 📖 Project Overview
 
-AVELIS is a production-ready full-stack Library Management System designed to deliver a modern digital library experience. The application seamlessly handles user authentication, library catalog search, physical book checkout management, FIFO hold queue reservations, reader reviews, and administrative catalog controls.
+**AVELIS** was engineered to address common challenges in digital resource management—delivering a unified platform where members can search library holdings, read digital publications directly in the browser, manage active book borrowing loans, and queue up reservations when physical inventory is checked out.
 
-Built with a decoupled architecture, AVELIS pairs a dynamic React single-page application with a high-performance Express REST API. The system enforces strict access policies for standard library members versus administrative staff while maintaining optimistic client state synchronization.
-
----
-
-## Why AVELIS?
-
-AVELIS was built as a production-quality portfolio project to demonstrate modern full-stack software engineering practices. Rather than focusing solely on basic CRUD operations, it emphasizes:
-
-* **Separation of Concerns:** Clear boundaries between presentation components, state providers, service mappers, API controllers, and ORM abstractions.
-* **Resilient Data Processing:** Transactional safeguards to prevent inventory overselling and concurrent hold allocation race conditions.
-* **User-Centric Experience:** Optimistic UI state updates, clear feedback toasts, archive-themed loading skeletons, and responsive layouts.
-* **Production Security:** Multi-layered defense including security headers, request sanitization, CORS policy enforcement, rate limiting, and encrypted token sessions.
+Traditional library management scripts often rely on basic database queries and monolithic codebases. AVELIS demonstrates a clean, decoupled architecture:
+1. **Frontend**: A responsive React 19 Single Page Application built with Vite and Tailwind CSS, prioritizing dynamic layout transitions, optimistic UI synchronization, and accessible reading controls.
+2. **Backend**: A production-grade REST API written in Node.js and Express, following strict Controller-Service-Repository separation with Prisma ORM transactional guarantees for inventory management.
 
 ---
 
-## Key Features
+## ✨ Core Highlights
+
+* **Full-Stack Architecture**: Clean separation of concerns between client components and backend REST controllers.
+* **Production Cloud Deployment**: Hosted on Vercel (Frontend SPA) and Render (Backend Express API) with Supabase Cloud DB.
+* **ACID Data Integrity**: PostgreSQL transactional workflows via Prisma ORM preventing inventory overselling during concurrent checkouts.
+* **Dual Authentication**: Hybrid security model supporting traditional Email/Password credentials and Google OAuth 2.0.
+* **In-Browser Digital Reader**: Dedicated PDF viewer equipped with reading progress persistence, custom notes, bookmarks, and highlights.
+* **Role-Based Access Control**: Tiered security rules granting standard members library privileges while restricting catalog and user administration to staff.
+* **Responsive UI Design**: Tailored aesthetics built with Tailwind CSS, custom design tokens, and smooth Framer Motion micro-interactions.
+
+---
+
+## 🔑 Key Features
 
 ### 🔑 Authentication & Authorization
-* **JWT Authentication:** Stateful token issuing with secure client storage and auto-renewal checks (`GET /users/me`).
-* **Session Persistence:** Persistent user sessions across page refreshes with automatic session restoration.
-* **Role-Based Access Control (RBAC):** Tiered privilege scopes distinguishing `MEMBER` users from `ADMIN` staff.
-* **Protected Routes:** Route guards redirecting unauthorized users with return-path state.
+* **Dual Authentication Modes**: Email/password registration/login along with Google OAuth 2.0 authentication.
+* **JWT Access Control**: Stateful bearer token issuing with client session storage and auto-validation routines.
+* **Role-Based Access Control (RBAC)**: Tiered privilege enforcement distinguishing `MEMBER` users from `ADMIN` library managers.
+* **Protected Client Routing**: Guarded frontend routes with session return-path preservation.
 
-### 📚 Books & Catalog
-* **Catalog Explorer:** Paginated catalog browsing with cover preview and inventory status.
-* **Real-time Search:** Instant keyword filtering by book title, author, category, or ISBN.
-* **Category Filtering:** Dynamic genre classification filters.
-* **Book Details:** Comprehensive metadata view including publication year, publisher, ISBN, stock status, and community ratings.
-* **Admin Book Management:** Full CRUD matrix allowing administrators to add, update, soft-delete, or restore catalog books.
+### 📚 Catalog Management & Discovery
+* **Interactive Library Explorer**: Browse paginated catalog holdings with real-time keyword search by title, author, category, or ISBN.
+* **Category Filtering**: Dynamic genre classification and structured collections (e.g., Editor's Picks, Featured Authors).
+* **Book Details View**: Complete book metadata, stock status indicators, publisher details, and community ratings.
+* **Continue Reading Hub**: Personalized quick-access shelf displaying active digital books and current completion percentages.
 
-### 📖 Loan Management
-* **Borrow Books:** One-click book allocation for available physical copies.
-* **Loan Renewals:** Extension of borrow periods with enforceable renewal limits (up to 3x).
-* **Return Processing:** Seamless return workflow updating copy status back to `AVAILABLE`.
-* **Active Loans:** Real-time tracking of checked-out books, due dates, and overdue status indicators.
-* **Borrow History:** Historical archive logging past borrowing transactions.
+### 📖 In-Browser Digital Reader
+* **PDF Document Viewer**: Direct browser-rendered digital reading interface for library e-books.
+* **Reading Progress Persistence**: Real-time page tracking saving exact reading coordinates per user.
+* **Personal Notes & Bookmarks**: Create, view, and organize reading bookmarks, highlights, and journal notes.
+
+### 🔄 Loan Management Workflow
+* **One-Click Borrowing**: Allocation of physical book inventory with immediate loan creation.
+* **Loan Extensions & Renewals**: Self-service borrow extensions up to allowed system limits.
+* **Seamless Returns**: Instant return handling updating copy availability state back to active stock.
+* **Loan Tracking Dashboard**: Centralized dashboard tab highlighting checked-out titles, due dates, and overdue status warnings.
 
 ### 🔖 Hold Queue & Reservations
-* **Place Hold:** FIFO queue hold creation for borrowable books (`POST /reservations`).
-* **Active Holds Tracking:** Dedicated dashboard tab displaying pending queue positions and ready-for-pickup notifications.
-* **Pickup Expiration Window:** Automatic hold expiration tracking for fulfilled book holds.
-* **Cancel Hold:** Instant cancellation of active hold requests.
+* **FIFO Reservation Queue**: Automated queue management allowing members to reserve checked-out books.
+* **Hold Queue Tracking**: Dedicated reservation view displaying position in queue and availability status updates.
 
-### ⭐ Reviews & Ratings
-* **Reader Reviews:** Member review submission with custom star ratings (1–5) and commentary.
-* **Rating Statistics:** Aggregated book statistics including average rating and distribution breakdown.
-* **Single Review Constraint:** Enforces one review per user per book with update/delete capabilities.
-* **Null-Rating Handling:** Standardized `—` indicator for unreviewed books across catalog and detail views.
+### ⭐ Reader Reviews & Ratings
+* **Community Ratings**: 5-star rating system with aggregated score calculations per title.
+* **User Review Journal**: Member reviews, reader feedback, and reflection notes.
 
-### 📊 Dashboard & User Workspace
-* **Member Dashboard:** Personalized dashboard featuring user greeting, account role, and active session badges.
-* **Continue Reading Panel:** Highlighted active checkout card showing progress percentage and days remaining.
-* **Live Statistics:** Real-time count tiles for Active Checkouts, Active Holds, Borrow History, and Overdue items.
-* **Tabbed Bento Workspace:** Integrated views for Active Checkouts, Borrow History, and Active Holds.
-* **Dynamic Recommendations:** Curated book suggestions pulled from live catalog inventory.
-* **Recently Visited:** Quick access list derived from user reading history and review activity.
-* **Profile Management:** Custom display name, biography updates, avatar management, and security password changes.
+### 🛠️ Administrative Management
+* **Catalog Management**: Complete CRUD interface for administrators to create, update, and manage book inventories.
+* **Digital File Uploads**: Streamlined file upload handlers for book cover artwork and PDF documents stored securely in Supabase Storage.
+* **User Management**: Staff interface for managing member permissions and account statuses.
+
+### 🛡️ System Security & Resilience
+* **HTTP Security Headers**: Express integration with Helmet security headers.
+* **Rate Limiting & Throttling**: IP-based rate limiters and slow-down middleware protecting endpoints from excessive requests.
+* **Request Sanitization**: Payload validation and HTML string sanitization preventing XSS and injection attempts.
 
 ---
 
-## Technology Stack
+## 🛠️ Technology Stack
 
-| Category | Technology | Usage |
+### Frontend
+| Technology | Version | Purpose |
 | :--- | :--- | :--- |
-| **Frontend Framework** | **React 19** & **Vite 8** | Single Page Application framework & build tool |
-| **Styling & UI** | **Tailwind CSS v4** | Vanilla utility-first styling with modern design tokens |
-| **Animations & Icons** | **Framer Motion** & **Lucide React** | Micro-interactions, transitions, and icons |
-| **HTTP Client** | **Axios** | API request handler with standard interceptors |
-| **Backend Runtime** | **Node.js 22** & **Express 4.x** | REST API engine and middleware pipeline |
-| **Database & ORM** | **PostgreSQL 16+** & **Prisma ORM 6.x** | Relational database & type-safe data access |
-| **Security & Auth** | **JWT**, **bcryptjs**, **Helmet** | Authentication, password hashing, and HTTP hardening |
-| **Protection & Logging** | **express-rate-limit**, **Winston** | Rate limiting, request slowdown, and structured logging |
+| **React** | `v19.2.7` | UI component architecture and client rendering |
+| **Vite** | `v8.1.0` | Next-generation frontend build tooling and HMR |
+| **Tailwind CSS** | `v4.3.1` | Utility-first styling framework & design system |
+| **Framer Motion** | `v12.42.0` | Fluid UI layout animations and micro-interactions |
+| **React Router** | `v7.18.0` | Client-side routing and layout management |
+| **Axios** | `v1.18.1` | HTTP client for asynchronous REST API communication |
+| **Spline / 3D** | `v4.1.0` | Interactive 3D visual canvas components |
+
+### Backend
+| Technology | Version | Purpose |
+| :--- | :--- | :--- |
+| **Node.js** | `v20.x` | Server runtime environment |
+| **Express.js** | `v4.x` | RESTful API routing and web application framework |
+| **Prisma ORM** | `v6.x` | Type-safe database client and migration manager |
+| **PostgreSQL** | `v16+` | Relational database management system |
+| **JWT (jsonwebtoken)** | `v9.x` | Secure, stateful JSON Web Token authorization |
+| **Helmet & Express Rate Limit** | `v7.x` | Security header enforcement and rate limiting |
+
+### Infrastructure & Cloud Services
+| Service | Provider | Function |
+| :--- | :--- | :--- |
+| **Frontend Hosting** | Vercel | Global CDN deployment for static SPA assets |
+| **Backend API Hosting** | Render | Managed Web Service running Node.js Express server |
+| **Database Hosting** | Supabase | Managed PostgreSQL cloud database instance |
+| **Object Storage** | Supabase Storage | Cloud file storage for covers and PDF media |
+| **OAuth Provider** | Google Identity Services | Third-party social login integration |
 
 ---
 
-## Architecture Overview
+## 🏗️ Architecture Overview
 
-AVELIS enforces a 9-layer decoupled request-flow architecture:
+AVELIS enforces strict operational boundaries between presentation components, HTTP request controllers, domain business logic services, and database persistence layers.
 
 ```mermaid
-graph TD
-    UI[React 19 SPA] --> Context[Context API State Providers]
-    Context --> HTTP[Axios HTTP Service Client]
-    HTTP --> Express[Express REST API]
-    Express --> Middleware[Auth & Validation Middleware]
-    Middleware --> Controller[Controller Layer]
-    Controller --> Service[Domain Service Layer]
-    Service --> Prisma[Prisma ORM Client]
-    Prisma --> DB[(PostgreSQL Database)]
+flowchart TD
+    subgraph Client ["Client Layer (Vercel)"]
+        UI["React 19 SPA (Vite + Tailwind)"]
+        Context["Context State (Auth, Library, Loan)"]
+        AxiosClient["Axios HTTP Client"]
+        UI --> Context
+        Context --> AxiosClient
+    end
+
+    subgraph Network ["Network API Boundary"]
+        HTTPS["HTTPS / REST API"]
+        AxiosClient ==>|JSON Payloads| HTTPS
+    end
+
+    subgraph Server ["Server Layer (Render)"]
+        Express["Express App (app.js)"]
+        Security["Middleware (Helmet, Rate-Limit, CORS, JWT Auth)"]
+        Controllers["API Controllers"]
+        Services["Domain Services (Business Logic)"]
+        Prisma["Prisma ORM Client"]
+
+        HTTPS ==> Express
+        Express --> Security
+        Security --> Controllers
+        Controllers --> Services
+        Services --> Prisma
+    end
+
+    subgraph Data ["Data & Storage Layer (Supabase Cloud)"]
+        Postgres[(PostgreSQL Database)]
+        Storage[(Supabase Object Storage)]
+
+        Prisma ==>|Database Queries| Postgres
+        Services ==>|File Uploads / Presigned URLs| Storage
+    end
 ```
 
-### Layer Responsibilities
-1. **React SPA:** Render presentation components, handle layout state, and capture user actions.
-2. **Context API:** Manage domain state (`Auth`, `Books`, `Loans`, `Reservations`, `Reviews`) with optimistic updates.
-3. **Axios Client:** Execute API requests using centralized configuration and error normalization.
-4. **Express REST API:** Mount base routes under `/api/v1` and handle HTTP request lifecycle.
-5. **Middleware Layer:** Execute CORS policy checks, rate limiting, Helmet headers, JWT authentication, and Zod validation.
-6. **Controller Layer:** Extract request parameters, invoke service logic, and format HTTP JSON responses.
-7. **Service Layer:** Implement domain business rules, authorization checks, and transaction boundaries.
-8. **Prisma ORM:** Abstract type-safe database queries and migrations.
-9. **PostgreSQL:** Primary relational store enforcing foreign key constraints and ACID guarantees.
+For complete technical specifications, review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
-## Project Structure
+## 📁 Folder Structure
 
-```
-AVELIS/
-├── docs/                 # Architectural specifications, database schema, & API reference
-├── server/               # Node.js & Express REST API
-│   ├── prisma/           # Database schema definition, migrations, & seeders
-│   └── src/              # Backend source code (controllers, services, routes, middleware)
-└── src/                  # React 19 Frontend Client SPA
-    ├── components/       # UI components (auth, dashboard, library, layout, common)
-    ├── context/          # Context API providers (Auth, Books, Loan, Reservation, Review)
-    ├── mappers/          # DTO normalization utilities
-    ├── pages/            # Page-level routes (Landing, Library, BookDetails, Dashboard)
-    └── services/         # API HTTP service modules
+```text
+AVELIS Repository Root
+├── .env.example                # Example environment variables for Frontend
+├── index.html                  # HTML entrypoint
+├── package.json                # Frontend package configuration
+├── vercel.json                 # Vercel deployment SPA rewrite configuration
+├── vite.config.js              # Vite build setup
+│
+├── docs/                       # Comprehensive Technical Documentation
+│   ├── API.md                  # Complete REST API specifications
+│   ├── ARCHITECTURE.md         # Deep-dive system architecture guide
+│   ├── DATABASE.md             # Entity Relationship & Prisma schema specs
+│   ├── DEPLOYMENT.md           # Production deployment procedures
+│   ├── SECURITY.md             # Threat modeling & security policy
+│   ├── PERFORMANCE.md          # Optimization & caching strategies
+│   ├── TESTING.md              # Quality assurance & testing suites
+│   ├── CHANGELOG.md            # Version release notes
+│   ├── CONTRIBUTING.md         # Developer contribution guidelines
+│   └── images/                 # Architecture & ER diagrams
+│
+├── server/                     # Express Backend Web Service
+│   ├── package.json            # Server dependencies & scripts
+│   ├── nodemon.json            # Local development hot-reload config
+│   ├── prisma/
+│   │   ├── schema.prisma       # Database models & relationships
+│   │   └── migrations/         # SQL migration history
+│   └── src/
+│       ├── app.js              # Express app setup & middleware stack
+│       ├── server.js           # Server listener entrypoint
+│       ├── config/             # Environment, security & DB configs
+│       ├── controllers/        # HTTP Request & Response handlers
+│       ├── middleware/         # Auth guards, validation & security
+│       ├── routes/             # REST route definitions
+│       ├── services/           # Business logic service layer
+│       └── utils/              # ApiError, Logger, JWT helpers
+│
+└── src/                        # React Frontend SPA Application
+    ├── main.jsx                # React app mounting script
+    ├── App.jsx                 # Main application routes & context providers
+    ├── api/                    # API client singletons & endpoints
+    ├── components/             # Reusable UI primitives & domain components
+    │   ├── auth/               # Login & profile forms
+    │   ├── dashboard/          # Admin catalog manager
+    │   ├── hero/               # 3D Canvas visual scenes
+    │   ├── journal/            # Reader reflection editor
+    │   ├── library/            # Book grid, card & search toolbar
+    │   └── reader/             # In-browser digital PDF viewer modal
+    ├── context/                # Global React context state managers
+    ├── hooks/                  # Custom React hooks (useAuth, useLibrary)
+    ├── pages/                  # Page view components (Landing, Library, Dashboard)
+    ├── routes/                 # Protected route wrappers
+    └── services/               # Frontend service abstractions
 ```
 
 ---
 
-## Installation & Setup
+## 🚀 Quick Start
 
-### 1. Prerequisites
-* **Node.js:** v18.x or higher (v22.x recommended)
-* **PostgreSQL:** v14.x or higher
-* **npm:** v9.x or higher
+Get a local copy running on your machine in under two minutes:
 
-### 2. Clone Repository
 ```bash
+# 1. Clone the repository
 git clone https://github.com/Aaditgupta1234/AVELIS.git
 cd AVELIS
-```
 
-### 3. Install Dependencies
-```bash
-# Install frontend client dependencies
+# 2. Install Frontend dependencies
 npm install
 
-# Install backend server dependencies
+# 3. Install Backend dependencies
 cd server
 npm install
 ```
 
-### 4. Database Setup & Environment Configuration
-Create a `.env` file in the `server/` directory:
-```ini
+> Refer to the detailed [Installation & Setup](#-installation--setup) steps below to configure environment files and database connections.
+
+---
+
+## 📥 Installation & Setup
+
+### Prerequisites
+* **Node.js**: `v18.x` or `v20.x` (LTS recommended)
+* **npm**: `v9.x` or later
+* **PostgreSQL**: `v15+` local database instance OR a free **Supabase** cloud PostgreSQL account.
+
+---
+
+## 🔐 Environment Variables
+
+### Frontend Configuration (`.env`)
+Create a `.env` file in the root directory by copying `.env.example`:
+
+```env
+# Application Environment
+NODE_ENV=development
+
+# Backend API Endpoint
+VITE_API_BASE_URL=http://localhost:5000/api/v1
+VITE_API_URL=http://localhost:5000/api/v1
+
+# Supabase Credentials
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Google OAuth Client ID
+VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+
+# Client URL
+VITE_APP_URL=http://localhost:5173
+```
+
+### Backend Configuration (`server/.env`)
+Create a `.env` file inside the `server/` directory:
+
+```env
+# Environment & Server Port
 NODE_ENV=development
 PORT=5000
-DATABASE_URL="postgresql://postgres:password@localhost:5432/avelis_db?schema=public"
-JWT_SECRET="your-super-secret-jwt-key"
-CLIENT_URL="http://localhost:5173"
-```
 
-Initialize the database schema and seed data (from `server/` directory):
-```bash
-# Push Prisma schema to PostgreSQL database
-npx prisma db push
+# PostgreSQL Database Connection String (Supabase or Local)
+DATABASE_URL="postgresql://postgres:yourpassword@db.your-supabase-ref.supabase.co:5432/postgres?schema=public"
+DIRECT_URL="postgresql://postgres:yourpassword@db.your-supabase-ref.supabase.co:5432/postgres?schema=public"
 
-# Seed initial categories, authors, and books
-npx prisma db seed
-```
+# Security & JWT Tokens
+JWT_SECRET=your_super_secret_jwt_key_min_32_characters
+JWT_EXPIRES_IN=7d
 
-## Environment Configuration
+# CORS Allowed Origin
+CORS_ORIGIN=http://localhost:5173
 
-AVELIS maintains strict environment separation between client and server layers, as well as local development vs production environments. Environment files containing sensitive credentials are intentionally excluded from version control.
-
-### Directory Structure
-
-```
-Anveli/
-│
-├── .env                ← Local frontend variables (ignored by Git)
-├── .env.example        ← Frontend template (committed)
-│
-├── server/
-│   ├── .env            ← Local backend variables (ignored by Git)
-│   └── .env.example    ← Backend template (committed)
-```
-
-### Environment Variables Directory
-
-#### Frontend Environment Variables
-
-| Variable | Description | Default / Example |
-| :--- | :--- | :--- |
-| `NODE_ENV` | Client environment mode (`development`, `production`) | `development` |
-| `VITE_API_BASE_URL` | Backend REST API base URL | `http://localhost:5000/api/v1` |
-| `VITE_SUPABASE_URL` | Supabase project URL | `https://xxxx.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Supabase public anonymous API key | `eyJhbG...` |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID | `xxxx.apps.googleusercontent.com` |
-| `VITE_APP_URL` | Client application origin URL | `http://localhost:5173` |
-
-#### Backend Environment Variables
-
-| Variable | Description | Default / Example |
-| :--- | :--- | :--- |
-| `NODE_ENV` | Node execution environment | `development` |
-| `PORT` | Backend HTTP server port | `5000` |
-| `DATABASE_URL` | PostgreSQL connection string (Transaction pooler) | `postgresql://user:pass@localhost:5432/avelis_db` |
-| `DIRECT_URL` | Direct PostgreSQL connection string for migrations | `postgresql://user:pass@localhost:5432/avelis_db` |
-| `JWT_SECRET` | Secret key for signing and verifying JWT tokens | `your-secret-key` |
-| `JWT_EXPIRES_IN` | Token expiration lifespan | `7d` |
-| `SUPABASE_URL` | Supabase project URL | `https://xxxx.supabase.co` |
-| `SUPABASE_SECRET_KEY` | Supabase service secret key | `sb_secret_xxxx` |
-| `SUPABASE_BOOK_COVERS_BUCKET` | Storage bucket for book cover images | `book-covers` |
-| `SUPABASE_BOOK_PDFS_BUCKET` | Storage bucket for book PDF codices | `book-pdfs` |
-| `CLIENT_URL` | Trusted origin URL for CORS validation | `http://localhost:5173` |
-
-## Execution Commands
-
-### Development
-```bash
-# Start backend server (from server/ folder)
-npm run dev
-
-# Start frontend client (from root folder)
-npm run dev
-```
-
-### Production Build & Linting
-```bash
-# Run code quality linter (from root folder)
-npm run lint
-
-# Build frontend production bundle (from root folder)
-npm run build
-
-# Start production backend server (from server/ folder)
-npm start
+# Supabase Storage Integration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 ---
 
-## API Directory
+## 💻 Running Locally
 
-All backend endpoints are mounted under base path `/api/v1`. Authentication requires header `Authorization: Bearer <JWT_TOKEN>`.
+### Step 1: Initialize Database Migrations & Seeds
+Inside the `server/` directory, run the Prisma migration command to prepare your PostgreSQL database schema:
 
-| Module | Base Path | Key Operations | Access Level |
+```bash
+cd server
+
+# Run database migrations
+npx prisma migrate dev --name init
+
+# Generate Prisma Client
+npx prisma generate
+```
+
+### Step 2: Start the Express Backend API
+In the `server/` directory, start the development server:
+
+```bash
+npm run dev
+# Server will start on http://localhost:5000
+```
+
+Verify backend health by visiting: `http://localhost:5000/api/v1/health`
+
+### Step 3: Start the React Frontend Application
+Open a separate terminal window at the repository root and launch the Vite dev server:
+
+```bash
+npm run dev
+# Application will launch on http://localhost:5173
+```
+
+---
+
+## ☁️ Production Deployment
+
+### Frontend (Vercel)
+The client application is optimized for deployment on Vercel as a Single Page Application:
+* **Build Command**: `npm run build`
+* **Output Directory**: `dist`
+* **Single Page Rewrites**: Configured via `vercel.json` to handle client-side route redirects cleanly.
+
+### Backend API (Render)
+The Express API runs as a Node.js web service on Render:
+* **Root Directory**: `server`
+* **Build Command**: `npm install && npx prisma generate`
+* **Start Command**: `node src/server.js`
+
+For detailed production instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+---
+
+## 🔌 API Overview
+
+The backend exposes a structured, versioned RESTful API under `/api/v1`:
+
+| HTTP Method | Route Endpoint | Description | Access Scope |
 | :--- | :--- | :--- | :--- |
-| **Auth** | `/api/v1/auth` | `POST /register`, `POST /login`, `GET /me` | Public / Member |
-| **Users** | `/api/v1/users` | `GET /me`, `PATCH /me`, `PATCH /me/password` | Authenticated Member |
-| **Books** | `/api/v1/books` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id` | Public / Admin Guarded |
-| **Loans** | `/api/v1/loans` | `GET /active`, `GET /history`, `POST /`, `POST /:id/return`, `POST /:id/renew` | Authenticated Member |
-| **Reservations** | `/api/v1/reservations` | `GET /me`, `POST /`, `PATCH /:id/cancel` | Authenticated Member |
-| **Reviews** | `/api/v1/reviews` | `GET /book/:bookId`, `POST /`, `DELETE /:id`, `GET /me` | Public / Member |
+| `POST` | `/api/v1/auth/register` | Register a new user account | Public |
+| `POST` | `/api/v1/auth/login` | Authenticate user & issue JWT | Public |
+| `GET` | `/api/v1/auth/me` | Fetch active user session profile | Authenticated |
+| `GET` | `/api/v1/books` | Retrieve paginated book catalog with search/filter | Public |
+| `GET` | `/api/v1/books/:id` | Fetch full metadata for a specific book | Public |
+| `POST` | `/api/v1/loans` | Borrow a physical copy of a book | Authenticated (`MEMBER`) |
+| `POST` | `/api/v1/loans/:id/return` | Return a checked-out book copy | Authenticated (`MEMBER`) |
+| `POST` | `/api/v1/reservations` | Join FIFO reservation queue for a book | Authenticated (`MEMBER`) |
+| `POST` | `/api/v1/books` | Add a new book to catalog holdings | Staff (`ADMIN`) |
+| `PATCH` | `/api/v1/books/:id` | Update existing catalog book metadata | Staff (`ADMIN`) |
 
-*For complete endpoint request parameters, schema definitions, and response envelopes, refer to **[docs/API.md](docs/API.md)**.*
-
----
-
-## Screenshots
-
-### Landing Page
-![Landing Page](docs/images/landing-page.png)
-*Landing page header and hero presentation.*
-
-### Library Catalog
-![Library Catalog](docs/images/library-catalog.png)
-*Paginated book repository with title/author search and category filters.*
-
-### Book Details
-![Book Details](docs/images/book-details.png)
-*Book details view with stock availability, hold queue triggers, and reader reviews.*
-
-### Member Dashboard
-![Member Dashboard](docs/images/member-dashboard.png)
-*User dashboard showing active checkouts, hold queues, borrowing history, and reading progress.*
-
-### Admin Catalog Manager
-![Admin Catalog Manager](docs/images/admin-catalog.png)
-*Admin catalog interface allowing library staff to create, edit, and manage books.*
-
-### Profile Management
-![Profile Management](docs/images/profile-management.png)
-*Profile view for avatar customization, biography updates, and account security.*
+For the complete API contract, request payload schemas, and example JSON responses, view [docs/API.md](docs/API.md).
 
 ---
 
-## Production Capabilities
+## 🗄️ Database Overview
 
-* **Security Hardening:** Express security pipeline configured with Helmet, strict CORS origin controls, custom cache prevention headers, and JSON body sanitization.
-* **Abuse Throttling:** Multi-stage IP rate limiting and progressive request slowdown throttling on sensitive endpoints.
-* **PII Data Redaction:** Winston structured logging engine with automatic parameter redaction for sensitive fields (passwords, tokens).
-* **Optimistic UI Engine:** React Context API providers perform optimistic state mutations to guarantee instant visual response, reverting gracefully upon API error responses.
-* **Error Normalization:** Standardized client error handler converting backend response errors into human-readable toast notifications and field messages.
+AVELIS uses **PostgreSQL** configured with strict foreign key constraints, indexes, and cascading behavior managed via **Prisma ORM**.
+
+```text
++-------------------+       +-------------------+       +-------------------+
+|       User        |       |       Book        |       |     Category      |
++-------------------+       +-------------------+       +-------------------+
+| id (PK)           |       | id (PK)           |       | id (PK)           |
+| email (Unique)    |       | title             |       | name (Unique)     |
+| passwordHash      |       | authorId (FK) ----+-----> | slug              |
+| role (MEMBER/ADMIN|       | categoryId (FK) --+--+    +-------------------+
++---------+---------+       | totalCopies       |  |
+          |                 | availableCopies   |  |
+          |                 +---------+---------+  |
+          |                           |            |
+          v                           v            |
++-------------------+       +-------------------+  |
+|       Loan        |       |    Reservation    |  |
++-------------------+       +-------------------+  |
+| id (PK)           |       | id (PK)           |  |
+| userId (FK)       |       | userId (FK)       |  |
+| bookId (FK)       |       | bookId (FK)       |  |
+| status (ACTIVE...) |       | queuePosition     |  |
++-------------------+       +-------------------+  |
+                                                   |
+                                                   v
+                                            (Category Ref)
+```
+
+For the complete database architecture, index definitions, and ER diagrams, view [docs/DATABASE.md](docs/DATABASE.md) and see [docs/images/er-diagram.png](docs/images/er-diagram.png).
 
 ---
 
-## Project Status
+## 🛡️ Security
 
-| Component | Status | Verification |
+AVELIS adopts defense-in-depth security standards across every application layer:
+
+* **Authentication Safeguards**: Passwords hashed using standard `bcryptjs` salt rounds; session tokens issued as signed JSON Web Tokens (JWT).
+* **HTTP Security Headers**: Express apps configured with Helmet to enforce `Content-Security-Policy`, `X-Frame-Options`, and `Strict-Transport-Security`.
+* **Rate Limiting & Slowdown**: Endpoint rate limiters protect authentication endpoints from brute-force attempts.
+* **Payload Validation**: Strict validation middleware sanitizes input data before reaching service layers.
+
+Read the security documentation at [docs/SECURITY.md](docs/SECURITY.md).
+
+---
+
+## ⚡ Performance
+
+* **Optimistic UI State**: Frontend context state updates optimistically on actions (e.g. loan renewals) with automatic rollback on server error.
+* **Indexed Database Queries**: Database schema includes target indexes on foreign keys, user emails, and book titles.
+* **Code Splitting**: Dynamic React route splitting keeps initial JavaScript bundle sizes minimal.
+
+Read the full performance report at [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
+---
+
+## 📚 Documentation Directory
+
+The repository includes detailed documentation files inside the `docs/` folder:
+
+| Document | Description | Link |
 | :--- | :--- | :--- |
-| **Backend API** | ✅ Complete | Fully audited with structured services & controllers |
-| **Frontend SPA** | ✅ Complete | Complete user workflow views & design system |
-| **Integration** | ✅ Complete | Full REST API context binding across all modules |
-| **Deployment** | ✅ Complete | Production build scripts & environment configurations |
----
-
-## Production Deployment Checklist
-
-Before deploying AVELIS to production:
-
-- [ ] Verify `.env` files are excluded by Git (`git status` and `git check-ignore .env`).
-- [ ] Ensure `.env.example` and `server/.env.example` templates match codebase usages.
-- [ ] Configure required environment variables in Vercel (`VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GOOGLE_CLIENT_ID`).
-- [ ] Configure required environment variables in Render (`PORT`, `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `CLIENT_URL`).
-- [ ] Run production build locally (`npm run build`).
-- [ ] Apply Prisma migrations to the production database (`npx prisma migrate deploy`).
-- [ ] Verify Supabase Storage buckets exist (`book-covers`, `book-pdfs`).
-- [ ] Verify Google OAuth Authorized Origins and Redirect URIs.
-- [ ] Verify backend health endpoint returns healthy status (`GET /health` or `GET /api/v1`).
-- [ ] Verify frontend successfully communicates with production backend API.
+| **API Specification** | Complete REST endpoint catalog, query params, and JSON schemas | [docs/API.md](docs/API.md) |
+| **Architecture Guide** | Architectural patterns, layer separation, and flow diagrams | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| **Database Reference** | Schema definitions, relations, ER diagrams, and migrations | [docs/DATABASE.md](docs/DATABASE.md) |
+| **Deployment Guide** | Detailed step-by-step instructions for Vercel, Render & Supabase | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
+| **Security Policy** | Comprehensive threat model, security controls & headers | [docs/SECURITY.md](docs/SECURITY.md) |
+| **Performance Guide** | Optimization techniques, query profiling, and bundle analysis | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) |
+| **Testing Suite Guide** | Testing patterns, unit tests, and integration test setup | [docs/TESTING.md](docs/TESTING.md) |
+| **Changelog** | Complete historical record of application release versions | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
+| **Contributing Guide** | Code guidelines, branch naming, and pull request workflow | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) |
 
 ---
 
-## Rollback
+## 🔮 Potential Future Enhancements
 
-If a production deployment encounters critical failures:
-
-1. Restore the previous stable Git commit in your repository branch.
-2. Trigger a redeploy via Vercel (Frontend) and Render (Backend).
-3. If a database migration was executed, run your migration rollback strategy before redeploying.
-
-## Current Limitations
-
-The following features are **intentionally deferred** for a future release:
-
-* **Admin Analytics API (`/admin/dashboard/analytics`)**: Backend router returns `501 Not Implemented`. Detailed system analytics charts will be implemented in a future update.
-* **Admin Reports API (`/admin/dashboard/reports`)**: Backend router returns `501 Not Implemented`. Data export features are planned for a future update.
-* **Orders Module**: Purchase and rental payment workflows are intentionally deferred as no backend order routes are mounted.
+* [ ] **Full-Text Catalog Search**: Integration of PostgreSQL `tsvector` full-text search indexing for advanced book queries.
+* [ ] **Email Notifications**: Automated transactional email reminders for upcoming due dates and hold availability using Resend or SendGrid.
+* [ ] **Offline Reader Support**: Service worker integration for offline reading caching of digital PDF materials.
+* [ ] **Enhanced Analytics Dashboard**: Visual charts for administrative library usage statistics and circulation metrics.
 
 ---
 
-## Future Roadmap
+## 🤝 Contributing
 
-* 🛒 **Orders & Checkout Engine:** Integration of digital book purchasing and rental payment processing.
-* 📈 **Admin Analytics Dashboard:** Time-series charts and detailed inventory performance analytics.
-* 🔔 **Real-time Notifications:** WebSockets integration for instantaneous hold availability notifications.
-* 📱 **PWA Support:** Progressive Web Application offline caching for reading journals and downloaded books.
-* ✉️ **Email Notification System:** Transactional email alerts for overdue loans and hold pickup expiration warnings.
+Contributions, feedback, and issue reports are welcome. Please read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on code standards, commit formatting, and submission workflows.
 
----
-
-## Documentation Directory
-
-Refer to the documentation suite in **[docs/](docs/)** for technical specifications:
-
-* **[Documentation Index](docs/README.md)** — Overview of all technical specifications.
-* **[Architecture Guide](docs/ARCHITECTURE.md)** — Architectural principles, layered patterns, and component responsibilities.
-* **[Database Specification](docs/DATABASE.md)** — Schema dictionaries, 3NF layout, and entity relationships.
-* **[API Reference](docs/API.md)** — Endpoint definitions, request bodies, and response envelopes.
-* **[Security Architecture](docs/SECURITY.md)** — RBAC roles, security headers, rate limiting, and session security.
-* **[Deployment Guide](docs/DEPLOYMENT.md)** — Environment setup, build processes, and startup configuration.
-* **[Testing & Verification](docs/TESTING.md)** — Testing strategies, linting setup, and verification routines.
-* **[Performance & Optimization](docs/PERFORMANCE.md)** — Benchmarks, latency metrics, and query optimizations.
-* **[Contributing Guidelines](docs/CONTRIBUTING.md)** — Development guidelines, Git branching, and PR workflows.
+1. Fork the Repository
+2. Create a Feature Branch (`git checkout -b feature/amazing-feature`)
+3. Commit your Changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the Branch (`git checkout -b feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-## Contributing & License
+## 📄 License
 
-For development guidelines and pull request workflows, please review **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)**.
+This project is open-source software licensed under the [ISC License](LICENSE).
 
-Distributed under the **ISC License**.
+```text
+ISC License
 
-Created by **Aadit Gupta** — GitHub: [@Aaditgupta1234](https://github.com/Aaditgupta1234).
+Copyright (c) 2026 Aadit Gupta
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+```
+
+---
+
+## 🙏 Acknowledgements
+
+AVELIS was developed as a portfolio project to demonstrate modern full-stack web development practices using React 19, Express, Prisma ORM, PostgreSQL, and Supabase. Special thanks to the open-source software communities maintaining these tools.
+
+---
+
+## ⚠️ Disclaimer
+
+> **Note**
+> AVELIS is a portfolio and educational project developed to demonstrate full-stack software engineering concepts. While deployed and functional, it is not intended for production use in commercial library environments.
+
+---
+
+## 📬 Contact
+
+* **Developer:** Aadit Gupta
+* **GitHub Profile:** [@Aaditgupta1234](https://github.com/Aaditgupta1234)
+* **Project Repository:** [https://github.com/Aaditgupta1234/AVELIS](https://github.com/Aaditgupta1234/AVELIS)
+
+---
+
+⭐ *If you found this project interesting, consider exploring the documentation or trying the live demo.*
+
+**Thank you for taking the time to explore AVELIS.**
