@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useLoans } from "../context/LoanContext.jsx";
@@ -28,9 +28,43 @@ import { apiClient } from "../api/client.js";
 import { Navbar } from "../components/layout/Navbar.jsx";
 import { ProfileView } from "../components/dashboard/ProfileView.jsx";
 import { SettingsView } from "../components/dashboard/SettingsView.jsx";
-import { CatalogManager } from "../components/dashboard/CatalogManager.jsx";
-import { BookReaderModal } from "../components/reader/BookReaderModal.jsx";
 import { motion, AnimatePresence } from "framer-motion";
+
+// ─── Lazy sub-components ────────────────────────────────────────────────────
+// CatalogManager (150 KB source) and BookReaderModal (59 KB source) are only
+// needed when specific dashboard tabs are active. Lazy-loading them means the
+// dashboard shell renders immediately; each panel appears with its own spinner.
+const CatalogManager = lazy(() =>
+  import("../components/dashboard/CatalogManager.jsx").then(m => ({ default: m.CatalogManager }))
+);
+const BookReaderModal = lazy(() =>
+  import("../components/reader/BookReaderModal.jsx").then(m => ({ default: m.BookReaderModal }))
+);
+
+// Inline spinner shown inside the dashboard content area while CatalogManager
+// chunk downloads. Fits the existing layout — not a full-screen overlay.
+const CatalogLoadingFallback = () => (
+  <div className="flex items-center justify-center py-32">
+    <div className="flex flex-col items-center gap-4">
+      <svg
+        className="animate-spin h-8 w-8 text-[#C9A227]"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+      <span className="font-display text-[10px] tracking-[0.3em] text-[#C9A227] uppercase animate-pulse">
+        Loading Catalog
+      </span>
+    </div>
+  </div>
+);
 
 export const DashboardPage = () => {
   const { user, logout } = useAuth();
@@ -389,7 +423,9 @@ export const DashboardPage = () => {
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
               >
-                <CatalogManager />
+                <Suspense fallback={<CatalogLoadingFallback />}>
+                  <CatalogManager />
+                </Suspense>
               </motion.div>
             ) : hash === "#profile" ? (
               <motion.div
@@ -1071,11 +1107,16 @@ export const DashboardPage = () => {
         )}
       </AnimatePresence>
       {/* Digital Book Reader Modal */}
-      <BookReaderModal
-        isOpen={!!readerBook}
-        onClose={() => setReaderBook(null)}
-        book={readerBook}
-      />
+      {/* BookReaderModal is lazy. fallback={null} is safe: the modal starts    */}
+      {/* closed (isOpen=false). By the time the user triggers it from inside    */}
+      {/* the dashboard, the chunk will already have loaded during idle time.    */}
+      <Suspense fallback={null}>
+        <BookReaderModal
+          isOpen={!!readerBook}
+          onClose={() => setReaderBook(null)}
+          book={readerBook}
+        />
+      </Suspense>
 
       {/* Order Cancellation Confirmation Modal */}
       <AnimatePresence>
