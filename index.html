@@ -30,6 +30,25 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Material+Symbols+Outlined:FILL,wght,GRAD,opsz@0..1,400,0,20&display=swap" />
     </noscript>
     
+
+    <!--
+      Preload the self-hosted Spline scene so the browser starts fetching
+      the 987 KB binary during HTML parse — before React mounts and before
+      the Spline component's requestIdleCallback fires. This eliminates the
+      largest single network waterfall in the LCP path.
+
+      as="fetch" + crossorigin="" tells the browser this is an XHR/fetch
+      resource (not a script or style), matching how the Spline runtime
+      fetches it internally. Without crossorigin the preloaded response
+      would be discarded and re-fetched — defeating the purpose.
+    -->
+    <link
+      rel="preload"
+      href="/spline/scene.splinecode"
+      as="fetch"
+      crossorigin=""
+    />
+
     <title>AVELIS | The Discerning Bibliophile's Sanctuary</title>
   </head>
   <body>
