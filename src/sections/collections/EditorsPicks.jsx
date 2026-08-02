@@ -12,7 +12,7 @@ export const EditorsPicks = () => {
         id: b.id,
         title: b.title,
         author: b.author || (b.authors && b.authors[0]?.author?.fullName) || "AVELIS Press",
-        image: b.coverImage || b.image || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=2187&auto=format&fit=crop",
+        image: b.coverImage || b.image || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
         category: b.category || (b.categories && b.categories[0]?.category?.name) || "Classic",
         description: b.description || "A masterfully curated selection for our distinguished readers."
     });

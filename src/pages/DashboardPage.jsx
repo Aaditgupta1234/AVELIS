@@ -349,21 +349,21 @@ export const DashboardPage = () => {
     {
       title: "Beyond Good and Evil",
       author: "Friedrich Nietzsche",
-      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80",
+      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
       category: "Philosophy",
       readingTime: "12h"
     },
     {
       title: "The Republic",
       author: "Plato",
-      image: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=600&q=80",
+      image: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
       category: "Philosophy",
       readingTime: "16h"
     },
     {
       title: "Dune",
       author: "Frank Herbert",
-      image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=600&q=80",
+      image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
       category: "Sci-Fi",
       readingTime: "22h"
     }
@@ -373,12 +373,12 @@ export const DashboardPage = () => {
     {
       title: "Letters from a Stoic",
       author: "Seneca",
-      image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80"
+      image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format,compress&fit=crop&w=300&q=75&fm=webp"
     },
     {
       title: "Thus Spoke Zarathustra",
       author: "Friedrich Nietzsche",
-      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=300&q=80"
+      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format,compress&fit=crop&w=300&q=75&fm=webp"
     }
   ];
 
@@ -400,7 +400,7 @@ export const DashboardPage = () => {
       ? userReviews.slice(0, 2).map((r) => ({
           title: r.bookTitle || "Archival Codex",
           author: r.author || "Archival Author",
-          image: r.coverImage || "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80"
+          image: r.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
         }))
       : fallbackRecentlyViewed;
 
@@ -922,7 +922,7 @@ export const DashboardPage = () => {
                             const bookTitle = firstItem?.book?.title || "Archival Hardcover Volume";
                             const coverImg =
                               firstItem?.book?.coverImage ||
-                              "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80";
+                              "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp";
 
                             const isCancellable = order.orderStatus === "PLACED" || order.orderStatus === "PROCESSING";
                             const isCancelled = order.orderStatus === "CANCELLED";

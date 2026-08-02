@@ -17,7 +17,7 @@ const FALLBACK_CATALOG_BOOKS = [
     author: "Julian Vance",
     category: "Philosophy",
     sellingPrice: 24.99,
-    coverImage: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=2187&auto=format&fit=crop"
+    coverImage: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
   },
   {
     id: "e2",
@@ -25,7 +25,7 @@ const FALLBACK_CATALOG_BOOKS = [
     author: "Elara Sterling",
     category: "Science",
     sellingPrice: 29.99,
-    coverImage: "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=2187&auto=format&fit=crop"
+    coverImage: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
   },
   {
     id: "e3",
@@ -33,7 +33,7 @@ const FALLBACK_CATALOG_BOOKS = [
     author: "Aris Thorne",
     category: "Science",
     sellingPrice: 24.99,
-    coverImage: "https://images.unsplash.com/photo-1629196914169-1c93a0bfa9b8?q=80&w=2070&auto=format&fit=crop"
+    coverImage: "https://images.unsplash.com/photo-1629196914169-1c93a0bfa9b8?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
   },
   {
     id: "e4",
@@ -41,11 +41,11 @@ const FALLBACK_CATALOG_BOOKS = [
     author: "Alan Turing",
     category: "Technology",
     sellingPrice: 24.99,
-    coverImage: "https://images.unsplash.com/photo-1550399105-c4db5fb85c18?q=80&w=2071&auto=format&fit=crop"
+    coverImage: "https://images.unsplash.com/photo-1550399105-c4db5fb85c18?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
   }
 ];
 
-const DEFAULT_BUNDLE_IMAGE = "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2190&auto=format&fit=crop";
+const DEFAULT_BUNDLE_IMAGE = "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format,compress&fit=crop&w=400&q=75&fm=webp";
 
 const CollectionCard = ({ item, index, onBorrowBundle, onExploreBundle, isBorrowing, allBooks = [] }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -311,7 +311,7 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
               bookId: b.id,
               title: b.title,
               author: b.author || "AVELIS Press",
-              coverImage: b.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+              coverImage: b.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
               borrowedAt: new Date().toISOString(),
               dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
               status: "BORROWED",
@@ -374,7 +374,7 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
             id: String(id),
             title: `Volume #${idx + 1} (${bundle.title || "Archive Bundle"})`,
             author: "AVELIS Press",
-            coverImage: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+            coverImage: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
             category: bundle.category || "Classics"
           });
         }
@@ -504,6 +504,10 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
                 <img
                   src={activeExploreBundle.image}
                   alt={activeExploreBundle.title}
+                  width="200"
+                  height="200"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full md:w-48 h-36 md:h-48 object-cover rounded-xl border border-[#C9A227]/30 shadow-xl flex-shrink-0"
                 />
                 <div className="space-y-3 flex-grow">
@@ -554,6 +558,10 @@ export const CollectionsGrid = ({ collections = [], isLoading = false }) => {
                       <img
                         src={b.coverImage}
                         alt={b.title}
+                        width="60"
+                        height="80"
+                        loading="lazy"
+                        decoding="async"
                         className="w-14 h-20 object-cover rounded-lg border border-white/10 shadow flex-shrink-0 group-hover:scale-105 transition-transform"
                       />
                       <div className="flex-grow min-w-0 space-y-1">

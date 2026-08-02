@@ -22,7 +22,7 @@ export const mapLoanToUI = (loan) => {
     title: bookData.title || "Unknown Title",
     author: authorNames,
     isbn: bookData.isbn || "",
-    coverImage: bookData.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+    coverImage: bookData.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
     coverImagePath: bookData.coverImagePath || null,
     pdfUrl: bookData.pdfUrl || null,
     pdfPath: bookData.pdfPath || null,

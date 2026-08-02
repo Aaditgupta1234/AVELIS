@@ -41,7 +41,7 @@ export const mapBookToUI = (book) => {
     category: categoryNames,
     authorsList,
     categoriesList,
-    coverImage: book.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+    coverImage: book.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
     coverImagePath: book.coverImagePath || null,
     pdfUrl: book.pdfUrl || null,
     pdfPath: book.pdfPath || null,

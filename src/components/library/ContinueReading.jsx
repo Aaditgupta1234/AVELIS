@@ -84,7 +84,10 @@ export const ContinueReading = () => {
                 <img
                   alt={loan.title}
                   src={loan.coverImage}
+                  width="96"
+                  height="144"
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>

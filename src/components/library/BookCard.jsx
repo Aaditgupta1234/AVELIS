@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, useMotionValue, useMotionTemplate } from "framer-motion";
 import { durations, easeOut } from "../../utils/motion.js";
 
-const DEFAULT_COVER = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80";
+const DEFAULT_COVER = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp";
 
 export const BookCard = ({ book, viewMode }) => {
     const [isLoaded, setIsLoaded] = useState(false);
@@ -50,6 +50,9 @@ export const BookCard = ({ book, viewMode }) => {
               <img
                 alt={`${book.title} cover`}
                 src={imgSrc}
+                width="112"
+                height="160"
+                decoding="async"
                 onLoad={() => setIsLoaded(true)}
                 onError={() => {
                   if (imgSrc !== DEFAULT_COVER) {
@@ -152,6 +155,9 @@ export const BookCard = ({ book, viewMode }) => {
             <img
               alt={`${book.title} cover`}
               src={imgSrc}
+              width="200"
+              height="300"
+              decoding="async"
               onLoad={() => setIsLoaded(true)}
               onError={() => {
                 if (imgSrc !== DEFAULT_COVER) {

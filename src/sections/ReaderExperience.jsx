@@ -4,7 +4,7 @@ export const ReaderExperience = () => {
         
         <div className="relative order-2 lg:order-1">
           <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full scale-150"></div>
-          <img alt="Device Showcase" className="relative z-10 w-full drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrfA7BAEvYVrXr4qH72poM_KTDMuM_FjnG8j-BhOA-KuNmFrqmbyFOixw49q0PMPgm73p02YcnZ1UZGAuzitReHb3uE0vPmtYoKkhT479waBDJRsx_I_3t27am1mAVCYq4Fygz33tpV4aQv1VqmSD9eMqQuSbenu840SVeuZL_MYT_IyMb1aoV4qhcV4ec8OYzVcbD0-BFnNvYSJ-W9AV531DuRhn4C-4MabTEgI4lpgYkBc3R-i_xHOnUzKqRx8Mm2WKwWF4JrugR"/>
+          <img alt="Device Showcase" width="600" height="480" loading="lazy" decoding="async" fetchpriority="low" className="relative z-10 w-full drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrfA7BAEvYVrXr4qH72poM_KTDMuM_FjnG8j-BhOA-KuNmFrqmbyFOixw49q0PMPgm73p02YcnZ1UZGAuzitReHb3uE0vPmtYoKkhT479waBDJRsx_I_3t27am1mAVCYq4Fygz33tpV4aQv1VqmSD9eMqQuSbenu840SVeuZL_MYT_IyMb1aoV4qhcV4ec8OYzVcbD0-BFnNvYSJ-W9AV531DuRhn4C-4MabTEgI4lpgYkBc3R-i_xHOnUzKqRx8Mm2WKwWF4JrugR"/>
         </div>
         
         <div className="space-y-12 order-1 lg:order-2">

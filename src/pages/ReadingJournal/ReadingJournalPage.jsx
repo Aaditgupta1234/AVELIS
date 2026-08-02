@@ -57,7 +57,7 @@ export const ReadingJournalPage = () => {
               content: contentStr || `Rated ${rev.rating}/5 stars.`,
               bookTitle: rev.book?.title || undefined,
               bookAuthor: authorStr,
-              coverImage: rev.book?.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+              coverImage: rev.book?.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
               visibility: "public",
               readingTime: `${Math.max(2, Math.ceil((contentStr || "").split(/\s+/).length / 200))} min read`,
               date: new Date(rev.createdAt || Date.now()).toLocaleDateString("en-US", {
@@ -222,7 +222,7 @@ export const ReadingJournalPage = () => {
       content: entry.content,
       bookTitle: matchedBook?.title || (entry.bookTitle !== "General Reflection" ? entry.bookTitle : undefined),
       bookAuthor: matchedBook?.author || undefined,
-      coverImage: matchedBook?.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+      coverImage: matchedBook?.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
       visibility: isPrivate ? "private" : "public",
       date: new Date().toLocaleDateString("en-US", {
         month: "short",

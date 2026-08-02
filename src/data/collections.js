@@ -7,7 +7,7 @@ export const mockCollections = [
         description: "Revisiting the 20th century's most profound literary achievements.",
         volumes: "42 Volumes",
         price: 49.99,
-        image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2228&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format,compress&fit=crop&w=600&q=75&fm=webp"
     },
     {
         id: "c2",
@@ -17,7 +17,7 @@ export const mockCollections = [
         description: "The fundamental theories that shaped the modern economic landscape.",
         volumes: "28 Volumes",
         price: 39.99,
-        image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2190&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format,compress&fit=crop&w=600&q=75&fm=webp"
     },
     {
         id: "c3",
@@ -27,7 +27,7 @@ export const mockCollections = [
         description: "Understanding the evolution of digital consciousness and ethics.",
         volumes: "15 Volumes",
         price: 59.99,
-        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format,compress&fit=crop&w=600&q=75&fm=webp"
     }
 ];
 export const categories = [

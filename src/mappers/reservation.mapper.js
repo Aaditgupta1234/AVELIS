@@ -25,7 +25,7 @@ export const mapReservationToUI = (reservation) => {
     author: authorNames,
     coverImage:
       bookData.coverImage ||
-      "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format,compress&fit=crop&w=400&q=75&fm=webp",
     status: reservation.status || "PENDING",
     createdAt: reservation.createdAt || new Date().toISOString(),
     expiresAt: reservation.expiresAt || null,

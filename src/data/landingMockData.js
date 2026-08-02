@@ -25,25 +25,25 @@ export const editorPicks = [
         id: "e1",
         title: "The Silent Archive",
         author: "JULIAN VANCE",
-        image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=2187&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
     },
     {
         id: "e2",
         title: "Mechanics of Time",
         author: "ELARA STERLING",
-        image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2112&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
     },
     {
         id: "e3",
         title: "Botany of Desire",
         author: "ARIS THORNE",
-        image: "https://images.unsplash.com/photo-1629196914169-1c93a0bfa9b8?q=80&w=2070&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1629196914169-1c93a0bfa9b8?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
     },
     {
         id: "e4",
         title: "Digital Consciousness",
         author: "ALAN TURING",
-        image: "https://images.unsplash.com/photo-1550399105-c4db5fb85c18?q=80&w=2071&auto=format&fit=crop"
+        image: "https://images.unsplash.com/photo-1550399105-c4db5fb85c18?auto=format,compress&fit=crop&w=400&q=75&fm=webp"
     }
 ];
 

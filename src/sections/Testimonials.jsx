@@ -29,7 +29,7 @@ const TestimonialCard = ({ quote, name, title, img }) => {
             <motion.img variants={{
             rest: { scale: 1 },
             hover: { scale: 1.03 },
-        }} transition={springs.smooth} alt={name} className="w-full h-full object-cover" src={img}/>
+        }} transition={springs.smooth} alt={name} width="64" height="64" loading="lazy" decoding="async" className="w-full h-full object-cover" src={img}/>
           </div>
           <div>
             <p className="font-display text-lg">{name}</p>

@@ -16,7 +16,7 @@ export const FeaturedAuthor = () => {
             ease: "easeInOut"
         }} className="absolute -top-10 -left-10 w-40 h-40 border border-primary/20 rounded-full"/>
           <div className="border border-white/10 glass-panel overflow-hidden aspect-square relative z-10 group">
-            <motion.img whileHover={{ scale: 1.05, filter: "grayscale(0%)" }} initial={{ filter: "grayscale(100%)" }} transition={{ duration: 1.5, ease: "easeOut" }} className="w-full h-full object-cover" alt="Albert Camus" src="/albert-camus.png" loading="lazy"/>
+            <motion.img whileHover={{ scale: 1.05, filter: "grayscale(0%)" }} initial={{ filter: "grayscale(100%)" }} transition={{ duration: 1.5, ease: "easeOut" }} className="w-full h-full object-cover" alt="Albert Camus" src="/albert-camus.webp" width="400" height="500" loading="lazy" decoding="async"/>
           </div>
         </div>
         
