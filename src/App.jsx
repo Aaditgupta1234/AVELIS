@@ -72,7 +72,7 @@ const AnimatedRoutes = () => {
           {/* ── Public routes ────────────────────────────────────────────── */}
 
           {/* LandingPage: eager — no Suspense, no chunk delay */}
-          <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
+          <Route path="/" element={<LandingPage />} />
 
           <Route path="/collections" element={
             <Suspense fallback={<PageLoadingFallback />}>
