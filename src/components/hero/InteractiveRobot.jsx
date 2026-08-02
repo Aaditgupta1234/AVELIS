@@ -1,5 +1,12 @@
-import { useState } from "react";
-import Spline from "@splinetool/react-spline";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
+
+// ─── Lazy-loaded Spline runtime ───────────────────────────────────────────────
+// Splitting @splinetool/react-spline (and its ~2 MB runtime) into a separate
+// async chunk prevents it from blocking the landing page's initial JS parse.
+// The dynamic import resolves only after requestIdleCallback fires — i.e. after
+// the browser has finished first paint and is genuinely idle.
+const SplineLazy = lazy(() => import("@splinetool/react-spline"));
+
 import * as THREE from "three";
 // ─── AVELIS Brand Palette ───────────────────────────────────────────────────
 const PALETTE = {
@@ -210,6 +217,43 @@ function restyleScene(scene) {
 // ─── React Component ────────────────────────────────────────────────────────
 export const InteractiveRobot = () => {
     const [isLoaded, setIsLoaded] = useState(false);
+
+    // ── Deferred mount ────────────────────────────────────────────────────────
+    // We do NOT mount the Spline canvas during the initial synchronous render.
+    // Instead we wait for requestIdleCallback (or a 200ms setTimeout fallback
+    // on Safari which lacks rIC) to fire. This guarantees:
+    //   1. The hero text and page chrome paint at FCP without competition.
+    //   2. The Spline JS chunk download starts only when the browser is idle.
+    //   3. TBT is not inflated by heavy WebGL initialisation on the main thread.
+    const [shouldMount, setShouldMount] = useState(false);
+    const idleRef = useRef(null);
+
+    useEffect(() => {
+        if (typeof requestIdleCallback !== "undefined") {
+            // Browsers that support rIC (Chrome, Edge, Firefox 119+):
+            // fire after all pending tasks have had a chance to run.
+            // timeout: 2000 ensures the robot still mounts even on very busy
+            // main threads (e.g. slow Android devices).
+            idleRef.current = requestIdleCallback(
+                () => setShouldMount(true),
+                { timeout: 2000 }
+            );
+        } else {
+            // Safari fallback: a 200ms delay is long enough to let the first
+            // meaningful paint complete on all Apple devices we target.
+            idleRef.current = setTimeout(() => setShouldMount(true), 200);
+        }
+
+        return () => {
+            // Clean up on unmount (e.g. user navigates away before idle fires)
+            if (typeof cancelIdleCallback !== "undefined" && idleRef.current) {
+                cancelIdleCallback(idleRef.current);
+            } else {
+                clearTimeout(idleRef.current);
+            }
+        };
+    }, []);
+
     const handleSplineLoad = (splineApp) => {
         // The Spline runtime exposes the Three.js scene in different ways
         // depending on the version. Try common access patterns.
@@ -219,6 +263,7 @@ export const InteractiveRobot = () => {
         }
         setIsLoaded(true);
     };
+
     return (<div className="relative w-full h-full min-h-[320px] md:min-h-[480px] max-h-[520px] flex items-center justify-center">
       {/* Premium Luxury Gold Loading Shimmer */}
       {!isLoaded && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
@@ -237,10 +282,24 @@ export const InteractiveRobot = () => {
           </div>
         </div>)}
 
-      {/* Spline 3D Scene */}
+      {/* Spline 3D Scene — mounted only after browser idle */}
       <div className={`w-full h-full transition-all duration-1000 ease-out ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-        <Spline scene="https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode" onLoad={handleSplineLoad}/>
+        {/*
+          Suspense fallback is null here intentionally.
+          The shimmer above already covers the loading state visually.
+          A second fallback element would cause a flash when the lazy
+          chunk resolves but before onLoad fires.
+        */}
+        {shouldMount && (
+          <Suspense fallback={null}>
+            <SplineLazy
+              scene="https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode"
+              onLoad={handleSplineLoad}
+            />
+          </Suspense>
+        )}
       </div>
     </div>);
 };
 export default InteractiveRobot;
+
