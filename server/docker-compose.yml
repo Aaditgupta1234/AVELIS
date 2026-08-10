@@ -1,0 +1,80 @@
+# =============================================================================
+# AVELIS — docker-compose.yml
+# =============================================================================
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │  ⚠️  LOCAL DEVELOPMENT ONLY                                             │
+# │                                                                         │
+# │  This file is for running the full AVELIS stack locally — offline.      │
+# │  It does NOT affect production.                                         │
+# │                                                                         │
+# │  Production architecture (unchanged):                                   │
+# │    Frontend  →  Vercel                                                  │
+# │    Backend   →  Render                                                  │
+# │    Database  →  Supabase (PostgreSQL)                                   │
+# └─────────────────────────────────────────────────────────────────────────┘
+#
+# Usage:
+#   docker compose up --build      # Start all services
+#   docker compose down            # Stop all services
+#   docker compose down -v         # Stop + delete volumes
+# =============================================================================
+
+services:
+
+  # ── Backend ────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: avelis-api
+    ports:
+      - "5000:5000"
+    # Load real values from .env (Supabase URL, keys, JWT secret, etc.)
+    # env_file is NOT the same as baking .env into the image — it only injects
+    # variables at container runtime. .env itself stays out of the image.
+    env_file:
+      - .env
+    environment:
+      # These override the values from .env specifically for the compose environment.
+      NODE_ENV: development
+      PORT: 5000
+
+      # ── Database — point to local compose postgres, not Supabase ─────────
+      DATABASE_URL: postgresql://avelis:avelis_secret@postgres:5432/avelis_db?schema=public
+      DIRECT_URL: postgresql://avelis:avelis_secret@postgres:5432/avelis_db?schema=public
+
+      # ── CORS ─────────────────────────────────────────────────────────────
+      CORS_ORIGIN: http://localhost:5173
+      CLIENT_URL: http://localhost:5173
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  # ── Local PostgreSQL (offline dev only — NOT a replacement for Supabase) ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: avelis-postgres
+    ports:
+      - "5432:5432"          # Exposed for DB GUI tools (TablePlus, DBeaver, etc.)
+    environment:
+      POSTGRES_USER: avelis
+      POSTGRES_PASSWORD: avelis_secret
+      POSTGRES_DB: avelis_db
+    volumes:
+      - avelis_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U avelis -d avelis_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+# ── Named Volumes ─────────────────────────────────────────────────────────────
+volumes:
+  avelis_pgdata:
+    name: avelis_pgdata

@@ -1,0 +1,48 @@
+# =============================================================================
+# AVELIS — .dockerignore
+# =============================================================================
+# Excludes files and directories from the Docker build context.
+# Anything listed here is NOT sent to the Docker daemon during `docker build`.
+# This reduces image size and prevents secrets from being baked in.
+# =============================================================================
+
+# ── Dependencies (rebuilt inside image via `npm ci`) ─────────────────────────
+node_modules
+
+# ── Secrets (must NEVER be baked into an image) ──────────────────────────────
+.env
+.env.*
+
+# ── Version control ──────────────────────────────────────────────────────────
+.git
+.gitignore
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ── Build artifacts ──────────────────────────────────────────────────────────
+dist
+coverage
+
+# ── Docker files (not needed inside the image itself) ────────────────────────
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# ── Local uploads (all file storage goes to Supabase Storage — no local disk writes) ──
+uploads
+
+# ── Development-only directories (not referenced by src/) ────────────────────
+scratch
+benchmark
+
+# ── Documentation ────────────────────────────────────────────────────────────
+README.md
+*.md
+
+# NOTE: `data/` is intentionally NOT excluded.
+# bundle.service.js and hero.service.js read from data/bundles.json and
+# data/hero.json at request time. This directory is required at runtime.

@@ -222,6 +222,155 @@ The Loan module is implemented using the flat architecture pattern (controllers,
 
 ---
 
+## 🐳 Docker Support
+
+> **Production architecture remains unchanged.**
+> Docker support is purely additive and has no effect on Render or Supabase.
+>
+> | Layer | Service |
+> |-------|---------|
+> | Frontend | React → **Vercel** |
+> | Backend | Express → **Render** |
+> | Database | PostgreSQL → **Supabase** |
+
+### Architecture
+
+```mermaid
+graph TD
+    React["Vercel — React Frontend"]
+    Express["Render — Express API"]
+    Prisma["Prisma ORM"]
+    Supabase[("Supabase — PostgreSQL")]
+    Multer["Multer — File Handling"]
+    SupabaseStorage[("Supabase Storage")]
+
+    React --> Express
+    Express --> Prisma
+    Prisma --> Supabase
+    Express --> Multer
+    Multer --> SupabaseStorage
+```
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed
+- [Docker Compose](https://docs.docker.com/compose/) installed (included with Docker Desktop)
+
+---
+
+### Build Image
+
+```bash
+# Run from the server/ directory
+docker build -t avelis-api .
+```
+
+### Run Container (against Supabase — production)
+
+```bash
+docker run \
+  -p 5000:5000 \
+  -e DATABASE_URL="postgresql://postgres.your_ref:your_password@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true" \
+  -e DIRECT_URL="postgresql://postgres.your_ref:your_password@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres" \
+  -e JWT_SECRET="your_jwt_secret_at_least_32_characters" \
+  -e SUPABASE_URL="https://your-project.supabase.co" \
+  -e SUPABASE_SECRET_KEY="your_service_role_key" \
+  avelis-api
+```
+
+#### Required Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Supabase pooled connection string (pgBouncer) |
+| `DIRECT_URL` | Supabase direct connection string (migrations) |
+| `JWT_SECRET` | JWT signing secret — minimum 32 characters |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SECRET_KEY` | Supabase service role key |
+| `PORT` | Optional — defaults to `5000` |
+| `NODE_ENV` | Optional — defaults to `production` |
+
+---
+
+### Health Check
+
+```bash
+curl http://localhost:5000/api/v1/health
+```
+
+Expected response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "database": "connected",
+    "uptime": 3.14,
+    "timestamp": "2026-08-10T10:00:00.000Z",
+    "version": "1.0.0"
+  }
+}
+```
+
+Additional probes:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/health` | Full health check with DB ping |
+| `GET /api/v1/ready` | Readiness probe |
+| `GET /api/v1/live` | Liveness probe (no DB call) |
+
+---
+
+### Docker Compose — Local Development Only
+
+> ⚠️ **Local development only.** The compose Postgres service is NOT a replacement for Supabase.
+> File uploads still require real Supabase credentials.
+
+```bash
+# Start all services (backend + local postgres)
+docker compose up --build
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (deletes local DB data)
+docker compose down -v
+```
+
+API available at: `http://localhost:5000/api/v1`
+
+---
+
+### Logs & Container Management
+
+```bash
+# View logs
+docker logs avelis-api
+
+# Follow logs
+docker logs -f avelis-api
+
+# Stop container
+docker stop avelis-api
+
+# Remove container
+docker rm avelis-api
+```
+
+### Rollback
+
+Docker support is additive only. To remove it:
+
+```bash
+git revert HEAD
+```
+
+No application code was changed. Render and Supabase are unaffected.
+
+---
+
 ## Deployment Checklist
 
 
