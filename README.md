@@ -15,6 +15,7 @@ AVELIS is a production-grade, full-stack Digital Reading Platform that combines 
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B-4169E1.svg?style=flat&logo=postgresql&logoColor=white)](#-technology-stack)
 [![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748.svg?style=flat&logo=prisma&logoColor=white)](#-technology-stack)
 [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Storage-3ECF8E.svg?style=flat&logo=supabase&logoColor=white)](#-technology-stack)
+[![Docker](https://img.shields.io/badge/Docker-Supported-2496ED.svg?style=flat&logo=docker&logoColor=white)](#️-technology-stack)
 [![Frontend Deployment](https://img.shields.io/badge/Vercel-Deployed-000000.svg?style=flat&logo=vercel&logoColor=white)](https://avelis-alpha.vercel.app)
 [![Backend Deployment](https://img.shields.io/badge/Render-Deployed-46E3B7.svg?style=flat&logo=render&logoColor=white)](https://avelis-api.onrender.com)
 
@@ -188,6 +189,12 @@ Traditional library software often relies on monolithic codebases and basic data
 | **Object Storage** | Supabase Storage | Cloud file storage for covers and PDF media |
 | **OAuth Provider** | Google Identity Services | Third-party social login integration |
 
+### Containerization
+| Technology | Version | Purpose |
+| :--- | :--- | :--- |
+| **Docker** | `node:22-alpine` base | Portable, production-ready container image for the Express API |
+| **Docker Compose** | `v2.x` | Multi-service local development environment (backend + postgres) |
+
 ---
 
 ## 🏗️ Architecture Overview
@@ -233,6 +240,8 @@ flowchart TD
 ```
 
 For complete technical specifications, review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+> **Docker support** is available for portable backend deployment and local development. The container image connects directly to the live Supabase database and storage. Production deployment remains Vercel + Render + Supabase — Docker is additive and does not affect existing infrastructure.
 
 ---
 
