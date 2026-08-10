@@ -41,8 +41,8 @@ services:
       PORT: 5000
 
       # ── Database — point to local compose postgres, not Supabase ─────────
-      DATABASE_URL: postgresql://avelis:avelis_secret@postgres:5432/avelis_db?schema=public
-      DIRECT_URL: postgresql://avelis:avelis_secret@postgres:5432/avelis_db?schema=public
+      DATABASE_URL: postgresql://avelis:avelis_secret@postgres:5432/avelis_db?schema=public  # Local PostgreSQL only. Production uses Supabase.
+      DIRECT_URL: postgresql://avelis:avelis_secret@postgres:5432/avelis_db?schema=public    # Local PostgreSQL only. Production uses Supabase.
 
       # ── CORS ─────────────────────────────────────────────────────────────
       CORS_ORIGIN: http://localhost:5173

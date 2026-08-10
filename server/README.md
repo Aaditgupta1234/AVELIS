@@ -225,13 +225,14 @@ The Loan module is implemented using the flat architecture pattern (controllers,
 ## 🐳 Docker Support
 
 > **Production architecture remains unchanged.**
-> Docker support is purely additive and has no effect on Render or Supabase.
+> Docker support is purely additive and has zero effect on the existing Render and Supabase deployments.
 >
 > | Layer | Service |
 > |-------|---------|
 > | Frontend | React → **Vercel** |
 > | Backend | Express → **Render** |
 > | Database | PostgreSQL → **Supabase** |
+> | Storage | Files → **Supabase Storage** |
 
 ### Architecture
 
@@ -251,6 +252,15 @@ graph TD
     Multer --> SupabaseStorage
 ```
 
+### Docker Files
+
+```
+server/
+├── Dockerfile
+├── .dockerignore
+└── docker-compose.yml
+```
+
 ### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) installed
@@ -265,30 +275,35 @@ graph TD
 docker build -t avelis-api .
 ```
 
-### Run Container (against Supabase — production)
+Build verified successfully. Prisma Client is generated inside the image during `docker build`.
+
+---
+
+### Run Container
 
 ```bash
 docker run \
+  --env-file .env \
   -p 5000:5000 \
-  -e DATABASE_URL="postgresql://postgres.your_ref:your_password@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true" \
-  -e DIRECT_URL="postgresql://postgres.your_ref:your_password@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres" \
-  -e JWT_SECRET="your_jwt_secret_at_least_32_characters" \
-  -e SUPABASE_URL="https://your-project.supabase.co" \
-  -e SUPABASE_SECRET_KEY="your_service_role_key" \
   avelis-api
 ```
 
+Uses your existing `server/.env` for all configuration. Connects to Supabase PostgreSQL and Supabase Storage directly — no local database required.
+
 #### Required Environment Variables
+
+All values in `.env` must be **unquoted** (see [Troubleshooting](#troubleshooting) below).
 
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | Supabase pooled connection string (pgBouncer) |
 | `DIRECT_URL` | Supabase direct connection string (migrations) |
 | `JWT_SECRET` | JWT signing secret — minimum 32 characters |
+| `JWT_EXPIRES_IN` | Token expiry — e.g. `7d` |
+| `CLIENT_URL` | Frontend origin for CORS |
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SECRET_KEY` | Supabase service role key |
 | `PORT` | Optional — defaults to `5000` |
-| `NODE_ENV` | Optional — defaults to `production` |
 
 ---
 
@@ -305,28 +320,28 @@ Expected response:
   "success": true,
   "data": {
     "status": "healthy",
-    "database": "connected",
-    "uptime": 3.14,
-    "timestamp": "2026-08-10T10:00:00.000Z",
-    "version": "1.0.0"
+    "database": "connected"
   }
 }
 ```
+
+The container also includes a Docker `HEALTHCHECK` that automatically probes this endpoint every 30 seconds. The container reports `healthy` or `unhealthy` in `docker ps` output.
 
 Additional probes:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /api/v1/health` | Full health check with DB ping |
+| `GET /api/v1/health` | Full health check with live DB ping |
 | `GET /api/v1/ready` | Readiness probe |
-| `GET /api/v1/live` | Liveness probe (no DB call) |
+| `GET /api/v1/live` | Liveness probe — no DB call |
 
 ---
 
 ### Docker Compose — Local Development Only
 
-> ⚠️ **Local development only.** The compose Postgres service is NOT a replacement for Supabase.
-> File uploads still require real Supabase credentials.
+> ⚠️ **Local development only.** Docker Compose runs a local `postgres:16-alpine` service.
+> This is NOT a replacement for Supabase. File uploads always require real Supabase credentials.
+> Production continues to use Render + Supabase.
 
 ```bash
 # Start all services (backend + local postgres)
@@ -339,7 +354,7 @@ docker compose down
 docker compose down -v
 ```
 
-API available at: `http://localhost:5000/api/v1`
+API available at `http://localhost:5000/api/v1`
 
 ---
 
@@ -359,9 +374,80 @@ docker stop avelis-api
 docker rm avelis-api
 ```
 
+---
+
+### Verification Results
+
+The following checks were completed against a running container connected to the live Supabase instance.
+
+| Component | Status |
+|-----------|--------|
+| Docker Build | ✅ |
+| Prisma Client Generate | ✅ |
+| Supabase Database Connection | ✅ |
+| Supabase Storage Connection | ✅ |
+| Storage Buckets (`book-covers`, `book-pdfs`) | ✅ |
+| Server Startup on Port 5000 | ✅ |
+| `GET /api/v1/health` → HTTP 200 | ✅ |
+| Docker `HEALTHCHECK` | ✅ |
+| Graceful SIGTERM Shutdown | ✅ |
+
+**Verified startup output:**
+
+```
+[INFO ] Database connection established successfully
+[INFO ] [StorageService] Supabase Storage initialization & read-only bucket
+         verification succeeded. { buckets: [ 'book-covers', 'book-pdfs' ] }
+[INFO ] ================================================
+[INFO ]   AVELIS Server
+[INFO ]   Environment : development
+[INFO ]   Port        : 5000
+[INFO ] ================================================
+[INFO ] GET /api/v1/health 200 452.770 ms - 216
+[INFO ] SIGTERM received. Starting graceful shutdown...
+[INFO ] HTTP server closed
+[INFO ] Database connection gracefully closed
+[INFO ] Graceful shutdown complete
+```
+
+---
+
+### Notes
+
+- Base image: `node:22-alpine`
+- `prisma` CLI is a `devDependency` — `npm ci` installs it so `npx prisma generate` can run during `docker build`
+- After Prisma Client generation, `npm prune --omit=dev` removes all devDependencies to keep the image lean. `@prisma/client` (a production dependency) is preserved
+- `data/` directory is included in the image — required at runtime by `bundle.service.js` and `hero.service.js`
+- No application code, routes, middleware, Prisma schema, or deployment configuration was modified
+
+---
+
+### Troubleshooting
+
+#### Invalid supabaseUrl on container startup
+
+**Symptom:**
+```
+Error: Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.
+```
+
+**Cause:** Docker `--env-file` does **not** strip surrounding quotes from values. `dotenv` (used locally) does strip them — so the same `.env` file that works locally will crash the container if values are quoted.
+
+```bash
+# ❌ Wrong — quotes are injected literally into the container
+SUPABASE_URL="https://xyz.supabase.co"
+
+# ✅ Correct — unquoted values work with both dotenv and Docker
+SUPABASE_URL=https://xyz.supabase.co
+```
+
+**Fix:** Remove all surrounding quotes from every value in `server/.env`.
+
+---
+
 ### Rollback
 
-Docker support is additive only. To remove it:
+Docker support is additive only. To remove it entirely:
 
 ```bash
 git revert HEAD
@@ -370,6 +456,7 @@ git revert HEAD
 No application code was changed. Render and Supabase are unaffected.
 
 ---
+
 
 ## Deployment Checklist
 
