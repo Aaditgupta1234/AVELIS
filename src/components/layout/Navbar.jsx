@@ -32,8 +32,8 @@ export const Navbar = () => {
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)}/>
       
       <motion.nav initial={{ backgroundColor: "rgba(10, 10, 10, 0)", backdropFilter: "blur(0px)", borderBottomColor: "rgba(255,255,255,0)" }} animate={{
-            paddingTop: scrolled ? "1rem" : "1.5rem",
-            paddingBottom: scrolled ? "1rem" : "1.5rem",
+            paddingTop: scrolled ? "0.6rem" : "0.9rem",
+            paddingBottom: scrolled ? "0.6rem" : "0.9rem",
             backgroundColor: scrolled ? "rgba(10, 10, 10, 0.8)" : "rgba(10, 10, 10, 0)",
             backdropFilter: scrolled ? "blur(24px)" : "blur(0px)",
             borderBottomColor: scrolled ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0)",

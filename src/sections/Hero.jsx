@@ -55,23 +55,23 @@ export const Hero = () => {
         hidden: { opacity: 0, y: 15 },
         visible: { opacity: 1, y: 0, transition: { duration: durations.slow, ease: easeOut } },
     };
-    return (<section className="min-h-screen flex items-center pt-20 overflow-hidden px-12 relative z-10" onMouseMove={handleMouseMove}>
+    return (<section className="min-h-screen flex items-start pt-10 md:pt-12 pb-16 overflow-hidden px-12 relative z-10" onMouseMove={handleMouseMove}>
       <Particles />
       <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
-          <motion.div variants={itemVariants} className="inline-flex items-center gap-4 px-4 py-1.5 border border-primary/20 rounded-full">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col">
+          <motion.div variants={itemVariants} className="inline-flex items-center gap-4 px-4 py-1.5 border border-primary/20 rounded-full w-fit mb-1.5">
             <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
             <span className="font-display text-[9px] tracking-[0.3em] text-primary uppercase">The Definitive Digital Library</span>
           </motion.div>
           
-          <h1 className="font-display text-5xl md:text-7xl lg:text-[5.25rem] leading-[1.1] text-white">
+          <h1 className="font-display text-5xl md:text-7xl lg:text-[5.25rem] leading-[1.1] text-white mb-4">
             {HERO_LINES.map((line, i) => (<motion.div key={i} variants={itemVariants}>
                 {line.italic ? <span className="italic text-primary">{line.text}</span> : line.text}
               </motion.div>))}
           </h1>
           
-          <motion.p variants={itemVariants} className="text-on-background/70 text-base max-w-lg font-light leading-relaxed">
+          <motion.p variants={itemVariants} className="text-on-background/70 text-base max-w-lg font-light leading-relaxed mb-8">
             Step into a curated sanctuary where the art of literature meets modern refinement. Discover, collect, and experience the world's most significant works in an environment designed for the discerning mind.
           </motion.p>
           
