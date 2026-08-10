@@ -264,7 +264,7 @@ export const InteractiveRobot = () => {
         setIsLoaded(true);
     };
 
-    return (<div className="relative w-full h-full min-h-[360px] md:min-h-[520px] lg:min-h-[620px] flex items-center justify-center py-2">
+    return (<div className="relative w-full h-full h-[480px] md:h-[580px] lg:h-[660px] min-h-[360px] flex items-center justify-center">
       {/* Premium Luxury Gold Loading Shimmer */}
       {!isLoaded && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           <div className="relative w-72 h-72 rounded-full border border-primary/10 flex items-center justify-center">
