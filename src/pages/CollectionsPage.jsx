@@ -10,6 +10,7 @@ import { ReadingQuote } from "../sections/collections/ReadingQuote";
 import { CollectionsCTA } from "../sections/collections/CollectionsCTA";
 import { mockCollections } from "../data/collections";
 import { getBundlesApi } from "../api/bundle.api";
+import { Helmet } from "react-helmet-async";
 
 export const CollectionsPage = () => {
   const [query, setQuery] = useState("");
@@ -90,6 +91,11 @@ export const CollectionsPage = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
+      <Helmet>
+        <title>Curated Collections — AVELIS</title>
+        <meta name="description" content="Explore hand-curated reading bundles and thematic collections in the AVELIS digital library — from classic literature to modern philosophy." />
+        <link rel="canonical" href="https://avelis-alpha.vercel.app/collections" />
+      </Helmet>
       <Navbar />
 
       <main className="flex-grow pt-20">

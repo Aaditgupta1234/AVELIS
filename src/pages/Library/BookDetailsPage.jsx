@@ -16,6 +16,7 @@ import { ProgressBar } from "../../components/ui/ProgressBar.jsx";
 import { ArrowLeft, Star, Bookmark, BookmarkCheck, ShieldAlert, Sparkles, Send, Trash2, MessageSquare, CheckCircle2, ShoppingBag, Layers, X } from "lucide-react";
 import { BuyBookModal } from "../../components/checkout/BuyBookModal.jsx";
 import { revealVariants } from "../../utils/motion.js";
+import { Helmet } from "react-helmet-async";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -231,9 +232,9 @@ export const BookDetailsPage = () => {
         <main className="pt-40 pb-24 relative z-10 flex-grow flex items-center justify-center">
           <motion.div initial="hidden" animate="visible" variants={revealVariants.A} className="max-w-md text-center p-8 bg-[#0D1626]/40 border border-red-500/20 rounded-2xl shadow-2xl backdrop-blur-md">
             <ShieldAlert className="w-12 h-12 text-[#C9A227] mx-auto mb-6 animate-pulse"/>
-            <h1 className="font-display text-2xl text-primary tracking-wider uppercase mb-4">
+            <h2 className="font-display text-2xl text-primary tracking-wider uppercase mb-4">
               Book Not Found
-            </h1>
+            </h2>
             <p className="font-body text-sm text-on-surface-variant/60 leading-relaxed mb-8">
               The archival codex identifier is either malformed or does not exist in the digital repository.
             </p>
@@ -301,9 +302,9 @@ export const BookDetailsPage = () => {
         <main className="pt-40 pb-24 relative z-10 flex-grow flex items-center justify-center">
           <div className="max-w-md text-center p-8 bg-[#0D1626]/40 border border-[#C9A227]/20 rounded-2xl shadow-2xl backdrop-blur-md">
             <ShieldAlert className="w-12 h-12 text-[#C9A227] mx-auto mb-6 animate-pulse"/>
-            <h1 className="font-display text-2xl text-primary tracking-wider uppercase mb-4">
+            <h2 className="font-display text-2xl text-primary tracking-wider uppercase mb-4">
               Book Not Found
-            </h1>
+            </h2>
             <p className="font-body text-sm text-on-surface-variant/60 leading-relaxed mb-8">
               The requested volume is currently unavailable in the library archives.
             </p>
@@ -321,6 +322,14 @@ export const BookDetailsPage = () => {
   // 5. Successful details display (Either rendered immediately via cache or updated via API)
   return (
     <div className="min-h-screen bg-[#07111F] text-[#F7F5EE] relative flex flex-col justify-between">
+      <Helmet>
+        <title>{book.title} by {book.author} | AVELIS</title>
+        <meta
+          name="description"
+          content={`Read "${book.title}" by ${book.author} on AVELIS. ${(book.description || '').slice(0, 120).trim()}${book.description && book.description.length > 120 ? '...' : ''}`}
+        />
+        <link rel="canonical" href={`https://avelis-alpha.vercel.app/book/${book.id}`} />
+      </Helmet>
       <div className="paper-grain opacity-5 pointer-events-none"/>
       <ProgressBar />
       <BackgroundShader />

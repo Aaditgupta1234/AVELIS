@@ -11,8 +11,15 @@ import { Testimonials } from "../sections/Testimonials";
 import { FinalCTA } from "../sections/FinalCTA";
 import { BackgroundShader } from "../components/ui/BackgroundShader";
 import { ProgressBar } from "../components/ui/ProgressBar";
+import { Helmet } from "react-helmet-async";
+
 export const LandingPage = () => {
     return (<>
+      <Helmet>
+        <title>AVELIS | The Discerning Bibliophile's Sanctuary</title>
+        <meta name="description" content="AVELIS is a premium digital library experience combining curated collections, intelligent discovery, reading journals, and immersive digital reading." />
+        <link rel="canonical" href="https://avelis-alpha.vercel.app/" />
+      </Helmet>
       <div className="paper-grain"></div>
       <ProgressBar />
       <BackgroundShader />

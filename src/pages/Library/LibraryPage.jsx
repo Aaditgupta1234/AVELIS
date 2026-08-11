@@ -12,6 +12,7 @@ import { CategorySection } from "../../components/library/CategorySection";
 import { AuthorSection } from "../../components/library/AuthorSection";
 import { useLibrary } from "../../hooks/useLibrary";
 import { revealVariants, springs } from "../../utils/motion";
+import { Helmet } from "react-helmet-async";
 
 export const LibraryPage = () => {
     const { searchQuery, setSearchQuery, activeFilters, addFilter, removeFilter, clearAllFilters, selectedSort, setSelectedSort, viewMode, setViewMode, filteredBooks, isLoading, error, pagination, setPage } = useLibrary();
@@ -35,6 +36,11 @@ export const LibraryPage = () => {
     };
 
     return (<div className="min-h-screen bg-[#07111F] text-on-background relative flex flex-col">
+      <Helmet>
+        <title>Library | Browse Books — AVELIS</title>
+        <meta name="description" content="Browse thousands of curated titles in the AVELIS digital library. Filter by genre, author, and era. Borrow, purchase, or read online." />
+        <link rel="canonical" href="https://avelis-alpha.vercel.app/library" />
+      </Helmet>
       <div className="paper-grain"></div>
       <ProgressBar />
       <BackgroundShader />

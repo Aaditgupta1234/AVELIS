@@ -14,6 +14,7 @@ import { getAllPublicReviews, createReview, updateReview, deleteReview } from ".
 import { getBooks } from "../../services/book.service.js";
 import { useNavigate } from "react-router-dom";
 import { X, Sparkles, Edit3 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 const PUBLIC_STORAGE_KEY = "avelis_public_reflections_v5";
 
@@ -274,6 +275,11 @@ export const ReadingJournalPage = () => {
 
   return (
     <div className="min-h-screen bg-[#07111F] text-on-background relative flex flex-col overflow-hidden">
+      <Helmet>
+        <title>Reading Journal — AVELIS</title>
+        <meta name="description" content="Discover reader reflections and personal reading journals from the AVELIS community. Share your own meditations on the books you love." />
+        <link rel="canonical" href="https://avelis-alpha.vercel.app/journal" />
+      </Helmet>
       {/* Paper Grain Texture */}
       <div className="paper-grain" />
 

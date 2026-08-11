@@ -1,0 +1,12 @@
+# robots.txt — AVELIS
+# https://avelis-alpha.vercel.app
+
+User-agent: *
+Allow: /
+
+# Private / authenticated routes — do not index
+Disallow: /dashboard
+Disallow: /dashboard/catalog
+Disallow: /auth/callback
+
+Sitemap: https://avelis-alpha.vercel.app/sitemap.xml
