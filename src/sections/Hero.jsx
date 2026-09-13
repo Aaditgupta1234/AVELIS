@@ -71,11 +71,11 @@ export const Hero = () => {
               </motion.div>))}
           </h1>
           
-          <motion.p variants={itemVariants} className="text-on-background/70 text-base max-w-lg font-light leading-relaxed mb-8">
+          <motion.p variants={itemVariants} className="text-on-background/70 text-base max-w-lg font-light leading-relaxed mb-5">
             Step into a curated sanctuary where the art of literature meets modern refinement. Discover, collect, and experience the world's most significant works in an environment designed for the discerning mind.
           </motion.p>
           
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-6">
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-5">
             <Link to="/library">
               <motion.button whileHover={{
               y: -2,
