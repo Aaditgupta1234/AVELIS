@@ -95,7 +95,7 @@ export const Hero = () => {
           </motion.div>
         </motion.div>
 
-        <motion.div style={{ x: smoothX, y: smoothY }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: durations.slow, ease: easeOut, delay: 0.5 }} className="relative flex justify-center items-center">
+        <motion.div style={{ x: smoothX, y: smoothY }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: durations.slow, ease: easeOut, delay: 0.5 }} className="relative flex justify-center items-center -mt-6 md:-mt-10 lg:-mt-14">
           <motion.div animate={{
             scale: [1, 1.01, 1],
             y: [0, -3, 0]
