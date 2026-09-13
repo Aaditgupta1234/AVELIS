@@ -55,11 +55,11 @@ export const Hero = () => {
         hidden: { opacity: 0, y: 15 },
         visible: { opacity: 1, y: 0, transition: { duration: durations.slow, ease: easeOut } },
     };
-    return (<section className="min-h-screen flex items-start pt-10 md:pt-12 pb-16 overflow-hidden px-12 relative z-10" onMouseMove={handleMouseMove}>
+    return (<section className="min-h-screen flex items-start pt-16 md:pt-20 pb-12 overflow-hidden px-6 md:px-12 relative z-10" onMouseMove={handleMouseMove}>
       <Particles />
-      <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+      <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start relative z-10">
         
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col pt-1">
           <motion.div variants={itemVariants} className="inline-flex items-center gap-4 px-4 py-1.5 border border-primary/20 rounded-full w-fit mb-1.5">
             <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
             <span className="font-display text-[9px] tracking-[0.3em] text-primary uppercase">The Definitive Digital Library</span>
